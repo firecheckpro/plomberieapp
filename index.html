@@ -9,8 +9,9 @@
   <meta name="theme-color" content="#1a5279">
   <meta name="description" content="Application de gestion pour plombier - 100% hors ligne et privée">
   <title>Plomberie Pro - Gestion hors ligne</title>
-  <link rel="manifest" href="data:application/manifest+json;base64,eyJuYW1lIjoiUGxvbWJyaWUgUHJvIiwic2hvcnRfbmFtZSI6IlBsb21iZXJpZSIsInN0YXJ0X3VybCI6Ii4iLCJkaXNwbGF5Ijoic3RhbmRhbG9uZSIsImJhY2tncm91bmRfY29sb3VyIjoiIzFhNTI3OSIsInRoZW1lX2NvbG9yIjoiIzFhNTI3OSIsImljb25zIjpbXX0=">
-  <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgcng9IjIwIiBmaWxsPSIjMWE1Mjc5Ii8+PHRleHQgeD0iNTAiIHk9IjY1IiBmb250LXNpemU9IjUwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSJ3aGl0ZSI+8J+UpzwvdGV4dD48L3N2Zz4=">
+  <link rel="icon" type="image/png" href="logo.png">
+  <link rel="apple-touch-icon" href="logo.png">
+  <link rel="manifest" href="data:application/manifest+json;base64,eyJuYW1lIjoiUGxvbWJyaWUgUHJvIiwic2hvcnRfbmFtZSI6IlBsb21iZXJpZSIsInN0YXJ0X3VybCI6Ii4iLCJkaXNwbGF5Ijoic3RhbmRhbG9uZSIsImJhY2tncm91bmRfY29sb3VyIjoiIzFhNTI3OSIsInRoZW1lX2NvbG9yIjoiIzFhNTI3OSIsImljb25zIjpbeyJzcmMiOiJsb2dvLnBuZyIsInNpemVzIjoiNTEyeDUxMiIsInR5cGUiOiJpbWFnZS9wbmciLCJwdXJwb3NlIjoiYW55IG1hc2thYmxlIn1dfQ==">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
@@ -64,6 +65,21 @@
       gap: 8px;
     }
 
+    .app-header .header-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .app-header .app-logo {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      object-fit: cover;
+      box-shadow: 0 2px 8px rgba(26, 82, 121, 0.15);
+      flex-shrink: 0;
+    }
+
     .app-header h1 {
       font-size: 1.4rem;
       font-weight: 700;
@@ -111,101 +127,91 @@
       50% { opacity: 0.4; }
     }
 
-    .global-stats {
+    /* ---- STATS COMPACTES ---- */
+    .stats-compact {
       display: flex;
-      gap: 8px;
+      gap: 6px;
       flex-wrap: wrap;
-      margin-bottom: 14px;
-      padding: 10px 12px;
-      background: #f8fbfe;
-      border-radius: 16px;
-      border: 1px solid #e3ebf3;
+      margin-bottom: 10px;
       justify-content: center;
     }
 
-    .stat-badge {
+    .stat-chip {
       display: flex;
       align-items: center;
       gap: 4px;
-      font-size: 0.75rem;
+      font-size: 0.65rem;
       font-weight: 500;
       color: #1b3b55;
-      padding: 4px 12px;
+      padding: 3px 10px;
       border-radius: 40px;
-      background: white;
-      border: 1px solid #e3ebf5;
+      background: #f8fbfe;
+      border: 1px solid #e3ebf3;
+      white-space: nowrap;
     }
 
-    .stat-badge .count {
+    .stat-chip .count {
       font-weight: 700;
-      font-size: 0.9rem;
-      min-width: 18px;
-      text-align: center;
-      color: #1a5279;
-    }
-
-    .stat-badge .stat-icon {
       font-size: 0.8rem;
       color: #1a5279;
     }
 
-    .stat-badge.paid {
-      background: #e8f5e9;
-      border-color: #c8e6c9;
-    }
-    .stat-badge.paid .count { color: #2e7d32; }
-    .stat-badge.paid .stat-icon { color: #2e7d32; }
-
-    .stat-badge.unpaid {
-      background: #ffebee;
-      border-color: #ffcdd2;
-    }
-    .stat-badge.unpaid .count { color: #c62828; }
-    .stat-badge.unpaid .stat-icon { color: #c62828; }
-
-    .ca-panel {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      margin-bottom: 14px;
-      padding: 12px 14px;
-      background: linear-gradient(135deg, #f0f7ff, #e8f0fa);
-      border-radius: 16px;
-      border: 1px solid #d4e4f2;
-    }
-
-    .ca-item {
-      flex: 1 1 140px;
-      background: white;
-      border-radius: 14px;
-      padding: 10px 14px;
-      border: 1px solid #e3ebf3;
-      text-align: center;
-    }
-
-    .ca-item .ca-label {
+    .stat-chip i {
       font-size: 0.65rem;
-      font-weight: 600;
-      color: #4f718d;
-      text-transform: uppercase;
-      letter-spacing: 0.3px;
-      margin-bottom: 4px;
-    }
-
-    .ca-item .ca-value {
-      font-size: 1.3rem;
-      font-weight: 700;
       color: #1a5279;
     }
 
-    .ca-item .ca-value.net {
-      color: #2e7d32;
+    .stat-chip.paid { background: #e8f5e9; border-color: #c8e6c9; }
+    .stat-chip.paid .count, .stat-chip.paid i { color: #2e7d32; }
+    .stat-chip.unpaid { background: #ffebee; border-color: #ffcdd2; }
+    .stat-chip.unpaid .count, .stat-chip.unpaid i { color: #c62828; }
+
+    /* ---- CA COMPACT ---- */
+    .ca-compact {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+      justify-content: center;
+      padding: 8px 10px;
+      background: linear-gradient(135deg, #f0f7ff, #e8f0fa);
+      border-radius: 12px;
+      border: 1px solid #d4e4f2;
     }
 
-    .ca-item .ca-sub {
-      font-size: 0.65rem;
+    .ca-chip {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 4px 12px;
+      border-radius: 10px;
+      background: white;
+      border: 1px solid #e3ebf3;
+      min-width: 90px;
+      flex: 1 1 80px;
+    }
+
+    .ca-chip .ca-chip-label {
+      font-size: 0.55rem;
+      font-weight: 600;
       color: #7a96b1;
-      margin-top: 2px;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    .ca-chip .ca-chip-value {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #1a5279;
+      line-height: 1.2;
+    }
+
+    .ca-chip .ca-chip-value.net { color: #2e7d32; }
+    .ca-chip .ca-chip-value.red { color: #c62828; }
+
+    .ca-chip .ca-chip-sub {
+      font-size: 0.5rem;
+      color: #a0b8cc;
     }
 
     .main-tabs {
@@ -966,6 +972,26 @@
       color: white;
     }
 
+    .planning-day-hours {
+      font-size: 0.5rem;
+      font-weight: 600;
+      color: #1a5279;
+      background: #eef4fa;
+      padding: 1px 5px;
+      border-radius: 20px;
+      margin-top: 1px;
+    }
+
+    .planning-day.selected .planning-day-hours {
+      background: rgba(255, 255, 255, 0.2);
+      color: white;
+    }
+
+    .planning-day-hours.over {
+      background: #ffebee;
+      color: #c62828;
+    }
+
     .planning-header {
       display: flex;
       justify-content: space-between;
@@ -1191,7 +1217,7 @@
     @media (max-width: 768px) {
       .app-container { padding: 12px 10px 20px; border-radius: 20px; }
       .app-header h1 { font-size: 1.1rem; }
-      .app-header h1 i { padding: 5px 10px; font-size: 0.85rem; }
+      .app-header .app-logo { width: 36px; height: 36px; border-radius: 10px; }
       .intervention-card { padding: 12px 14px; }
       .int-client { font-size: 0.9rem; }
       .modal-box { padding: 18px 16px; }
@@ -1206,6 +1232,8 @@
       .int-status { align-self: flex-start; }
       .main-tab { font-size: 0.65rem; padding: 6px 8px; }
       .main-tab .tab-badge { display: none; }
+      .ca-chip { min-width: 70px; padding: 3px 8px; }
+      .ca-chip .ca-chip-value { font-size: 0.8rem; }
     }
 
     .recap-grid {
@@ -1330,7 +1358,6 @@
     .offline-badge.offline { background: #ed6c02; }
     .offline-badge.online { background: #2e7d32; }
 
-    /* Safe area pour les modales */
     @supports (padding: max(0px)) {
       .modal-box {
         padding-bottom: max(24px, calc(24px + var(--safe-bottom)));
@@ -1346,7 +1373,10 @@
 
   <div class="app-container">
     <div class="app-header">
-      <h1><i class="fas fa-wrench"></i> Plomberie Pro</h1>
+      <div class="header-left">
+        <img src="logo.png" alt="Logo" class="app-logo" onerror="this.style.display='none'" />
+        <h1>Plomberie Pro</h1>
+      </div>
       <div style="display:flex; flex-wrap:wrap; gap:6px; align-items:center;">
         <div class="save-indicator" id="saveIndicator">
           <span class="save-dot" id="saveDot"></span>
@@ -1356,33 +1386,35 @@
       </div>
     </div>
 
-    <div class="global-stats">
-      <span class="stat-badge"><i class="fas fa-list stat-icon"></i> Interventions: <span class="count" id="totalInterventions">0</span></span>
-      <span class="stat-badge unpaid"><i class="fas fa-exclamation-circle stat-icon"></i> Impayées: <span class="count" id="totalImpayees">0</span></span>
-      <span class="stat-badge paid"><i class="fas fa-check-circle stat-icon"></i> Payées: <span class="count" id="totalPayees">0</span></span>
-      <span class="stat-badge"><i class="fas fa-file-signature stat-icon"></i> Devis: <span class="count" id="totalDevis">0</span></span>
+    <!-- Stats compactes -->
+    <div class="stats-compact">
+      <span class="stat-chip"><i class="fas fa-list"></i> Interv. <span class="count" id="totalInterventions">0</span></span>
+      <span class="stat-chip unpaid"><i class="fas fa-exclamation-circle"></i> Impayées <span class="count" id="totalImpayees">0</span></span>
+      <span class="stat-chip paid"><i class="fas fa-check-circle"></i> Payées <span class="count" id="totalPayees">0</span></span>
+      <span class="stat-chip"><i class="fas fa-file-signature"></i> Devis <span class="count" id="totalDevis">0</span></span>
     </div>
 
-    <div class="ca-panel" id="caPanel">
-      <div class="ca-item">
-        <div class="ca-label"><i class="fas fa-chart-line"></i> CA du mois</div>
-        <div class="ca-value" id="caMois">0,00 €</div>
-        <div class="ca-sub" id="caMoisLabel">Janvier 2025</div>
+    <!-- CA compact -->
+    <div class="ca-compact">
+      <div class="ca-chip">
+        <span class="ca-chip-label">CA mois</span>
+        <span class="ca-chip-value" id="caMois">0,00 €</span>
+        <span class="ca-chip-sub" id="caMoisLabel">Janvier 2025</span>
       </div>
-      <div class="ca-item">
-        <div class="ca-label"><i class="fas fa-chart-line"></i> CA net (après impôts)</div>
-        <div class="ca-value net" id="caNetMois">0,00 €</div>
-        <div class="ca-sub" id="caNetMoisSub">Auto-entreprise ~21,2%</div>
+      <div class="ca-chip">
+        <span class="ca-chip-label">CA net</span>
+        <span class="ca-chip-value net" id="caNetMois">0,00 €</span>
+        <span class="ca-chip-sub" id="caNetMoisSub">~21,2%</span>
       </div>
-      <div class="ca-item">
-        <div class="ca-label"><i class="fas fa-calendar-alt"></i> CA annuel</div>
-        <div class="ca-value" id="caAnnuel">0,00 €</div>
-        <div class="ca-sub" id="caAnnuelLabel">2025</div>
+      <div class="ca-chip">
+        <span class="ca-chip-label">CA annuel</span>
+        <span class="ca-chip-value" id="caAnnuel">0,00 €</span>
+        <span class="ca-chip-sub" id="caAnnuelLabel">2025</span>
       </div>
-      <div class="ca-item">
-        <div class="ca-label"><i class="fas fa-hand-holding-usd"></i> Reste à encaisser</div>
-        <div class="ca-value" id="resteEncaisser" style="color:#c62828;">0,00 €</div>
-        <div class="ca-sub">Factures impayées</div>
+      <div class="ca-chip">
+        <span class="ca-chip-label">À encaisser</span>
+        <span class="ca-chip-value red" id="resteEncaisser">0,00 €</span>
+        <span class="ca-chip-sub">Impayées</span>
       </div>
     </div>
 
@@ -1476,7 +1508,7 @@
     <div id="toastArea" style="margin-top:8px;"></div>
   </div>
 
-  <!-- MODALES (identiques à votre code, avec corrections) -->
+  <!-- MODALES -->
   <div class="modal-overlay" id="interventionModal">
     <div class="modal-box">
       <h2 id="interventionModalTitle"><i class="fas fa-plus-circle" style="color:#1a5279;"></i> Nouvelle intervention</h2>
@@ -1842,10 +1874,11 @@
     // ============================================================
     if ('serviceWorker' in navigator) {
       var swCode = `
-        const CACHE_NAME = 'plomberie-pro-v4';
+        const CACHE_NAME = 'plomberie-pro-v5';
         const ASSETS = [
           'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css',
-          'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js'
+          'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',
+          'logo.png'
         ];
         self.addEventListener('install', function(e) {
           e.waitUntil(
@@ -1883,9 +1916,7 @@
       `;
       var blob = new Blob([swCode], { type: 'application/javascript' });
       var swUrl = URL.createObjectURL(blob);
-      navigator.serviceWorker.register(swUrl).catch(function() {
-        // Fallback silencieux
-      });
+      navigator.serviceWorker.register(swUrl).catch(function() {});
     }
 
     // ============================================================
@@ -1913,9 +1944,10 @@
     (function() {
       'use strict';
 
-      var STORAGE_KEY = 'plomberie_pro_v4';
-      var SETTINGS_KEY = 'plomberie_pro_settings_v4';
+      var STORAGE_KEY = 'plomberie_pro_v5';
+      var SETTINGS_KEY = 'plomberie_pro_settings_v5';
       var SAVE_DELAY = 1500;
+      var WORK_HOURS_PER_DAY = 7; // 7h de travail par jour -> 35h/semaine
 
       var TYPES_TACHES = {
         depannage: { label: 'Dépannage', color: 'depannage' },
@@ -2060,7 +2092,6 @@
           localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
           localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
           updateSaveIndicator(true);
-          if (!silent) return true;
           return true;
         } catch (e) {
           console.error('Erreur sauvegarde:', e);
@@ -2152,7 +2183,7 @@
         if (confirmCallback) { confirmCallback(false); confirmCallback = null; }
       });
 
-      // ----- Rendu stats -----
+      // ----- Rendu stats (version compacte) -----
       function renderStats() {
         var total = interventions.length;
         var impayees = 0, payees = 0;
@@ -2188,7 +2219,7 @@
         document.getElementById('resteEncaisser').textContent = formatEuro(resteEncaisser);
         document.getElementById('caMoisLabel').textContent = formatMois(now);
         document.getElementById('caAnnuelLabel').textContent = currentYear;
-        document.getElementById('caNetMoisSub').textContent = 'Auto-entreprise ~' + settings.taxe + '%';
+        document.getElementById('caNetMoisSub').textContent = '~' + settings.taxe + '%';
       }
 
       // ----- Rendu interventions -----
@@ -2427,7 +2458,7 @@
         });
       }
 
-      // ----- Planning -----
+      // ----- Planning (7h/jour) -----
       function getWeekDays(date) {
         var d = new Date(date);
         var day = d.getDay();
@@ -2443,6 +2474,16 @@
         return days;
       }
 
+      function getDayWorkMinutes(dateStr) {
+        var total = 0;
+        interventions.forEach(function(int) {
+          if (int.date === dateStr) {
+            total += int.duree || 0;
+          }
+        });
+        return total;
+      }
+
       function renderPlanning() {
         var grid = document.getElementById('planningGrid');
         var days = getWeekDays(planningDate);
@@ -2456,12 +2497,16 @@
           var events = interventions.filter(function(int) { return int.date === dayStr; });
           var isToday = day.getTime() === today.getTime();
           var isSelected = day.toDateString() === selectedPlanningDate.toDateString();
+          var workMinutes = getDayWorkMinutes(dayStr);
+          var workHours = Math.round(workMinutes / 60 * 10) / 10;
+          var isOver = workMinutes > WORK_HOURS_PER_DAY * 60;
           var el = document.createElement('div');
           el.className = 'planning-day' + (isToday ? ' today' : '') + (isSelected ? ' selected' : '') + (events.length > 0 ? ' has-events' : '');
           el.innerHTML =
             '<div class="planning-day-name">' + dayNames[i] + '</div>' +
             '<div class="planning-day-num">' + day.getDate() + '</div>' +
-            (events.length > 0 ? '<div class="planning-day-events">' + events.length + '</div>' : '');
+            (events.length > 0 ? '<div class="planning-day-events">' + events.length + '</div>' : '') +
+            (workMinutes > 0 ? '<div class="planning-day-hours' + (isOver ? ' over' : '') + '">' + workHours + 'h</div>' : '');
           el.addEventListener('click', function() {
             selectedPlanningDate = new Date(day);
             renderPlanning();
@@ -2472,7 +2517,9 @@
         var selStr = selectedPlanningDate.getFullYear() + '-' + String(selectedPlanningDate.getMonth() + 1).padStart(2, '0') + '-' + String(selectedPlanningDate.getDate()).padStart(2, '0');
         var selEvents = interventions.filter(function(int) { return int.date === selStr; });
         selEvents.sort(function(a, b) { return (a.heure || '99:99').localeCompare(b.heure || '99:99'); });
-        document.getElementById('planningDayLabel').textContent = selectedPlanningDate.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+        var workMin = getDayWorkMinutes(selStr);
+        var workH = Math.round(workMin / 60 * 10) / 10;
+        document.getElementById('planningDayLabel').textContent = selectedPlanningDate.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }) + (workMin > 0 ? ' — ' + workH + 'h / ' + WORK_HOURS_PER_DAY + 'h' : '');
         eventsContainer.innerHTML = '';
         if (selEvents.length === 0) {
           eventsContainer.innerHTML = '<div class="empty-state" style="padding:20px;"><i class="fas fa-calendar-day" style="font-size:1.5rem; display:block; margin-bottom:8px; opacity:0.5;"></i>Aucune intervention ce jour</div>';
@@ -2487,6 +2534,7 @@
                 '<span class="pe-time">' + (int.heure || '--:--') + '</span>' +
                 '<span class="pe-client">' + escapeHtml(int.client) + '</span>' +
                 '<span class="pe-type">' + typeInfo.label + '</span>' +
+                '<span style="font-size:0.65rem; color:#7a96b1;"><i class="fas fa-hourglass-half"></i> ' + formatDuree(int.duree) + '</span>' +
               '</div>' +
               '<div class="pe-actions">' +
                 '<button data-id="' + int.id + '" class="view-ev"><i class="fas fa-eye"></i></button>' +
@@ -3755,7 +3803,6 @@
         }
       });
 
-      // Sauvegarde automatique périodique
       setInterval(function() { saveToStorage(true); }, 180000);
 
       // ----- Paramètres -----
@@ -3808,7 +3855,6 @@
         }
       });
 
-      // Sauvegarde avant fermeture
       window.addEventListener('beforeunload', function() { saveToStorage(true); });
       window.addEventListener('pagehide', function() { saveToStorage(true); });
       document.addEventListener('visibilitychange', function() {
