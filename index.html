@@ -61,7 +61,7 @@
       flex-wrap: wrap;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 18px;
+      margin-bottom: 12px;
       gap: 8px;
     }
 
@@ -151,44 +151,112 @@
       white-space: nowrap;
     }
 
-    .stats-compact {
-      display: flex;
-      gap: 6px;
-      flex-wrap: wrap;
-      margin-bottom: 10px;
-      justify-content: center;
-    }
-
-    .stat-chip {
-      display: flex;
+    /* ==== Bandeau rappel sauvegarde ==== */
+    .alert-backup {
+      display: none;
       align-items: center;
-      gap: 4px;
-      font-size: 0.65rem;
-      font-weight: 500;
-      color: #1b3b55;
-      padding: 3px 10px;
+      gap: 10px;
+      padding: 10px 14px;
+      margin-bottom: 10px;
+      background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+      border: 1px solid #64b5f6;
+      border-left: 5px solid #1976d2;
+      border-radius: 14px;
+      font-size: 0.8rem;
+      color: #0d47a1;
+      font-weight: 600;
+      cursor: pointer;
+      transition: 0.15s;
+    }
+    .alert-backup:hover {
+      background: linear-gradient(135deg, #bbdefb, #90caf9);
+    }
+    .alert-backup.show { display: flex; }
+    .alert-backup i.alert-icon { font-size: 1.1rem; color: #1976d2; }
+    .alert-backup .alert-text { flex: 1; }
+    .alert-backup .alert-action {
+      background: #1976d2;
+      color: white;
+      padding: 4px 12px;
       border-radius: 40px;
-      background: #f8fbfe;
-      border: 1px solid #e3ebf3;
+      font-size: 0.7rem;
+      font-weight: 700;
       white-space: nowrap;
     }
+    .alert-backup .alert-close {
+      background: transparent;
+      border: none;
+      color: #0d47a1;
+      cursor: pointer;
+      padding: 4px 6px;
+      font-size: 0.9rem;
+      opacity: 0.6;
+      transition: 0.15s;
+      -webkit-appearance: none;
+    }
+    .alert-backup .alert-close:hover { opacity: 1; }
 
-    .stat-chip .count {
+    /* ==== Stats compactes sur une seule ligne ==== */
+    .stats-row {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 10px;
+      padding: 6px 8px;
+      background: #f8fbfe;
+      border-radius: 12px;
+      border: 1px solid #e3ebf3;
+      justify-content: space-between;
+      align-items: stretch;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+    .stats-row::-webkit-scrollbar { display: none; }
+
+    .stat-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 4px 6px;
+      border-radius: 8px;
+      flex: 1 1 0;
+      min-width: 0;
+      transition: 0.15s;
+      text-align: center;
+    }
+
+    .stat-item .stat-value {
+      font-size: 1rem;
       font-weight: 700;
-      font-size: 0.8rem;
+      line-height: 1;
       color: #1a5279;
     }
-
-    .stat-chip i {
-      font-size: 0.65rem;
-      color: #1a5279;
+    .stat-item .stat-label {
+      font-size: 0.55rem;
+      font-weight: 600;
+      color: #7a96b1;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      margin-top: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 100%;
     }
 
-    .stat-chip.paid { background: #e8f5e9; border-color: #c8e6c9; }
-    .stat-chip.paid .count, .stat-chip.paid i { color: #2e7d32; }
-    .stat-chip.unpaid { background: #ffebee; border-color: #ffcdd2; }
-    .stat-chip.unpaid .count, .stat-chip.unpaid i { color: #c62828; }
+    .stat-item.unpaid .stat-value { color: #c62828; }
+    .stat-item.paid .stat-value { color: #2e7d32; }
+    .stat-item.devis .stat-value { color: #4338ca; }
 
+    .stat-sep {
+      width: 1px;
+      background: #e3ebf3;
+      margin: 4px 0;
+      flex-shrink: 0;
+    }
+
+    /* ==== Bandeau CA avec boutons sauvegarder/restaurer ==== */
     .ca-compact {
       display: flex;
       gap: 6px;
@@ -199,6 +267,7 @@
       background: linear-gradient(135deg, #f0f7ff, #e8f0fa);
       border-radius: 12px;
       border: 1px solid #d4e4f2;
+      align-items: stretch;
     }
 
     .ca-chip {
@@ -234,6 +303,52 @@
     .ca-chip .ca-chip-sub {
       font-size: 0.5rem;
       color: #a0b8cc;
+    }
+
+    .ca-actions {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      flex: 1 1 100%;
+      justify-content: center;
+      padding-top: 6px;
+      margin-top: 2px;
+      border-top: 1px dashed #c6d9ec;
+    }
+
+    .ca-action-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 6px 14px;
+      border-radius: 40px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: 0.15s;
+      white-space: nowrap;
+      -webkit-appearance: none;
+    }
+
+    .ca-action-btn.save-btn {
+      background: #2e7d32;
+      color: white;
+      box-shadow: 0 2px 6px rgba(46, 125, 50, 0.25);
+    }
+    .ca-action-btn.save-btn:hover {
+      background: #1b5e20;
+      transform: translateY(-1px);
+    }
+
+    .ca-action-btn.restore-btn {
+      background: #1a5279;
+      color: white;
+      box-shadow: 0 2px 6px rgba(26, 82, 121, 0.25);
+    }
+    .ca-action-btn.restore-btn:hover {
+      background: #0f3f60;
+      transform: translateY(-1px);
     }
 
     .main-tabs {
@@ -342,27 +457,6 @@
     .btn-secondary:hover {
       background: #ecf4fd;
       border-color: #8eb3d4;
-    }
-
-    .btn-save {
-      background: #2e7d32;
-      border: none;
-      color: white;
-      padding: 10px 18px;
-      border-radius: 60px;
-      font-weight: 600;
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      cursor: pointer;
-      transition: 0.2s;
-      font-size: 0.8rem;
-      box-shadow: 0 4px 12px rgba(46, 125, 50, 0.2);
-      -webkit-appearance: none;
-    }
-    .btn-save:hover {
-      background: #1b5e20;
-      transform: translateY(-2px);
     }
 
     .search-section {
@@ -563,6 +657,7 @@
       align-items: center;
       gap: 4px;
       -webkit-appearance: none;
+      text-decoration: none;
     }
     .int-btn:hover { background: #e2ebf5; color: #1a5279; }
     .int-btn.pay:hover { background: #e8f5e9; color: #2e7d32; }
@@ -664,7 +759,8 @@
       flex-wrap: wrap;
     }
 
-    .fact-actions button {
+    .fact-actions button,
+    .fact-actions a {
       background: transparent;
       border: none;
       padding: 6px 8px;
@@ -674,9 +770,14 @@
       color: #5a7f9c;
       transition: 0.15s;
       -webkit-appearance: none;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
     }
 
-    .fact-actions button:hover {
+    .fact-actions button:hover,
+    .fact-actions a:hover {
       background: #e2ebf5;
       color: #1a5279;
     }
@@ -1141,7 +1242,8 @@
       flex-wrap: wrap;
     }
 
-    .planning-event .pe-actions button {
+    .planning-event .pe-actions button,
+    .planning-event .pe-actions a {
       background: transparent;
       border: none;
       padding: 4px 8px;
@@ -1150,19 +1252,24 @@
       font-size: 0.7rem;
       color: #5a7f9c;
       -webkit-appearance: none;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
     }
 
-    .planning-event .pe-actions button:hover {
+    .planning-event .pe-actions button:hover,
+    .planning-event .pe-actions a:hover {
       background: #e2ebf5;
       color: #1a5279;
     }
 
     .planning-event .pe-actions button.edit-ev:hover {
-      background: #e0e7ff;
-      color: #4338ca;
+      background: #e0e7ff; color: #4338ca;
     }
-    .planning-event .pe-actions button.call-ev:hover { background: #e8f5e9; color: #2e7d32; }
-    .planning-event .pe-actions button.route-ev:hover { background: #e0e7ff; color: #4338ca; }
+    .planning-event .pe-actions button.call-ev:hover,
+    .planning-event .pe-actions a.call-ev:hover { background: #e8f5e9; color: #2e7d32; }
+    .planning-event .pe-actions button.route-ev:hover,
+    .planning-event .pe-actions a.route-ev:hover { background: #e0e7ff; color: #4338ca; }
 
     .signature-container {
       margin: 14px 0;
@@ -1298,6 +1405,8 @@
       .main-tab .tab-badge { display: none; }
       .ca-chip { min-width: 70px; padding: 3px 8px; }
       .ca-chip .ca-chip-value { font-size: 0.8rem; }
+      .stat-item .stat-value { font-size: 0.85rem; }
+      .stat-item .stat-label { font-size: 0.5rem; }
     }
 
     .recap-grid {
@@ -1449,20 +1558,44 @@
       </div>
     </div>
 
-    <!-- Bandeau d'alerte impayées > 30 jours (amélioration 7) -->
+    <!-- Bandeau d'alerte impayées > seuil -->
     <div class="alert-overdue" id="alertOverdue">
       <i class="fas fa-exclamation-triangle alert-icon"></i>
       <span class="alert-text" id="alertOverdueText">—</span>
       <span class="alert-action">Voir</span>
     </div>
 
-    <div class="stats-compact">
-      <span class="stat-chip"><i class="fas fa-list"></i> Interv. <span class="count" id="totalInterventions">0</span></span>
-      <span class="stat-chip unpaid"><i class="fas fa-exclamation-circle"></i> Impayées <span class="count" id="totalImpayees">0</span></span>
-      <span class="stat-chip paid"><i class="fas fa-check-circle"></i> Payées <span class="count" id="totalPayees">0</span></span>
-      <span class="stat-chip"><i class="fas fa-file-signature"></i> Devis <span class="count" id="totalDevis">0</span></span>
+    <!-- Bandeau de rappel de sauvegarde (apparaît si >15 jours) -->
+    <div class="alert-backup" id="alertBackup">
+      <i class="fas fa-cloud-download-alt alert-icon"></i>
+      <span class="alert-text" id="alertBackupText">—</span>
+      <button class="alert-close" id="alertBackupClose" title="Me rappeler plus tard"><i class="fas fa-times"></i></button>
     </div>
 
+    <!-- Stats compactes sur une seule ligne -->
+    <div class="stats-row">
+      <div class="stat-item">
+        <span class="stat-value" id="totalInterventions">0</span>
+        <span class="stat-label">Interv.</span>
+      </div>
+      <div class="stat-sep"></div>
+      <div class="stat-item unpaid">
+        <span class="stat-value" id="totalImpayees">0</span>
+        <span class="stat-label">Impayées</span>
+      </div>
+      <div class="stat-sep"></div>
+      <div class="stat-item paid">
+        <span class="stat-value" id="totalPayees">0</span>
+        <span class="stat-label">Payées</span>
+      </div>
+      <div class="stat-sep"></div>
+      <div class="stat-item devis">
+        <span class="stat-value" id="totalDevis">0</span>
+        <span class="stat-label">Devis</span>
+      </div>
+    </div>
+
+    <!-- Bandeau CA avec boutons Sauvegarder / Restaurer -->
     <div class="ca-compact">
       <div class="ca-chip">
         <span class="ca-chip-label">CA mois</span>
@@ -1483,6 +1616,15 @@
         <span class="ca-chip-label">À encaisser</span>
         <span class="ca-chip-value red" id="resteEncaisser">0,00 €</span>
         <span class="ca-chip-sub">Impayées</span>
+      </div>
+      <div class="ca-actions">
+        <button class="ca-action-btn save-btn" id="exportDataBtn" title="Sauvegarder toutes vos données dans un fichier">
+          <i class="fas fa-save"></i> Sauvegarder
+        </button>
+        <button class="ca-action-btn restore-btn" id="importDataBtn" title="Restaurer une sauvegarde">
+          <i class="fas fa-upload"></i> Restaurer
+        </button>
+        <input type="file" id="importDataInput" accept=".json,application/json" style="display:none;" />
       </div>
     </div>
 
@@ -1524,7 +1666,6 @@
     <div class="tab-content active" id="tab-interventions">
       <div class="action-bar">
         <button class="btn-primary" id="addInterventionBtn"><i class="fas fa-plus-circle"></i> Nouvelle intervention</button>
-        <button class="btn-save" id="saveAllBtn"><i class="fas fa-save"></i> Sauvegarder</button>
       </div>
       <div class="search-section">
         <div class="search-wrapper">
@@ -1538,10 +1679,6 @@
     <div class="tab-content" id="tab-factures">
       <div class="action-bar">
         <button class="btn-primary" id="addFactureBtn"><i class="fas fa-plus-circle"></i> Nouvelle facture</button>
-        <button class="btn-secondary" id="exportFacturesBtn"><i class="fas fa-download"></i> Export CSV</button>
-        <button class="btn-secondary" id="exportDataBtn"><i class="fas fa-file-export"></i> Exporter</button>
-        <button class="btn-secondary" id="importDataBtn"><i class="fas fa-file-import"></i> Importer</button>
-        <input type="file" id="importDataInput" accept=".json,application/json" style="display:none;" />
       </div>
       <div class="search-section">
         <div class="search-wrapper">
@@ -1989,6 +2126,10 @@
         <label>Seuil d'alerte impayés (jours)</label>
         <input type="number" id="setSeuilAlerte" value="30" step="1" min="1" />
       </div>
+      <div class="form-group">
+        <label>Rappel de sauvegarde (jours)</label>
+        <input type="number" id="setSeuilSauvegarde" value="15" step="1" min="1" />
+      </div>
       <div style="margin-top:12px; padding:10px; background:#f8fbfe; border-radius:12px; font-size:0.7rem; color:#4f718d;">
         <i class="fas fa-shield-alt"></i> <strong>Confidentialité :</strong> Toutes vos données sont stockées uniquement sur votre appareil. Aucune information n'est envoyée sur Internet.
       </div>
@@ -2012,7 +2153,7 @@
     // ============================================================
     if ('serviceWorker' in navigator) {
       var swCode = `
-        const CACHE_NAME = 'plomberie-pro-v7';
+        const CACHE_NAME = 'plomberie-pro-v9';
         const ASSETS = [
           'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css',
           'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',
@@ -2082,8 +2223,9 @@
     (function() {
       'use strict';
 
-      var STORAGE_KEY = 'plomberie_pro_v7';
-      var SETTINGS_KEY = 'plomberie_pro_settings_v7';
+      var STORAGE_KEY = 'plomberie_pro_v9';
+      var SETTINGS_KEY = 'plomberie_pro_settings_v9';
+      var BACKUP_META_KEY = 'plomberie_pro_backup_meta_v9';
       var SAVE_DELAY = 1500;
       var WORK_HOURS_PER_DAY = 7;
 
@@ -2121,7 +2263,12 @@
         tvaActive: false,
         tauxDefaut: 45,
         deplacementDefaut: 30,
-        seuilAlerte: 30
+        seuilAlerte: 30,
+        seuilSauvegarde: 15
+      };
+      var backupMeta = {
+        lastExportAt: null,      // date ISO du dernier export
+        lastReminderAt: null     // date ISO du dernier rappel affiché
       };
       var planningDate = new Date();
       var selectedPlanningDate = new Date();
@@ -2206,11 +2353,17 @@
         return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0');
       }
 
-      // Calcule le nombre de jours entre deux dates
       function joursEntre(dateStr1, dateStr2) {
         var d1 = new Date(dateStr1 + 'T00:00:00');
         var d2 = new Date(dateStr2 + 'T00:00:00');
         return Math.floor((d2 - d1) / (24 * 3600 * 1000));
+      }
+
+      function joursDepuis(dateIso) {
+        if (!dateIso) return null;
+        var d = new Date(dateIso);
+        var now = new Date();
+        return Math.floor((now - d) / (24 * 3600 * 1000));
       }
 
       function genererNumeroFacture() {
@@ -2257,7 +2410,6 @@
         return getTotalTTC(item) * (1 - settings.taxe / 100);
       }
 
-      // Vérifie si une intervention est en retard de paiement
       function isOverdue(int) {
         if (int.paye) return false;
         if (!int.date) return false;
@@ -2278,6 +2430,7 @@
           };
           localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
           localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+          localStorage.setItem(BACKUP_META_KEY, JSON.stringify(backupMeta));
           updateSaveIndicator(true);
           return true;
         } catch (e) {
@@ -2303,6 +2456,12 @@
             for (var key in s) {
               if (settings.hasOwnProperty(key)) settings[key] = s[key];
             }
+          }
+          var rawBackupMeta = localStorage.getItem(BACKUP_META_KEY);
+          if (rawBackupMeta) {
+            var bm = JSON.parse(rawBackupMeta);
+            backupMeta.lastExportAt = bm.lastExportAt || null;
+            backupMeta.lastReminderAt = bm.lastReminderAt || null;
           }
           return true;
         } catch (e) {
@@ -2354,10 +2513,9 @@
         setTimeout(function() { area.innerHTML = ''; }, 3500);
       }
 
-      // ----- Actions rapides (téléphone / itinéraire) -----
+      // ----- Actions rapides -----
       function getPhoneHref(tel) {
         if (!tel) return '';
-        // Nettoie le numéro (garde + et chiffres)
         var cleaned = String(tel).replace(/[^0-9+]/g, '');
         return 'tel:' + cleaned;
       }
@@ -2365,7 +2523,6 @@
       function getMapsHref(adresse) {
         if (!adresse) return '';
         var q = encodeURIComponent(adresse);
-        // Détection iOS pour Apple Plans
         var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
         if (isIOS) {
           return 'https://maps.apple.com/?q=' + q;
@@ -2389,7 +2546,85 @@
         if (confirmCallback) { confirmCallback(false); confirmCallback = null; }
       });
 
-      // ----- Rendu stats + alerte impayés (améliorations 7) -----
+      // ============================================================
+      // RAPPEL DE SAUVEGARDE (bulle intelligente)
+      // ============================================================
+      function checkBackupReminder() {
+        var alertEl = document.getElementById('alertBackup');
+        var alertText = document.getElementById('alertBackupText');
+        var seuil = settings.seuilSauvegarde || 15;
+
+        // Cas 1 : jamais sauvegardé
+        if (!backupMeta.lastExportAt) {
+          // On attend 3 jours après la première utilisation pour ne pas déranger tout de suite
+          var rawData = localStorage.getItem(STORAGE_KEY);
+          if (rawData) {
+            try {
+              var data = JSON.parse(rawData);
+              var savedAt = data.savedAt ? new Date(data.savedAt) : null;
+              if (savedAt) {
+                var joursDepuisCreation = Math.floor((new Date() - savedAt) / (24 * 3600 * 1000));
+                if (joursDepuisCreation < 3) {
+                  alertEl.classList.remove('show');
+                  return;
+                }
+              }
+            } catch(e) {}
+          }
+          // Vérifie qu'on n'a pas déjà affiché le rappel récemment
+          var derniereAlerte = backupMeta.lastReminderAt ? new Date(backupMeta.lastReminderAt) : null;
+          if (derniereAlerte) {
+            var joursDepuisAlerte = Math.floor((new Date() - derniereAlerte) / (24 * 3600 * 1000));
+            if (joursDepuisAlerte < 7) {
+              alertEl.classList.remove('show');
+              return;
+            }
+          }
+          alertText.innerHTML = 'Pensez à <strong>sauvegarder</strong> vos données pour les protéger';
+          alertEl.classList.add('show');
+          return;
+        }
+
+        // Cas 2 : déjà sauvegardé, on regarde le délai
+        var jours = joursDepuis(backupMeta.lastExportAt);
+        if (jours === null || jours < seuil) {
+          alertEl.classList.remove('show');
+          return;
+        }
+
+        // Vérifie qu'on n'a pas affiché le rappel depuis moins de 7 jours
+        if (backupMeta.lastReminderAt) {
+          var joursDepuisRappel = joursDepuis(backupMeta.lastReminderAt);
+          if (joursDepuisRappel !== null && joursDepuisRappel < 7) {
+            alertEl.classList.remove('show');
+            return;
+          }
+        }
+
+        alertText.innerHTML = 'Cela fait <strong>' + jours + ' jours</strong> depuis votre dernière sauvegarde';
+        alertEl.classList.add('show');
+      }
+
+      function dismissBackupReminder() {
+        backupMeta.lastReminderAt = new Date().toISOString();
+        saveToStorage(true);
+        document.getElementById('alertBackup').classList.remove('show');
+      }
+
+      // Clic sur le bandeau : lance directement la sauvegarde
+      document.getElementById('alertBackup').addEventListener('click', function(e) {
+        if (e.target.closest('.alert-close')) return;
+        // Simule un clic sur le bouton Sauvegarder
+        document.getElementById('exportDataBtn').click();
+      });
+
+      // Bouton "X" pour ne pas être relancé avant 7 jours
+      document.getElementById('alertBackupClose').addEventListener('click', function(e) {
+        e.stopPropagation();
+        dismissBackupReminder();
+      });
+
+      // ----- Rendu stats -----
       function renderStats() {
         var total = interventions.length;
         var impayees = 0, payees = 0, overdue = 0, overdueTotal = 0;
@@ -2434,7 +2669,6 @@
         document.getElementById('caAnnuelLabel').textContent = currentYear;
         document.getElementById('caNetMoisSub').textContent = '~' + settings.taxe + '%';
 
-        // Bandeau alerte impayés > seuil
         var alertEl = document.getElementById('alertOverdue');
         var alertText = document.getElementById('alertOverdueText');
         if (overdue > 0) {
@@ -2630,7 +2864,7 @@
         });
       }
 
-      // ----- Rendu devis (avec bordure par statut - amélioration 18) -----
+      // ----- Rendu devis -----
       function renderDevis() {
         var container = document.getElementById('devisList');
         var term = searchDevisTerm.trim().toLowerCase();
@@ -4177,22 +4411,9 @@
         renderDevis();
       });
 
-      // ----- Export CSV -----
-      document.getElementById('exportFacturesBtn').addEventListener('click', function() {
-        var csv = 'Numéro;Client;Email;Téléphone;Adresse;Date;Type;Description;Durée;Total TTC;Statut;Signée\n';
-        interventions.forEach(function(int) {
-          var typeInfo = TYPES_TACHES[int.type] || TYPES_TACHES.autre;
-          csv += '"' + (int.numeroFacture || '') + '";"' + (int.client || '') + '";"' + (int.email || '') + '";"' + (int.tel || '') + '";"' + (int.adresse || '') + '";"' + (int.date || '') + '";"' + typeInfo.label + '";"' + (int.description || '').replace(/"/g, '""') + '";"' + formatDuree(int.duree) + '";"' + getTotalTTC(int).toFixed(2) + '";"' + (int.paye ? 'Payée' : (isOverdue(int) ? 'En retard' : 'Impayée')) + '";"' + (int.signatureClient ? 'Oui' : 'Non') + '"\n';
-        });
-        var blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
-        var link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = 'factures_' + new Date().toISOString().slice(0, 10) + '.csv';
-        link.click();
-        toast('Export CSV téléchargé');
-      });
-
-      // ----- Export données complètes -----
+      // ============================================================
+      // SAUVEGARDE COMPLÈTE
+      // ============================================================
       document.getElementById('exportDataBtn').addEventListener('click', function() {
         var data = {
           interventions: interventions,
@@ -4202,18 +4423,23 @@
           devisCounter: devisCounter,
           settings: settings,
           exportedAt: new Date().toISOString(),
-          version: 'v7'
+          version: 'v9'
         };
         var blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
         var link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
         link.download = 'plomberie_pro_sauvegarde_' + new Date().toISOString().slice(0, 10) + '.json';
         link.click();
-        toast('Sauvegarde complète téléchargée');
+        // Enregistre la date du dernier export
+        backupMeta.lastExportAt = new Date().toISOString();
+        backupMeta.lastReminderAt = null; // reset du rappel
+        saveToStorage(true);
+        checkBackupReminder();
+        showToastSave('Sauvegarde téléchargée', 'success');
       });
 
       // ============================================================
-      // IMPORT DE SAUVEGARDE (amélioration 14)
+      // RESTAURATION
       // ============================================================
       document.getElementById('importDataBtn').addEventListener('click', function() {
         document.getElementById('importDataInput').click();
@@ -4246,7 +4472,6 @@
                 return;
               }
               try {
-                // Sauvegarde de secours automatique avant écrasement
                 var backup = {
                   interventions: interventions,
                   devisList: devisList,
@@ -4259,7 +4484,6 @@
                 };
                 localStorage.setItem('plomberie_pro_backup_before_import', JSON.stringify(backup));
 
-                // Application des nouvelles données
                 interventions = data.interventions || [];
                 devisList = data.devisList || [];
                 clients = data.clients || [];
@@ -4272,9 +4496,9 @@
                 }
                 saveToStorage();
                 renderAll();
-                showToastSave('Import réussi : ' + nbInt + ' interventions, ' + nbDevis + ' devis', 'success');
+                showToastSave('Restauration réussie : ' + nbInt + ' interventions, ' + nbDevis + ' devis', 'success');
               } catch (err) {
-                showToastSave('Erreur lors de l\'import : ' + err.message, 'error');
+                showToastSave('Erreur lors de la restauration : ' + err.message, 'error');
               }
               document.getElementById('importDataInput').value = '';
             });
@@ -4290,7 +4514,7 @@
         reader.readAsText(file);
       });
 
-      // Clic sur le bandeau d'alerte → aller aux factures
+      // Clic sur le bandeau d'alerte impayés → aller aux factures
       document.getElementById('alertOverdue').addEventListener('click', function() {
         switchTab('factures');
       });
@@ -4361,16 +4585,6 @@
         tab.addEventListener('click', function() { switchTab(this.dataset.tab); });
       });
 
-      // ----- Sauvegarde -----
-      document.getElementById('saveAllBtn').addEventListener('click', function() {
-        if (saveToStorage()) {
-          showToastSave('Données sauvegardées localement', 'success');
-          renderAll();
-        } else {
-          showToastSave('Erreur sauvegarde', 'error');
-        }
-      });
-
       setInterval(function() { saveToStorage(true); }, 180000);
 
       // ----- Paramètres -----
@@ -4386,6 +4600,7 @@
         document.getElementById('setTauxDefaut').value = settings.tauxDefaut;
         document.getElementById('setDeplacementDefaut').value = settings.deplacementDefaut;
         document.getElementById('setSeuilAlerte').value = settings.seuilAlerte || 30;
+        document.getElementById('setSeuilSauvegarde').value = settings.seuilSauvegarde || 15;
         document.getElementById('settingsModal').classList.add('show');
       });
 
@@ -4405,9 +4620,11 @@
         settings.tauxDefaut = parseFloat(document.getElementById('setTauxDefaut').value) || 45;
         settings.deplacementDefaut = parseFloat(document.getElementById('setDeplacementDefaut').value) || 30;
         settings.seuilAlerte = parseInt(document.getElementById('setSeuilAlerte').value) || 30;
+        settings.seuilSauvegarde = parseInt(document.getElementById('setSeuilSauvegarde').value) || 15;
         saveToStorage();
         document.getElementById('settingsModal').classList.remove('show');
         renderAll();
+        checkBackupReminder();
         showToastSave('Paramètres sauvegardés', 'success');
       });
 
@@ -4462,6 +4679,9 @@
       renderAll();
       updateSaveIndicator(true);
       if (loaded) setTimeout(function() { showToastSave('Données locales chargées', 'success'); }, 500);
+
+      // Vérifie le rappel de sauvegarde au démarrage (délai pour ne pas bloquer)
+      setTimeout(checkBackupReminder, 1500);
 
     })();
   </script>
