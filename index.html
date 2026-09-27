@@ -1,0 +1,3851 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Plomberie Pro">
+  <meta name="theme-color" content="#1a5279">
+  <meta name="description" content="Application de gestion pour plombier - 100% hors ligne et privée">
+  <title>Plomberie Pro - Gestion hors ligne</title>
+  <link rel="manifest" href="data:application/manifest+json;base64,eyJuYW1lIjoiUGxvbWJyaWUgUHJvIiwic2hvcnRfbmFtZSI6IlBsb21iZXJpZSIsInN0YXJ0X3VybCI6Ii4iLCJkaXNwbGF5Ijoic3RhbmRhbG9uZSIsImJhY2tncm91bmRfY29sb3VyIjoiIzFhNTI3OSIsInRoZW1lX2NvbG9yIjoiIzFhNTI3OSIsImljb25zIjpbXX0=">
+  <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgcng9IjIwIiBmaWxsPSIjMWE1Mjc5Ii8+PHRleHQgeD0iNTAiIHk9IjY1IiBmb250LXNpemU9IjUwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSJ3aGl0ZSI+8J+UpzwvdGV4dD48L3N2Zz4=">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <style>
+    :root {
+      --safe-top: env(safe-area-inset-top, 0px);
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+      --safe-left: env(safe-area-inset-left, 0px);
+      --safe-right: env(safe-area-inset-right, 0px);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+      -webkit-touch-callout: none;
+    }
+
+    html {
+      -webkit-text-size-adjust: 100%;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      background: #f0f4fa;
+      display: flex;
+      justify-content: center;
+      padding: calc(12px + var(--safe-top)) calc(8px + var(--safe-right)) calc(30px + var(--safe-bottom)) calc(8px + var(--safe-left));
+      min-height: 100vh;
+      min-height: -webkit-fill-available;
+      overscroll-behavior-y: none;
+    }
+
+    .app-container {
+      max-width: 1100px;
+      width: 100%;
+      background: #ffffff;
+      border-radius: 32px;
+      box-shadow: 0 25px 60px rgba(0, 20, 40, 0.08);
+      padding: 16px 14px 28px;
+      transition: all 0.2s;
+    }
+
+    .app-header {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 18px;
+      gap: 8px;
+    }
+
+    .app-header h1 {
+      font-size: 1.4rem;
+      font-weight: 700;
+      background: linear-gradient(145deg, #0a2a44, #1a5279);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .app-header h1 i {
+      background: #1a5279;
+      -webkit-text-fill-color: white;
+      padding: 6px 12px;
+      border-radius: 60px;
+      font-size: 1rem;
+      color: white;
+    }
+
+    .save-indicator {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.65rem;
+      color: #4f718d;
+    }
+
+    .save-indicator .save-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #2e7d32;
+      transition: 0.3s;
+    }
+
+    .save-indicator .save-dot.dirty {
+      background: #c62828;
+      animation: pulse 1s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    .global-stats {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
+      padding: 10px 12px;
+      background: #f8fbfe;
+      border-radius: 16px;
+      border: 1px solid #e3ebf3;
+      justify-content: center;
+    }
+
+    .stat-badge {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: #1b3b55;
+      padding: 4px 12px;
+      border-radius: 40px;
+      background: white;
+      border: 1px solid #e3ebf5;
+    }
+
+    .stat-badge .count {
+      font-weight: 700;
+      font-size: 0.9rem;
+      min-width: 18px;
+      text-align: center;
+      color: #1a5279;
+    }
+
+    .stat-badge .stat-icon {
+      font-size: 0.8rem;
+      color: #1a5279;
+    }
+
+    .stat-badge.paid {
+      background: #e8f5e9;
+      border-color: #c8e6c9;
+    }
+    .stat-badge.paid .count { color: #2e7d32; }
+    .stat-badge.paid .stat-icon { color: #2e7d32; }
+
+    .stat-badge.unpaid {
+      background: #ffebee;
+      border-color: #ffcdd2;
+    }
+    .stat-badge.unpaid .count { color: #c62828; }
+    .stat-badge.unpaid .stat-icon { color: #c62828; }
+
+    .ca-panel {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
+      padding: 12px 14px;
+      background: linear-gradient(135deg, #f0f7ff, #e8f0fa);
+      border-radius: 16px;
+      border: 1px solid #d4e4f2;
+    }
+
+    .ca-item {
+      flex: 1 1 140px;
+      background: white;
+      border-radius: 14px;
+      padding: 10px 14px;
+      border: 1px solid #e3ebf3;
+      text-align: center;
+    }
+
+    .ca-item .ca-label {
+      font-size: 0.65rem;
+      font-weight: 600;
+      color: #4f718d;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      margin-bottom: 4px;
+    }
+
+    .ca-item .ca-value {
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: #1a5279;
+    }
+
+    .ca-item .ca-value.net {
+      color: #2e7d32;
+    }
+
+    .ca-item .ca-sub {
+      font-size: 0.65rem;
+      color: #7a96b1;
+      margin-top: 2px;
+    }
+
+    .main-tabs {
+      display: flex;
+      gap: 2px;
+      margin-bottom: 14px;
+      border-bottom: 2px solid #e3ebf3;
+      padding-bottom: 0;
+      flex-wrap: wrap;
+    }
+
+    .main-tab {
+      padding: 8px 14px;
+      border-radius: 20px 20px 0 0;
+      font-weight: 600;
+      font-size: 0.75rem;
+      color: #4f718d;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      transition: 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex: 1 1 auto;
+      justify-content: center;
+      white-space: nowrap;
+    }
+
+    .main-tab:hover {
+      background: #eef4fa;
+      color: #1a4b6d;
+    }
+
+    .main-tab.active {
+      background: #1a5279;
+      color: white;
+      box-shadow: 0 -4px 12px rgba(26, 82, 121, 0.15);
+    }
+
+    .main-tab .tab-badge {
+      background: rgba(0, 0, 0, 0.1);
+      padding: 0 8px;
+      border-radius: 40px;
+      font-size: 0.6rem;
+      font-weight: 700;
+    }
+
+    .main-tab.active .tab-badge {
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    .tab-content {
+      display: none;
+    }
+    .tab-content.active {
+      display: block;
+    }
+
+    .action-bar {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .btn-primary {
+      background: #1a5279;
+      border: none;
+      color: white;
+      padding: 10px 18px;
+      border-radius: 60px;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      transition: 0.2s;
+      font-size: 0.8rem;
+      box-shadow: 0 4px 12px rgba(20, 70, 110, 0.2);
+      -webkit-appearance: none;
+    }
+
+    .btn-primary:hover {
+      background: #0f3f60;
+      transform: translateY(-2px);
+      box-shadow: 0 10px 18px -6px #1a527955;
+    }
+
+    .btn-secondary {
+      background: white;
+      border: 1px solid #c6d9ec;
+      color: #1d4f74;
+      padding: 10px 16px;
+      border-radius: 60px;
+      font-weight: 500;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      transition: 0.15s;
+      font-size: 0.8rem;
+      -webkit-appearance: none;
+    }
+    .btn-secondary:hover {
+      background: #ecf4fd;
+      border-color: #8eb3d4;
+    }
+
+    .btn-save {
+      background: #2e7d32;
+      border: none;
+      color: white;
+      padding: 10px 18px;
+      border-radius: 60px;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      transition: 0.2s;
+      font-size: 0.8rem;
+      box-shadow: 0 4px 12px rgba(46, 125, 50, 0.2);
+      -webkit-appearance: none;
+    }
+    .btn-save:hover {
+      background: #1b5e20;
+      transform: translateY(-2px);
+    }
+
+    .search-section {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .search-wrapper {
+      flex: 1;
+      min-width: 180px;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .search-wrapper input {
+      flex: 1;
+      padding: 10px 16px;
+      border-radius: 60px;
+      border: 1px solid #c6d9ec;
+      background: #fafdff;
+      font-size: 0.85rem;
+      outline: none;
+      transition: 0.15s;
+      min-width: 140px;
+      -webkit-appearance: none;
+      font-size: 16px;
+    }
+
+    .search-wrapper input:focus {
+      border-color: #1a5279;
+      box-shadow: 0 0 0 3px rgba(26, 82, 121, 0.1);
+    }
+
+    .search-wrapper .search-icon {
+      background: #1a5279;
+      color: white;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 60px;
+      cursor: pointer;
+      font-weight: 500;
+      white-space: nowrap;
+      font-size: 0.8rem;
+      -webkit-appearance: none;
+    }
+
+    .interventions-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .intervention-card {
+      background: white;
+      border-radius: 20px;
+      border: 1px solid #e3ebf5;
+      padding: 14px 16px;
+      box-shadow: 0 2px 6px rgba(0, 20, 40, 0.03);
+      transition: all 0.15s;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .intervention-card:active {
+      transform: scale(0.99);
+    }
+
+    .intervention-card.paid {
+      border-left: 5px solid #2e7d32;
+      background: #f9fdf9;
+    }
+
+    .intervention-card.unpaid {
+      border-left: 5px solid #c62828;
+      background: #fffafa;
+    }
+
+    .int-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .int-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      flex: 1;
+    }
+
+    .int-client {
+      font-weight: 700;
+      font-size: 1rem;
+      color: #0a2a44;
+    }
+
+    .int-type-badge {
+      font-size: 0.6rem;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 30px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .int-type-badge.depannage { background: #ffe0b0; color: #b16b1a; }
+    .int-type-badge.entretien { background: #d4ebd4; color: #1b6b3b; }
+    .int-type-badge.reparation { background: #e8f0fe; color: #1a5279; }
+    .int-type-badge.installation { background: #e0e7ff; color: #4338ca; }
+    .int-type-badge.urgence { background: #ffe1de; color: #b13b2e; }
+    .int-type-badge.autre { background: #f0f0f0; color: #555; }
+
+    .int-date {
+      font-size: 0.7rem;
+      color: #5a7f9c;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .int-status {
+      font-size: 0.65rem;
+      font-weight: 700;
+      padding: 4px 12px;
+      border-radius: 30px;
+      white-space: nowrap;
+    }
+    .int-status.paid { background: #2e7d32; color: white; }
+    .int-status.unpaid { background: #c62828; color: white; }
+
+    .int-description {
+      font-size: 0.85rem;
+      color: #264c69;
+      margin-bottom: 10px;
+      line-height: 1.4;
+      word-break: break-word;
+    }
+
+    .int-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding-top: 10px;
+      border-top: 1px dashed #e3ebf3;
+    }
+
+    .int-meta {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .int-meta-item {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.75rem;
+      color: #4f718d;
+      font-weight: 500;
+    }
+
+    .int-meta-item i {
+      color: #1a5279;
+      font-size: 0.7rem;
+    }
+
+    .int-meta-item.total {
+      font-weight: 700;
+      color: #1a5279;
+      font-size: 0.95rem;
+    }
+
+    .int-actions {
+      display: flex;
+      gap: 4px;
+    }
+
+    .int-btn {
+      background: transparent;
+      border: none;
+      padding: 6px 10px;
+      border-radius: 30px;
+      cursor: pointer;
+      font-size: 0.75rem;
+      color: #5a7f9c;
+      transition: 0.15s;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      -webkit-appearance: none;
+    }
+    .int-btn:hover { background: #e2ebf5; color: #1a5279; }
+    .int-btn.pay:hover { background: #e8f5e9; color: #2e7d32; }
+    .int-btn.delete:hover { background: #ffebee; color: #c62828; }
+
+    .empty-state {
+      color: #7a96b1;
+      font-style: italic;
+      padding: 40px 20px;
+      text-align: center;
+      font-size: 0.9rem;
+      background: #fafdff;
+      border-radius: 20px;
+      border: 1px dashed #c6d9ec;
+    }
+
+    .facture-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .facture-item {
+      background: white;
+      border-radius: 16px;
+      border: 1px solid #e3ebf5;
+      padding: 12px 16px;
+      box-shadow: 0 2px 6px rgba(0, 20, 40, 0.03);
+      transition: all 0.15s;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .facture-item:active {
+      transform: scale(0.99);
+    }
+
+    .facture-item.paid {
+      border-left: 4px solid #2e7d32;
+      background: #f9fdf9;
+    }
+
+    .facture-item.unpaid {
+      border-left: 4px solid #c62828;
+      background: #fffafa;
+    }
+
+    .fact-num {
+      font-family: 'Courier New', monospace;
+      font-weight: 700;
+      font-size: 0.75rem;
+      background: #eef4fa;
+      padding: 3px 10px;
+      border-radius: 20px;
+      color: #1a5279;
+      white-space: nowrap;
+    }
+
+    .fact-client {
+      font-weight: 600;
+      font-size: 0.9rem;
+      color: #0a2a44;
+    }
+
+    .fact-info {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      font-size: 0.75rem;
+      color: #4f718d;
+      flex-wrap: wrap;
+    }
+
+    .fact-info .fact-total {
+      font-weight: 700;
+      font-size: 0.9rem;
+      color: #1a5279;
+    }
+
+    .fact-actions {
+      display: flex;
+      gap: 2px;
+    }
+
+    .fact-actions button {
+      background: transparent;
+      border: none;
+      padding: 6px 8px;
+      border-radius: 30px;
+      cursor: pointer;
+      font-size: 0.75rem;
+      color: #5a7f9c;
+      transition: 0.15s;
+      -webkit-appearance: none;
+    }
+
+    .fact-actions button:hover {
+      background: #e2ebf5;
+      color: #1a5279;
+    }
+
+    .fact-actions .pay:hover { background: #e8f5e9; color: #2e7d32; }
+    .fact-actions .del:hover { background: #ffebee; color: #c62828; }
+
+    @media (max-width: 600px) {
+      .facture-item {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      .fact-info {
+        width: 100%;
+        justify-content: space-between;
+      }
+      .fact-actions {
+        width: 100%;
+        justify-content: flex-end;
+      }
+    }
+
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 20, 40, 0.4);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+      padding: calc(16px + var(--safe-top)) calc(16px + var(--safe-right)) calc(16px + var(--safe-bottom)) calc(16px + var(--safe-left));
+    }
+
+    .modal-overlay.show {
+      display: flex;
+    }
+
+    .modal-box {
+      background: white;
+      max-width: 560px;
+      width: 100%;
+      border-radius: 24px;
+      padding: 24px 20px;
+      box-shadow: 0 30px 60px rgba(0, 0, 0, 0.2);
+      max-height: 90vh;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
+    }
+
+    .modal-box h2 {
+      font-size: 1.2rem;
+      color: #0a2a44;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid #e3edf7;
+    }
+
+    .form-group {
+      margin-bottom: 14px;
+    }
+
+    .form-group label {
+      display: block;
+      font-weight: 600;
+      font-size: 0.75rem;
+      color: #1b3b55;
+      margin-bottom: 5px;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      width: 100%;
+      padding: 10px 14px;
+      border-radius: 60px;
+      border: 1px solid #c6d9ec;
+      font-size: 16px;
+      background: #fafdff;
+      font-family: inherit;
+      outline: none;
+      transition: 0.15s;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+
+    .form-group select {
+      background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231a5279' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      background-size: 16px;
+      padding-right: 36px;
+    }
+
+    .form-group textarea {
+      border-radius: 16px;
+      resize: vertical;
+      min-height: 80px;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+      border-color: #1a5279;
+      box-shadow: 0 0 0 3px rgba(26, 82, 121, 0.1);
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .form-row-3 {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+    }
+
+    @media (max-width: 480px) {
+      .form-row, .form-row-3 {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .duree-group {
+      display: flex;
+      gap: 6px;
+      align-items: flex-end;
+    }
+
+    .duree-group .duree-field {
+      flex: 1;
+      text-align: center;
+    }
+
+    .duree-group .duree-field label {
+      font-size: 0.6rem;
+      text-align: center;
+      color: #7a96b1;
+      text-transform: uppercase;
+      margin-bottom: 3px;
+      display: block;
+    }
+
+    .duree-group .duree-field input {
+      text-align: center;
+      padding: 10px 6px;
+      font-weight: 700;
+      color: #1a5279;
+      font-size: 1rem;
+    }
+
+    .duree-total-badge {
+      background: #eef4fa;
+      border-radius: 40px;
+      padding: 8px 16px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: #1a5279;
+      text-align: center;
+      margin-top: 6px;
+      display: inline-block;
+    }
+
+    .pieces-section {
+      margin-bottom: 14px;
+      padding: 12px;
+      background: #f8fbfe;
+      border-radius: 16px;
+      border: 1px solid #e3ebf3;
+    }
+
+    .pieces-section h4 {
+      font-size: 0.75rem;
+      color: #1a5279;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .piece-row {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 6px;
+      align-items: center;
+    }
+
+    .piece-row input {
+      padding: 8px 12px !important;
+      font-size: 16px !important;
+      border-radius: 40px !important;
+    }
+
+    .piece-row input.piece-nom { flex: 2; }
+    .piece-row input.piece-prix { flex: 1; min-width: 70px; }
+
+    .piece-row button {
+      background: #ffebee;
+      border: none;
+      color: #c62828;
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      cursor: pointer;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.8rem;
+      -webkit-appearance: none;
+    }
+
+    .piece-row button:hover { background: #ffcdd2; }
+
+    .btn-add-piece {
+      background: white;
+      border: 1px dashed #7aa3c9;
+      color: #1a5279;
+      padding: 8px 14px;
+      border-radius: 40px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      margin-top: 4px;
+      width: 100%;
+      justify-content: center;
+      -webkit-appearance: none;
+    }
+
+    .btn-add-piece:hover { background: #ecf4fd; }
+
+    .piece-total {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #1a5279;
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px dashed #c6d9ec;
+    }
+
+    .planning-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 4px;
+      margin-bottom: 14px;
+    }
+
+    @media (max-width: 600px) {
+      .planning-grid { grid-template-columns: repeat(7, 1fr); gap: 2px; }
+    }
+
+    .planning-day {
+      background: #f8fbfe;
+      border-radius: 12px;
+      padding: 8px 4px;
+      text-align: center;
+      border: 1px solid #e3ebf3;
+      cursor: pointer;
+      transition: 0.15s;
+      min-height: 70px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 2px;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .planning-day:active { transform: scale(0.97); }
+
+    .planning-day.selected {
+      background: #1a5279;
+      color: white;
+      border-color: #1a5279;
+    }
+
+    .planning-day.selected .planning-day-name,
+    .planning-day.selected .planning-day-num { color: white; }
+
+    .planning-day.today { border: 2px solid #2e7d32; }
+    .planning-day.has-events { background: #fff8e1; }
+    .planning-day.selected.has-events { background: #1a5279; }
+
+    .planning-day-name {
+      font-size: 0.6rem;
+      font-weight: 700;
+      color: #4f718d;
+      text-transform: uppercase;
+    }
+
+    .planning-day-num {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #0a2a44;
+    }
+
+    .planning-day-events {
+      font-size: 0.55rem;
+      font-weight: 600;
+      color: #2e7d32;
+      background: #e8f5e9;
+      padding: 1px 6px;
+      border-radius: 20px;
+      margin-top: 2px;
+    }
+
+    .planning-day.selected .planning-day-events {
+      background: rgba(255, 255, 255, 0.2);
+      color: white;
+    }
+
+    .planning-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .planning-header h3 { font-size: 1rem; color: #1a5279; }
+
+    .planning-nav {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .planning-nav button {
+      background: white;
+      border: 1px solid #c6d9ec;
+      color: #1d4f74;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.8rem;
+      transition: 0.15s;
+      -webkit-appearance: none;
+    }
+
+    .planning-nav button:hover { background: #ecf4fd; }
+
+    .planning-nav .planning-month {
+      font-weight: 700;
+      font-size: 0.85rem;
+      color: #1a5279;
+      min-width: 120px;
+      text-align: center;
+    }
+
+    .planning-events {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .planning-event {
+      background: white;
+      border-radius: 14px;
+      border: 1px solid #e3ebf5;
+      padding: 10px 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      border-left: 4px solid #1a5279;
+    }
+
+    .planning-event.paid { border-left-color: #2e7d32; }
+    .planning-event.unpaid { border-left-color: #c62828; }
+
+    .planning-event .pe-time {
+      font-family: 'Courier New', monospace;
+      font-weight: 700;
+      color: #1a5279;
+      font-size: 0.8rem;
+    }
+
+    .planning-event .pe-client {
+      font-weight: 600;
+      color: #0a2a44;
+      font-size: 0.9rem;
+    }
+
+    .planning-event .pe-type {
+      font-size: 0.65rem;
+      padding: 2px 8px;
+      border-radius: 20px;
+      background: #eef4fa;
+      color: #1a5279;
+      font-weight: 600;
+    }
+
+    .planning-event .pe-actions {
+      display: flex;
+      gap: 4px;
+    }
+
+    .planning-event .pe-actions button {
+      background: transparent;
+      border: none;
+      padding: 4px 8px;
+      border-radius: 20px;
+      cursor: pointer;
+      font-size: 0.7rem;
+      color: #5a7f9c;
+      -webkit-appearance: none;
+    }
+
+    .planning-event .pe-actions button:hover {
+      background: #e2ebf5;
+      color: #1a5279;
+    }
+
+    .signature-container {
+      margin: 14px 0;
+      padding: 12px;
+      background: #f8fbfe;
+      border-radius: 16px;
+      border: 1px solid #e3ebf3;
+    }
+
+    .signature-container h4 {
+      font-size: 0.75rem;
+      color: #1a5279;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .signature-canvas-wrapper {
+      position: relative;
+      background: white;
+      border-radius: 12px;
+      border: 2px dashed #c6d9ec;
+      overflow: hidden;
+    }
+
+    .signature-canvas {
+      display: block;
+      width: 100%;
+      height: 150px;
+      touch-action: none;
+      cursor: crosshair;
+      background: white;
+    }
+
+    .signature-actions {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 8px;
+      gap: 8px;
+    }
+
+    .signature-actions button {
+      padding: 6px 14px;
+      border-radius: 40px;
+      border: none;
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      -webkit-appearance: none;
+    }
+
+    .btn-clear-sig { background: #ffebee; color: #c62828; }
+    .btn-clear-sig:hover { background: #ffcdd2; }
+    .btn-save-sig { background: #1a5279; color: white; }
+    .btn-save-sig:hover { background: #0f3f60; }
+
+    .devis-badge {
+      font-size: 0.6rem;
+      padding: 2px 8px;
+      border-radius: 20px;
+      background: #e0e7ff;
+      color: #4338ca;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .devis-badge.accepted { background: #e8f5e9; color: #2e7d32; }
+    .devis-badge.refused { background: #ffebee; color: #c62828; }
+    .devis-badge.pending { background: #fff8e1; color: #b16b1a; }
+
+    .toast-save-global {
+      position: fixed;
+      bottom: calc(30px + var(--safe-bottom));
+      right: calc(30px + var(--safe-right));
+      background: #1a5279;
+      color: white;
+      padding: 14px 24px;
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+      z-index: 9999;
+      display: none;
+      align-items: center;
+      gap: 12px;
+      font-size: 0.9rem;
+      animation: slideUp 0.3s ease;
+      max-width: 90vw;
+    }
+
+    .toast-save-global.show { display: flex; }
+
+    .toast-save-global .toast-icon { font-size: 1.4rem; }
+
+    .toast-save-global.success { background: #2e7d32; }
+    .toast-save-global.warning { background: #ed6c02; }
+    .toast-save-global.error { background: #c62828; }
+
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 768px) {
+      .toast-save-global {
+        bottom: calc(15px + var(--safe-bottom));
+        right: calc(15px + var(--safe-right));
+        left: calc(15px + var(--safe-left));
+        padding: 12px 16px;
+        font-size: 0.8rem;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .app-container { padding: 12px 10px 20px; border-radius: 20px; }
+      .app-header h1 { font-size: 1.1rem; }
+      .app-header h1 i { padding: 5px 10px; font-size: 0.85rem; }
+      .intervention-card { padding: 12px 14px; }
+      .int-client { font-size: 0.9rem; }
+      .modal-box { padding: 18px 16px; }
+      .modal-box h2 { font-size: 1.05rem; }
+      .int-actions { width: 100%; justify-content: flex-end; }
+    }
+
+    @media (max-width: 480px) {
+      .action-bar { flex-direction: column; align-items: stretch; }
+      .action-bar button { justify-content: center; }
+      .int-header { flex-direction: column; align-items: flex-start; }
+      .int-status { align-self: flex-start; }
+      .main-tab { font-size: 0.65rem; padding: 6px 8px; }
+      .main-tab .tab-badge { display: none; }
+    }
+
+    .recap-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin: 14px 0;
+    }
+
+    .recap-card {
+      background: #f8fbfe;
+      border-radius: 14px;
+      padding: 12px;
+      border: 1px solid #e3ebf3;
+      text-align: center;
+    }
+
+    .recap-card .recap-label {
+      font-size: 0.65rem;
+      font-weight: 600;
+      color: #4f718d;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+
+    .recap-card .recap-value {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: #1a5279;
+    }
+
+    .recap-card .recap-value.green { color: #2e7d32; }
+    .recap-card .recap-value.red { color: #c62828; }
+
+    @media (max-width: 400px) {
+      .recap-grid { grid-template-columns: 1fr; }
+    }
+
+    @media print {
+      body * { visibility: hidden; }
+      #printSection, #printSection * { visibility: visible; }
+      #printSection {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        padding: 20px;
+        background: white;
+      }
+      .no-print { display: none !important; }
+    }
+
+    .facture-lines { margin: 16px 0; }
+    .facture-line {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid #f0f5fc;
+      font-size: 0.85rem;
+    }
+    .facture-line:last-child { border-bottom: none; }
+    .facture-line.total {
+      font-weight: 700;
+      font-size: 1.1rem;
+      margin-top: 8px;
+      border-top: 2px solid #d4e2f0;
+      padding-top: 12px;
+      color: #1a5279;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+      margin-top: 18px;
+      flex-wrap: wrap;
+    }
+
+    .modal-actions button {
+      padding: 10px 20px;
+      border-radius: 60px;
+      border: none;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 0.85rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      -webkit-appearance: none;
+    }
+
+    .btn-cancel { background: #e6edf5; color: #214a66; }
+    .btn-cancel:hover { background: #d5dfe9; }
+    .btn-confirm { background: #1a5279; color: white; }
+    .btn-confirm:hover { background: #0f3f60; }
+    .btn-danger { background: #c62828; color: white; }
+    .btn-danger:hover { background: #b71c1c; }
+    .btn-pay { background: #2e7d32; color: white; }
+    .btn-pay:hover { background: #1b5e20; }
+
+    /* Indicateur hors ligne */
+    .offline-badge {
+      position: fixed;
+      top: calc(10px + var(--safe-top));
+      left: 50%;
+      transform: translateX(-50%);
+      background: #2e7d32;
+      color: white;
+      padding: 6px 16px;
+      border-radius: 40px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      z-index: 99999;
+      display: none;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      white-space: nowrap;
+    }
+
+    .offline-badge.show { display: flex; }
+    .offline-badge.offline { background: #ed6c02; }
+    .offline-badge.online { background: #2e7d32; }
+
+    /* Safe area pour les modales */
+    @supports (padding: max(0px)) {
+      .modal-box {
+        padding-bottom: max(24px, calc(24px + var(--safe-bottom)));
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="offline-badge" id="offlineBadge">
+    <i class="fas fa-wifi"></i>
+    <span id="offlineText">Hors ligne - Données locales</span>
+  </div>
+
+  <div class="app-container">
+    <div class="app-header">
+      <h1><i class="fas fa-wrench"></i> Plomberie Pro</h1>
+      <div style="display:flex; flex-wrap:wrap; gap:6px; align-items:center;">
+        <div class="save-indicator" id="saveIndicator">
+          <span class="save-dot" id="saveDot"></span>
+          <span id="saveStatusText">Sauvegardé localement</span>
+        </div>
+        <button class="btn-secondary" id="settingsBtn" style="padding:6px 12px; font-size:0.7rem;"><i class="fas fa-cog"></i></button>
+      </div>
+    </div>
+
+    <div class="global-stats">
+      <span class="stat-badge"><i class="fas fa-list stat-icon"></i> Interventions: <span class="count" id="totalInterventions">0</span></span>
+      <span class="stat-badge unpaid"><i class="fas fa-exclamation-circle stat-icon"></i> Impayées: <span class="count" id="totalImpayees">0</span></span>
+      <span class="stat-badge paid"><i class="fas fa-check-circle stat-icon"></i> Payées: <span class="count" id="totalPayees">0</span></span>
+      <span class="stat-badge"><i class="fas fa-file-signature stat-icon"></i> Devis: <span class="count" id="totalDevis">0</span></span>
+    </div>
+
+    <div class="ca-panel" id="caPanel">
+      <div class="ca-item">
+        <div class="ca-label"><i class="fas fa-chart-line"></i> CA du mois</div>
+        <div class="ca-value" id="caMois">0,00 €</div>
+        <div class="ca-sub" id="caMoisLabel">Janvier 2025</div>
+      </div>
+      <div class="ca-item">
+        <div class="ca-label"><i class="fas fa-chart-line"></i> CA net (après impôts)</div>
+        <div class="ca-value net" id="caNetMois">0,00 €</div>
+        <div class="ca-sub" id="caNetMoisSub">Auto-entreprise ~21,2%</div>
+      </div>
+      <div class="ca-item">
+        <div class="ca-label"><i class="fas fa-calendar-alt"></i> CA annuel</div>
+        <div class="ca-value" id="caAnnuel">0,00 €</div>
+        <div class="ca-sub" id="caAnnuelLabel">2025</div>
+      </div>
+      <div class="ca-item">
+        <div class="ca-label"><i class="fas fa-hand-holding-usd"></i> Reste à encaisser</div>
+        <div class="ca-value" id="resteEncaisser" style="color:#c62828;">0,00 €</div>
+        <div class="ca-sub">Factures impayées</div>
+      </div>
+    </div>
+
+    <div class="main-tabs">
+      <button class="main-tab" data-tab="planning">
+        <i class="fas fa-calendar-alt"></i> Planning
+      </button>
+      <button class="main-tab active" data-tab="interventions">
+        <i class="fas fa-clipboard-list"></i> Interventions <span class="tab-badge" id="tabInterventionsCount">0</span>
+      </button>
+      <button class="main-tab" data-tab="factures">
+        <i class="fas fa-file-invoice"></i> Factures <span class="tab-badge" id="tabFacturesCount">0</span>
+      </button>
+      <button class="main-tab" data-tab="devis">
+        <i class="fas fa-file-signature"></i> Devis <span class="tab-badge" id="tabDevisCount">0</span>
+      </button>
+      <button class="main-tab" data-tab="recap">
+        <i class="fas fa-chart-pie"></i> Récap
+      </button>
+    </div>
+
+    <div class="tab-content" id="tab-planning">
+      <div class="planning-header">
+        <h3><i class="fas fa-calendar-week"></i> Planning de la semaine</h3>
+        <div class="planning-nav">
+          <button id="prevWeekBtn"><i class="fas fa-chevron-left"></i></button>
+          <span class="planning-month" id="planningMonthLabel">Janvier 2025</span>
+          <button id="nextWeekBtn"><i class="fas fa-chevron-right"></i></button>
+        </div>
+      </div>
+      <div class="planning-grid" id="planningGrid"></div>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:8px;">
+        <h4 style="font-size:0.85rem; color:#1a5279;" id="planningDayLabel">Lundi 15 janvier</h4>
+        <button class="btn-primary" id="addFromPlanningBtn" style="padding:8px 14px; font-size:0.75rem;"><i class="fas fa-plus"></i> Ajouter</button>
+      </div>
+      <div class="planning-events" id="planningEvents"></div>
+    </div>
+
+    <div class="tab-content active" id="tab-interventions">
+      <div class="action-bar">
+        <button class="btn-primary" id="addInterventionBtn"><i class="fas fa-plus-circle"></i> Nouvelle intervention</button>
+        <button class="btn-save" id="saveAllBtn"><i class="fas fa-save"></i> Sauvegarder</button>
+      </div>
+      <div class="search-section">
+        <div class="search-wrapper">
+          <input type="text" id="searchInput" placeholder="Rechercher un client, une tâche, un n° de facture..." />
+          <button class="search-icon" id="searchBtn"><i class="fas fa-search"></i></button>
+        </div>
+      </div>
+      <div class="interventions-list" id="interventionsList"></div>
+    </div>
+
+    <div class="tab-content" id="tab-factures">
+      <div class="action-bar">
+        <button class="btn-primary" id="addFactureBtn"><i class="fas fa-plus-circle"></i> Nouvelle facture</button>
+        <button class="btn-secondary" id="exportFacturesBtn"><i class="fas fa-download"></i> Export CSV</button>
+        <button class="btn-secondary" id="exportDataBtn"><i class="fas fa-file-export"></i> Sauvegarde complète</button>
+      </div>
+      <div class="search-section">
+        <div class="search-wrapper">
+          <input type="text" id="searchFactureInput" placeholder="Rechercher par n° de facture, client, date..." />
+          <button class="search-icon" id="searchFactureBtn"><i class="fas fa-search"></i></button>
+        </div>
+      </div>
+      <div class="facture-list" id="factureList"></div>
+    </div>
+
+    <div class="tab-content" id="tab-devis">
+      <div class="action-bar">
+        <button class="btn-primary" id="addDevisBtn"><i class="fas fa-plus-circle"></i> Nouveau devis</button>
+      </div>
+      <div class="search-section">
+        <div class="search-wrapper">
+          <input type="text" id="searchDevisInput" placeholder="Rechercher un devis par n°, client..." />
+          <button class="search-icon" id="searchDevisBtn"><i class="fas fa-search"></i></button>
+        </div>
+      </div>
+      <div class="facture-list" id="devisList"></div>
+    </div>
+
+    <div class="tab-content" id="tab-recap">
+      <div class="action-bar">
+        <button class="btn-secondary" id="prevMonthBtn"><i class="fas fa-chevron-left"></i> Mois précédent</button>
+        <span id="recapMonthLabel" style="font-weight:700; font-size:1rem; color:#1a5279; padding:8px 16px;">Janvier 2025</span>
+        <button class="btn-secondary" id="nextMonthBtn">Mois suivant <i class="fas fa-chevron-right"></i></button>
+      </div>
+      <div class="recap-grid" id="recapGrid"></div>
+      <div id="recapDetail" style="margin-top:14px;"></div>
+    </div>
+
+    <div id="toastArea" style="margin-top:8px;"></div>
+  </div>
+
+  <!-- MODALES (identiques à votre code, avec corrections) -->
+  <div class="modal-overlay" id="interventionModal">
+    <div class="modal-box">
+      <h2 id="interventionModalTitle"><i class="fas fa-plus-circle" style="color:#1a5279;"></i> Nouvelle intervention</h2>
+      <div class="form-group">
+        <label>Type de prestation</label>
+        <select id="intTypeSelect">
+          <option value="depannage">🔧 Dépannage</option>
+          <option value="reparation">🔩 Réparation fuite</option>
+          <option value="entretien">📋 Entretien chaudière</option>
+          <option value="installation">➕ Installation</option>
+          <option value="urgence">⚠️ Urgence</option>
+          <option value="autre">📌 Autre</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Client / Adresse</label>
+        <input type="text" id="intClient" placeholder="Nom du client ou adresse" />
+      </div>
+      <div class="form-group">
+        <label>Email du client</label>
+        <input type="email" id="intEmail" placeholder="client@email.com" />
+      </div>
+      <div class="form-group">
+        <label>Description de la tâche</label>
+        <textarea id="intDescription" placeholder="Ex: Réparation fuite sous évier, entretien chaudière gaz..."></textarea>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Date</label>
+          <input type="date" id="intDate" />
+        </div>
+        <div class="form-group">
+          <label>Heure (optionnel)</label>
+          <input type="time" id="intHeure" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Durée du chantier</label>
+        <div class="duree-group">
+          <div class="duree-field">
+            <label>Jours</label>
+            <input type="number" id="intDureeJours" min="0" step="1" value="0" placeholder="0" />
+          </div>
+          <div class="duree-field">
+            <label>Heures</label>
+            <input type="number" id="intDureeHeures" min="0" max="23" step="1" value="0" placeholder="0" />
+          </div>
+          <div class="duree-field">
+            <label>Minutes</label>
+            <input type="number" id="intDureeMinutes" min="0" max="59" step="5" value="0" placeholder="0" />
+          </div>
+        </div>
+        <div class="duree-total-badge" id="intDureeTotalBadge">Total : 0 min</div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Taux horaire (€/h)</label>
+          <input type="number" id="intTaux" min="0" step="5" value="45" />
+        </div>
+        <div class="form-group">
+          <label>Déplacement (€)</label>
+          <input type="number" id="intDeplacement" min="0" step="5" value="30" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Notes (optionnel)</label>
+        <input type="text" id="intNotes" placeholder="Ex: Client absent..." />
+      </div>
+      <div class="pieces-section">
+        <h4><i class="fas fa-boxes"></i> Pièces & Matériels</h4>
+        <div id="piecesContainer"></div>
+        <button class="btn-add-piece" id="addPieceBtn"><i class="fas fa-plus"></i> Ajouter une pièce</button>
+        <div class="piece-total">
+          <span>Total pièces :</span>
+          <span id="piecesTotal">0,00 €</span>
+        </div>
+      </div>
+      <div class="form-group" style="display:flex; align-items:center; gap:10px;">
+        <input type="checkbox" id="intPaye" style="width:auto; accent-color:#2e7d32;" />
+        <label for="intPaye" style="margin:0; font-size:0.8rem; text-transform:none; letter-spacing:0;">Le client a payé immédiatement</label>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-cancel" id="cancelIntervention"><i class="fas fa-times"></i> Annuler</button>
+        <button class="btn-confirm" id="confirmIntervention"><i class="fas fa-check"></i> Enregistrer</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="planningModal">
+    <div class="modal-box" style="max-width:480px;">
+      <h2><i class="fas fa-calendar-plus" style="color:#1a5279;"></i> Ajouter au planning</h2>
+      <div class="form-group">
+        <label>Type de prestation</label>
+        <select id="planTypeSelect">
+          <option value="depannage">🔧 Dépannage</option>
+          <option value="reparation">🔩 Réparation fuite</option>
+          <option value="entretien">📋 Entretien chaudière</option>
+          <option value="installation">➕ Installation</option>
+          <option value="urgence">⚠️ Urgence</option>
+          <option value="autre">📌 Autre</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Date</label>
+          <input type="date" id="planDate" />
+        </div>
+        <div class="form-group">
+          <label>Heure</label>
+          <input type="time" id="planHeure" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Client / Adresse</label>
+        <input type="text" id="planClient" placeholder="Nom ou adresse" />
+      </div>
+      <div class="form-group">
+        <label>Description de la tâche</label>
+        <textarea id="planDescription" placeholder="Ex: Fuite sous évier..." style="min-height:70px;"></textarea>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-cancel" id="cancelPlanning"><i class="fas fa-times"></i> Annuler</button>
+        <button class="btn-confirm" id="confirmPlanning"><i class="fas fa-check"></i> Ajouter</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="devisModal">
+    <div class="modal-box">
+      <h2><i class="fas fa-file-signature" style="color:#4338ca;"></i> Nouveau devis</h2>
+      <div class="form-group">
+        <label>Client / Adresse</label>
+        <input type="text" id="devisClient" placeholder="Nom du client ou adresse" />
+      </div>
+      <div class="form-group">
+        <label>Email du client</label>
+        <input type="email" id="devisEmail" placeholder="client@email.com" />
+      </div>
+      <div class="form-group">
+        <label>Description des travaux</label>
+        <textarea id="devisDescription" placeholder="Détail des travaux à réaliser..."></textarea>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Date du devis</label>
+          <input type="date" id="devisDate" />
+        </div>
+        <div class="form-group">
+          <label>Validité (jours)</label>
+          <input type="number" id="devisValidite" value="30" min="1" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Durée estimée</label>
+        <div class="duree-group">
+          <div class="duree-field">
+            <label>Jours</label>
+            <input type="number" id="devisDureeJours" min="0" step="1" value="0" />
+          </div>
+          <div class="duree-field">
+            <label>Heures</label>
+            <input type="number" id="devisDureeHeures" min="0" max="23" step="1" value="0" />
+          </div>
+          <div class="duree-field">
+            <label>Minutes</label>
+            <input type="number" id="devisDureeMinutes" min="0" max="59" step="5" value="0" />
+          </div>
+        </div>
+        <div class="duree-total-badge" id="devisDureeTotalBadge">Total : 0 min</div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Taux horaire (€/h)</label>
+          <input type="number" id="devisTaux" min="0" step="5" value="45" />
+        </div>
+        <div class="form-group">
+          <label>Déplacement (€)</label>
+          <input type="number" id="devisDeplacement" min="0" step="5" value="30" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Notes</label>
+        <input type="text" id="devisNotes" placeholder="Conditions particulières..." />
+      </div>
+      <div class="pieces-section">
+        <h4><i class="fas fa-boxes"></i> Pièces & Matériels</h4>
+        <div id="devisPiecesContainer"></div>
+        <button class="btn-add-piece" id="addDevisPieceBtn"><i class="fas fa-plus"></i> Ajouter une pièce</button>
+        <div class="piece-total">
+          <span>Total pièces :</span>
+          <span id="devisPiecesTotal">0,00 €</span>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-cancel" id="cancelDevis"><i class="fas fa-times"></i> Annuler</button>
+        <button class="btn-confirm" id="confirmDevis" style="background:#4338ca;"><i class="fas fa-check"></i> Créer le devis</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="signatureModal">
+    <div class="modal-box" style="max-width:520px;">
+      <h2><i class="fas fa-signature" style="color:#1a5279;"></i> Signatures</h2>
+      <div class="signature-container">
+        <h4><i class="fas fa-user"></i> Signature du client</h4>
+        <div class="signature-canvas-wrapper">
+          <canvas class="signature-canvas" id="clientSignatureCanvas"></canvas>
+        </div>
+        <div class="signature-actions">
+          <button class="btn-clear-sig" id="clearClientSig"><i class="fas fa-eraser"></i> Effacer</button>
+          <button class="btn-save-sig" id="saveClientSig"><i class="fas fa-check"></i> Valider</button>
+        </div>
+      </div>
+      <div class="signature-container">
+        <h4><i class="fas fa-hard-hat"></i> Signature du technicien</h4>
+        <div class="signature-canvas-wrapper">
+          <canvas class="signature-canvas" id="techSignatureCanvas"></canvas>
+        </div>
+        <div class="signature-actions">
+          <button class="btn-clear-sig" id="clearTechSig"><i class="fas fa-eraser"></i> Effacer</button>
+          <button class="btn-save-sig" id="saveTechSig"><i class="fas fa-check"></i> Valider</button>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-cancel" id="closeSignatureModal"><i class="fas fa-times"></i> Fermer</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="factureModal">
+    <div class="modal-box">
+      <h2><i class="fas fa-file-invoice" style="color:#1a5279;"></i> Facture <span id="factureNumeroDisplay" style="font-family:monospace; font-size:0.9rem; color:#1a5279;"></span></h2>
+      <div id="factureContent"></div>
+      <div class="modal-actions" style="justify-content:space-between; flex-wrap:wrap;">
+        <div style="display:flex; gap:6px; flex-wrap:wrap;">
+          <button class="btn-pay" id="markPaidBtn"><i class="fas fa-check"></i> Marquer payée</button>
+          <button class="btn-secondary" id="downloadPdfBtn"><i class="fas fa-download"></i> PDF</button>
+          <button class="btn-secondary" id="printFactureBtn"><i class="fas fa-print"></i> Imprimer</button>
+          <button class="btn-secondary" id="sendMailBtn"><i class="fas fa-envelope"></i> Mail</button>
+          <button class="btn-secondary" id="signFactureBtn"><i class="fas fa-signature"></i> Signer</button>
+          <button class="btn-secondary" id="editFactureBtn"><i class="fas fa-edit"></i> Modifier</button>
+        </div>
+        <button class="btn-cancel" id="closeFacture"><i class="fas fa-times"></i> Fermer</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="devisDetailModal">
+    <div class="modal-box">
+      <h2><i class="fas fa-file-signature" style="color:#4338ca;"></i> Devis <span id="devisNumeroDisplay" style="font-family:monospace; font-size:0.9rem; color:#4338ca;"></span></h2>
+      <div id="devisDetailContent"></div>
+      <div class="modal-actions" style="justify-content:space-between; flex-wrap:wrap;">
+        <div style="display:flex; gap:6px; flex-wrap:wrap;">
+          <button class="btn-secondary" id="acceptDevisBtn" style="background:#e8f5e9; color:#2e7d32; border-color:#c8e6c9;"><i class="fas fa-check"></i> Accepter</button>
+          <button class="btn-secondary" id="refuseDevisBtn" style="background:#ffebee; color:#c62828; border-color:#ffcdd2;"><i class="fas fa-times"></i> Refuser</button>
+          <button class="btn-secondary" id="downloadDevisPdfBtn"><i class="fas fa-download"></i> PDF</button>
+          <button class="btn-secondary" id="sendDevisMailBtn"><i class="fas fa-envelope"></i> Mail</button>
+          <button class="btn-secondary" id="convertDevisBtn" style="background:#e0e7ff; color:#4338ca; border-color:#c7d2fe;"><i class="fas fa-exchange-alt"></i> Convertir en facture</button>
+        </div>
+        <button class="btn-cancel" id="closeDevisDetail"><i class="fas fa-times"></i> Fermer</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="mailModal">
+    <div class="modal-box" style="max-width:480px;">
+      <h2><i class="fas fa-envelope" style="color:#2e7d32;"></i> Envoyer</h2>
+      <div class="form-group">
+        <label>Destinataire</label>
+        <input type="email" id="mailTo" placeholder="client@email.com" />
+      </div>
+      <div class="form-group">
+        <label>Objet</label>
+        <input type="text" id="mailSubject" readonly />
+      </div>
+      <div class="form-group">
+        <label>Message</label>
+        <textarea id="mailBody" readonly style="border-radius:12px; min-height:140px;"></textarea>
+      </div>
+      <div style="font-size:0.7rem; color:#7a96b1; margin-top:6px; padding:8px; background:#f8fbfe; border-radius:8px;">
+        <i class="fas fa-info-circle"></i> Cette action ouvre votre client mail. Joignez le PDF téléchargé.
+      </div>
+      <div class="modal-actions">
+        <button class="btn-cancel" id="cancelMail"><i class="fas fa-times"></i> Annuler</button>
+        <button class="btn-confirm" id="confirmMail" style="background:#2e7d32;"><i class="fas fa-paper-plane"></i> Ouvrir le mail</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="confirmModal">
+    <div class="modal-box" style="max-width:400px; text-align:center;">
+      <p id="confirmMessage" style="font-size:1rem; color:#1b3b55; margin-bottom:20px; white-space:pre-line;"></p>
+      <div class="modal-actions" style="justify-content:center;">
+        <button class="btn-cancel" id="confirmNo"><i class="fas fa-times"></i> Non</button>
+        <button class="btn-danger" id="confirmYes"><i class="fas fa-check"></i> Oui</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="settingsModal">
+    <div class="modal-box" style="max-width:460px;">
+      <h2><i class="fas fa-cog" style="color:#1a5279;"></i> Paramètres</h2>
+      <div class="form-group">
+        <label>Nom de l'entreprise</label>
+        <input type="text" id="setNom" value="Plomberie Pro" />
+      </div>
+      <div class="form-group">
+        <label>Adresse</label>
+        <input type="text" id="setAdresse" value="12 rue des Artisans, 75000 Paris" />
+      </div>
+      <div class="form-group">
+        <label>SIRET</label>
+        <input type="text" id="setSiret" value="123 456 789 00012" />
+      </div>
+      <div class="form-group">
+        <label>Téléphone</label>
+        <input type="text" id="setTel" value="01 23 45 67 89" />
+      </div>
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="setEmail" value="contact@plomberie-pro.fr" />
+      </div>
+      <div class="form-group">
+        <label>Taux d'imposition auto-entreprise (%)</label>
+        <input type="number" id="setTaxe" value="21.2" step="0.1" min="0" max="50" />
+      </div>
+      <div class="form-group">
+        <label>TVA (%)</label>
+        <input type="number" id="setTva" value="10" step="0.1" min="0" max="30" />
+      </div>
+      <div class="form-group" style="display:flex; align-items:center; gap:10px;">
+        <input type="checkbox" id="setTvaActive" style="width:auto; accent-color:#1a5279;" />
+        <label for="setTvaActive" style="margin:0; font-size:0.8rem; text-transform:none;">Activer la TVA</label>
+      </div>
+      <div class="form-group">
+        <label>Taux horaire par défaut (€/h)</label>
+        <input type="number" id="setTauxDefaut" value="45" step="5" min="0" />
+      </div>
+      <div class="form-group">
+        <label>Frais de déplacement par défaut (€)</label>
+        <input type="number" id="setDeplacementDefaut" value="30" step="5" min="0" />
+      </div>
+      <div style="margin-top:12px; padding:10px; background:#f8fbfe; border-radius:12px; font-size:0.7rem; color:#4f718d;">
+        <i class="fas fa-shield-alt"></i> <strong>Confidentialité :</strong> Toutes vos données sont stockées uniquement sur votre appareil. Aucune information n'est envoyée sur Internet.
+      </div>
+      <div class="modal-actions">
+        <button class="btn-cancel" id="cancelSettings"><i class="fas fa-times"></i> Annuler</button>
+        <button class="btn-confirm" id="saveSettings"><i class="fas fa-save"></i> Sauvegarder</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast-save-global" id="toastSaveGlobal">
+    <span class="toast-icon"><i class="fas fa-check-circle"></i></span>
+    <span id="toastSaveMessage">Données sauvegardées</span>
+  </div>
+
+  <div id="printSection" style="display:none;"></div>
+
+  <script>
+    // ============================================================
+    // SERVICE WORKER INLINE POUR HORS LIGNE
+    // ============================================================
+    if ('serviceWorker' in navigator) {
+      var swCode = `
+        const CACHE_NAME = 'plomberie-pro-v4';
+        const ASSETS = [
+          'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css',
+          'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js'
+        ];
+        self.addEventListener('install', function(e) {
+          e.waitUntil(
+            caches.open(CACHE_NAME).then(function(cache) {
+              return cache.addAll(ASSETS).catch(function() {});
+            })
+          );
+          self.skipWaiting();
+        });
+        self.addEventListener('activate', function(e) {
+          e.waitUntil(
+            caches.keys().then(function(keys) {
+              return Promise.all(keys.filter(function(k) { return k !== CACHE_NAME; }).map(function(k) { return caches.delete(k); }));
+            })
+          );
+          self.clients.claim();
+        });
+        self.addEventListener('fetch', function(e) {
+          if (e.request.method !== 'GET') return;
+          e.respondWith(
+            caches.match(e.request).then(function(cached) {
+              if (cached) return cached;
+              return fetch(e.request).then(function(response) {
+                if (response && response.status === 200 && response.type === 'basic') {
+                  var clone = response.clone();
+                  caches.open(CACHE_NAME).then(function(cache) { cache.put(e.request, clone); });
+                }
+                return response;
+              }).catch(function() {
+                return caches.match(e.request);
+              });
+            })
+          );
+        });
+      `;
+      var blob = new Blob([swCode], { type: 'application/javascript' });
+      var swUrl = URL.createObjectURL(blob);
+      navigator.serviceWorker.register(swUrl).catch(function() {
+        // Fallback silencieux
+      });
+    }
+
+    // ============================================================
+    // INDICATEUR HORS LIGNE
+    // ============================================================
+    function updateOfflineBadge() {
+      var badge = document.getElementById('offlineBadge');
+      var text = document.getElementById('offlineText');
+      if (navigator.onLine) {
+        badge.className = 'offline-badge show online';
+        text.textContent = 'En ligne - Données locales sécurisées';
+        setTimeout(function() { badge.classList.remove('show'); }, 2500);
+      } else {
+        badge.className = 'offline-badge show offline';
+        text.textContent = 'Hors ligne - Fonctionne normalement';
+      }
+    }
+    window.addEventListener('online', updateOfflineBadge);
+    window.addEventListener('offline', updateOfflineBadge);
+    updateOfflineBadge();
+
+    // ============================================================
+    // APPLICATION PRINCIPALE
+    // ============================================================
+    (function() {
+      'use strict';
+
+      var STORAGE_KEY = 'plomberie_pro_v4';
+      var SETTINGS_KEY = 'plomberie_pro_settings_v4';
+      var SAVE_DELAY = 1500;
+
+      var TYPES_TACHES = {
+        depannage: { label: 'Dépannage', color: 'depannage' },
+        reparation: { label: 'Réparation fuite', color: 'reparation' },
+        entretien: { label: 'Entretien chaudière', color: 'entretien' },
+        installation: { label: 'Installation', color: 'installation' },
+        urgence: { label: 'Urgence', color: 'urgence' },
+        autre: { label: 'Autre', color: 'autre' }
+      };
+
+      var interventions = [];
+      var devisList = [];
+      var clients = [];
+      var factureCounter = 1;
+      var devisCounter = 1;
+      var currentFactureId = null;
+      var currentDevisId = null;
+      var currentMailType = 'facture';
+      var currentMailId = null;
+      var clientSignatureData = null;
+      var techSignatureData = null;
+      var currentSignatureTarget = null;
+      var settings = {
+        nom: 'Plomberie Pro',
+        adresse: '12 rue des Artisans, 75000 Paris',
+        siret: '123 456 789 00012',
+        tel: '01 23 45 67 89',
+        email: 'contact@plomberie-pro.fr',
+        taxe: 21.2,
+        tva: 10,
+        tvaActive: false,
+        tauxDefaut: 45,
+        deplacementDefaut: 30
+      };
+      var planningDate = new Date();
+      var selectedPlanningDate = new Date();
+      var searchTerm = '';
+      var searchFactureTerm = '';
+      var searchDevisTerm = '';
+      var confirmCallback = null;
+      var recapDate = new Date();
+      var tempPieces = [];
+      var tempDevisPieces = [];
+      var saveTimeout = null;
+
+      // ----- Utilitaires -----
+      function escapeHtml(text) {
+        if (!text && text !== 0) return '';
+        var div = document.createElement('div');
+        div.textContent = String(text);
+        return div.innerHTML;
+      }
+
+      function formatDate(dateStr) {
+        if (!dateStr) return '—';
+        try {
+          var d = new Date(dateStr + 'T00:00:00');
+          return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
+        } catch(e) { return dateStr; }
+      }
+
+      function formatMois(date) {
+        return date.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+      }
+
+      function formatEuro(n) {
+        if (isNaN(n) || n === null) n = 0;
+        return n.toFixed(2).replace('.', ',') + ' €';
+      }
+
+      function formatDuree(minutes) {
+        if (!minutes || minutes === 0) return '0 min';
+        var j = Math.floor(minutes / 1440);
+        var h = Math.floor((minutes % 1440) / 60);
+        var m = minutes % 60;
+        var parts = [];
+        if (j > 0) parts.push(j + 'j');
+        if (h > 0) parts.push(h + 'h');
+        if (m > 0) parts.push(m + 'min');
+        return parts.join(' ') || '0 min';
+      }
+
+      function dureeEnMinutes(jours, heures, minutes) {
+        return (parseInt(jours) || 0) * 1440 + (parseInt(heures) || 0) * 60 + (parseInt(minutes) || 0);
+      }
+
+      function genererNumeroFacture() {
+        var year = new Date().getFullYear();
+        var num = String(factureCounter).padStart(4, '0');
+        factureCounter++;
+        return 'FAC-' + year + '-' + num;
+      }
+
+      function genererNumeroDevis() {
+        var year = new Date().getFullYear();
+        var num = String(devisCounter).padStart(4, '0');
+        devisCounter++;
+        return 'DEV-' + year + '-' + num;
+      }
+
+      // ----- Calculs -----
+      function getPiecesTotal(pieces) {
+        if (!pieces || !pieces.length) return 0;
+        var total = 0;
+        for (var i = 0; i < pieces.length; i++) {
+          total += (parseFloat(pieces[i].prix) || 0) * (parseInt(pieces[i].qte) || 1);
+        }
+        return total;
+      }
+
+      function getTotalHT(item) {
+        var heures = (item.duree || 0) / 60;
+        var mainOeuvre = heures * (item.taux || settings.tauxDefaut);
+        var deplacement = item.deplacement || 0;
+        var pieces = getPiecesTotal(item.pieces);
+        return mainOeuvre + deplacement + pieces;
+      }
+
+      function getTotalTTC(item) {
+        var ht = getTotalHT(item);
+        if (settings.tvaActive && settings.tva > 0) {
+          return ht * (1 + settings.tva / 100);
+        }
+        return ht;
+      }
+
+      function getTotalNet(item) {
+        return getTotalTTC(item) * (1 - settings.taxe / 100);
+      }
+
+      // ----- Sauvegarde / chargement -----
+      function saveToStorage(silent) {
+        try {
+          var data = {
+            interventions: interventions,
+            devisList: devisList,
+            clients: clients,
+            factureCounter: factureCounter,
+            devisCounter: devisCounter,
+            savedAt: new Date().toISOString()
+          };
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+          localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+          updateSaveIndicator(true);
+          if (!silent) return true;
+          return true;
+        } catch (e) {
+          console.error('Erreur sauvegarde:', e);
+          return false;
+        }
+      }
+
+      function loadFromStorage() {
+        try {
+          var raw = localStorage.getItem(STORAGE_KEY);
+          if (raw) {
+            var data = JSON.parse(raw);
+            interventions = data.interventions || [];
+            devisList = data.devisList || [];
+            clients = data.clients || [];
+            factureCounter = data.factureCounter || 1;
+            devisCounter = data.devisCounter || 1;
+          }
+          var rawSettings = localStorage.getItem(SETTINGS_KEY);
+          if (rawSettings) {
+            var s = JSON.parse(rawSettings);
+            for (var key in s) {
+              if (settings.hasOwnProperty(key)) settings[key] = s[key];
+            }
+          }
+          return true;
+        } catch (e) {
+          console.error('Erreur chargement:', e);
+          return false;
+        }
+      }
+
+      function markAsDirty() {
+        updateSaveIndicator(false);
+        if (saveTimeout) clearTimeout(saveTimeout);
+        saveTimeout = setTimeout(function() {
+          if (saveToStorage(true)) {
+            showToastSave('Sauvegarde automatique', 'success');
+          }
+        }, SAVE_DELAY);
+      }
+
+      function updateSaveIndicator(saved) {
+        var dot = document.getElementById('saveDot');
+        var text = document.getElementById('saveStatusText');
+        if (saved) {
+          dot.className = 'save-dot';
+          text.textContent = 'Sauvegardé localement';
+        } else {
+          dot.className = 'save-dot dirty';
+          text.textContent = 'Modifications...';
+        }
+      }
+
+      function showToastSave(message, type) {
+        var toast = document.getElementById('toastSaveGlobal');
+        var msgEl = document.getElementById('toastSaveMessage');
+        var iconEl = toast.querySelector('.toast-icon i');
+        msgEl.textContent = message || 'Données sauvegardées';
+        toast.className = 'toast-save-global';
+        if (type === 'success') { toast.classList.add('success'); iconEl.className = 'fas fa-check-circle'; }
+        else if (type === 'warning') { toast.classList.add('warning'); iconEl.className = 'fas fa-exclamation-triangle'; }
+        else if (type === 'error') { toast.classList.add('error'); iconEl.className = 'fas fa-times-circle'; }
+        else { toast.classList.add('success'); iconEl.className = 'fas fa-check-circle'; }
+        toast.classList.add('show');
+        if (toast._timeout) clearTimeout(toast._timeout);
+        toast._timeout = setTimeout(function() { toast.classList.remove('show'); }, 2800);
+      }
+
+      function toast(msg) {
+        var area = document.getElementById('toastArea');
+        area.innerHTML = '<div style="background:#163a51; color:white; padding:8px 18px; border-radius:60px; font-size:0.8rem; display:inline-block; margin-top:8px;"><i class="fas fa-info-circle"></i> ' + escapeHtml(msg) + '</div>';
+        setTimeout(function() { area.innerHTML = ''; }, 3500);
+      }
+
+      // ----- Confirmation -----
+      function showConfirm(message, callback) {
+        document.getElementById('confirmMessage').textContent = message;
+        document.getElementById('confirmModal').classList.add('show');
+        confirmCallback = callback;
+      }
+
+      document.getElementById('confirmYes').addEventListener('click', function() {
+        document.getElementById('confirmModal').classList.remove('show');
+        if (confirmCallback) { confirmCallback(true); confirmCallback = null; }
+      });
+      document.getElementById('confirmNo').addEventListener('click', function() {
+        document.getElementById('confirmModal').classList.remove('show');
+        if (confirmCallback) { confirmCallback(false); confirmCallback = null; }
+      });
+
+      // ----- Rendu stats -----
+      function renderStats() {
+        var total = interventions.length;
+        var impayees = 0, payees = 0;
+        var caMois = 0, caNetMois = 0, caAnnuel = 0, resteEncaisser = 0;
+        var now = new Date();
+        var currentMonth = now.getMonth();
+        var currentYear = now.getFullYear();
+
+        for (var i = 0; i < interventions.length; i++) {
+          var int = interventions[i];
+          var ttc = getTotalTTC(int);
+          var net = getTotalNet(int);
+          if (int.paye) payees++;
+          else { impayees++; resteEncaisser += ttc; }
+          var intDate = new Date(int.date + 'T00:00:00');
+          if (intDate.getMonth() === currentMonth && intDate.getFullYear() === currentYear) {
+            caMois += ttc;
+            caNetMois += net;
+          }
+          if (intDate.getFullYear() === currentYear) caAnnuel += ttc;
+        }
+
+        document.getElementById('totalInterventions').textContent = total;
+        document.getElementById('totalImpayees').textContent = impayees;
+        document.getElementById('totalPayees').textContent = payees;
+        document.getElementById('totalDevis').textContent = devisList.length;
+        document.getElementById('tabInterventionsCount').textContent = total;
+        document.getElementById('tabFacturesCount').textContent = total;
+        document.getElementById('tabDevisCount').textContent = devisList.length;
+        document.getElementById('caMois').textContent = formatEuro(caMois);
+        document.getElementById('caNetMois').textContent = formatEuro(caNetMois);
+        document.getElementById('caAnnuel').textContent = formatEuro(caAnnuel);
+        document.getElementById('resteEncaisser').textContent = formatEuro(resteEncaisser);
+        document.getElementById('caMoisLabel').textContent = formatMois(now);
+        document.getElementById('caAnnuelLabel').textContent = currentYear;
+        document.getElementById('caNetMoisSub').textContent = 'Auto-entreprise ~' + settings.taxe + '%';
+      }
+
+      // ----- Rendu interventions -----
+      function renderInterventions() {
+        var container = document.getElementById('interventionsList');
+        var term = searchTerm.trim().toLowerCase();
+        var filtered = [];
+        for (var i = 0; i < interventions.length; i++) {
+          var int = interventions[i];
+          if (!term) { filtered.push(int); continue; }
+          var client = (int.client || '').toLowerCase();
+          var desc = (int.description || '').toLowerCase();
+          var num = (int.numeroFacture || '').toLowerCase();
+          var email = (int.email || '').toLowerCase();
+          if (client.indexOf(term) !== -1 || desc.indexOf(term) !== -1 || num.indexOf(term) !== -1 || email.indexOf(term) !== -1) {
+            filtered.push(int);
+          }
+        }
+        filtered.sort(function(a, b) {
+          if (a.paye !== b.paye) return a.paye ? 1 : -1;
+          return (b.date || '').localeCompare(a.date || '');
+        });
+        container.innerHTML = '';
+        if (filtered.length === 0) {
+          container.innerHTML = '<div class="empty-state"><i class="fas fa-inbox" style="font-size:2rem; display:block; margin-bottom:10px; opacity:0.5;"></i>Aucune intervention</div>';
+          return;
+        }
+        var frag = document.createDocumentFragment();
+        for (var j = 0; j < filtered.length; j++) {
+          var int = filtered[j];
+          var typeInfo = TYPES_TACHES[int.type] || TYPES_TACHES.autre;
+          var total = getTotalTTC(int);
+          var card = document.createElement('div');
+          card.className = 'intervention-card ' + (int.paye ? 'paid' : 'unpaid');
+          card.dataset.id = int.id;
+          card.innerHTML =
+            '<div class="int-header">' +
+              '<div class="int-title">' +
+                '<span class="int-type-badge ' + typeInfo.color + '">' + typeInfo.label + '</span>' +
+                '<span class="int-client">' + escapeHtml(int.client || 'Client') + '</span>' +
+                (int.numeroFacture ? '<span style="font-size:0.65rem; font-family:monospace; background:#eef4fa; padding:2px 8px; border-radius:20px; color:#1a5279;">' + int.numeroFacture + '</span>' : '') +
+                (int.signatureClient ? '<span style="font-size:0.6rem; color:#2e7d32;"><i class="fas fa-signature"></i></span>' : '') +
+              '</div>' +
+              '<span class="int-status ' + (int.paye ? 'paid' : 'unpaid') + '">' + (int.paye ? '✓ Payée' : '⚠ Impayée') + '</span>' +
+            '</div>' +
+            '<div class="int-description">' + escapeHtml(int.description || '—') + '</div>' +
+            '<div class="int-footer">' +
+              '<div class="int-meta">' +
+                '<span class="int-meta-item"><i class="far fa-calendar-alt"></i> ' + formatDate(int.date) + '</span>' +
+                (int.heure ? '<span class="int-meta-item"><i class="far fa-clock"></i> ' + int.heure + '</span>' : '') +
+                '<span class="int-meta-item"><i class="fas fa-hourglass-half"></i> ' + formatDuree(int.duree) + '</span>' +
+                '<span class="int-meta-item total"><i class="fas fa-euro-sign"></i> ' + formatEuro(total) + '</span>' +
+              '</div>' +
+              '<div class="int-actions">' +
+                '<button class="int-btn view" data-id="' + int.id + '" title="Facture"><i class="fas fa-file-invoice"></i></button>' +
+                '<button class="int-btn sign" data-id="' + int.id + '" title="Signer"><i class="fas fa-signature"></i></button>' +
+                (int.paye ? '' : '<button class="int-btn pay" data-id="' + int.id + '" title="Payée"><i class="fas fa-check"></i></button>') +
+                '<button class="int-btn delete" data-id="' + int.id + '" title="Supprimer"><i class="fas fa-trash-alt"></i></button>' +
+              '</div>' +
+            '</div>';
+          frag.appendChild(card);
+        }
+        container.appendChild(frag);
+        container.querySelectorAll('.intervention-card').forEach(function(card) {
+          card.addEventListener('click', function(e) {
+            if (e.target.closest('.int-btn')) return;
+            openFacture(card.dataset.id);
+          });
+        });
+        container.querySelectorAll('.int-btn.view').forEach(function(btn) {
+          btn.addEventListener('click', function(e) { e.stopPropagation(); openFacture(btn.dataset.id); });
+        });
+        container.querySelectorAll('.int-btn.sign').forEach(function(btn) {
+          btn.addEventListener('click', function(e) { e.stopPropagation(); openSignatureModal(btn.dataset.id, 'facture'); });
+        });
+        container.querySelectorAll('.int-btn.pay').forEach(function(btn) {
+          btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            showConfirm('Marquer cette facture comme payée ?', function(c) { if (c) markAsPaid(btn.dataset.id); });
+          });
+        });
+        container.querySelectorAll('.int-btn.delete').forEach(function(btn) {
+          btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            showConfirm('Supprimer cette intervention ?', function(c) { if (c) deleteIntervention(btn.dataset.id); });
+          });
+        });
+      }
+
+      // ----- Rendu factures -----
+      function renderFactures() {
+        var container = document.getElementById('factureList');
+        var term = searchFactureTerm.trim().toLowerCase();
+        var filtered = interventions.filter(function(int) {
+          if (!term) return true;
+          return (int.numeroFacture || '').toLowerCase().indexOf(term) !== -1 ||
+                 (int.client || '').toLowerCase().indexOf(term) !== -1 ||
+                 (int.date || '').toLowerCase().indexOf(term) !== -1;
+        });
+        filtered.sort(function(a, b) { return (b.date || '').localeCompare(a.date || ''); });
+        container.innerHTML = '';
+        if (filtered.length === 0) {
+          container.innerHTML = '<div class="empty-state"><i class="fas fa-file-invoice" style="font-size:2rem; display:block; margin-bottom:10px; opacity:0.5;"></i>Aucune facture</div>';
+          return;
+        }
+        var frag = document.createDocumentFragment();
+        filtered.forEach(function(int) {
+          var total = getTotalTTC(int);
+          var item = document.createElement('div');
+          item.className = 'facture-item ' + (int.paye ? 'paid' : 'unpaid');
+          item.dataset.id = int.id;
+          item.innerHTML =
+            '<div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap; flex:1;">' +
+              '<span class="fact-num">' + (int.numeroFacture || '—') + '</span>' +
+              '<span class="fact-client">' + escapeHtml(int.client || '—') + '</span>' +
+              (int.signatureClient ? '<span style="font-size:0.6rem; color:#2e7d32;"><i class="fas fa-signature"></i> Signée</span>' : '') +
+            '</div>' +
+            '<div class="fact-info">' +
+              '<span><i class="far fa-calendar-alt"></i> ' + formatDate(int.date) + '</span>' +
+              '<span class="fact-total">' + formatEuro(total) + '</span>' +
+              (int.paye ? '<span style="color:#2e7d32; font-weight:600; font-size:0.7rem;"><i class="fas fa-check-circle"></i> Payée</span>' : '<span style="color:#c62828; font-weight:600; font-size:0.7rem;"><i class="fas fa-exclamation-circle"></i> Impayée</span>') +
+            '</div>' +
+            '<div class="fact-actions">' +
+              '<button class="view" data-id="' + int.id + '" title="Voir"><i class="fas fa-eye"></i></button>' +
+              '<button class="pdf" data-id="' + int.id + '" title="PDF"><i class="fas fa-file-pdf"></i></button>' +
+              '<button class="mail" data-id="' + int.id + '" title="Mail"><i class="fas fa-envelope"></i></button>' +
+              '<button class="sign" data-id="' + int.id + '" title="Signer"><i class="fas fa-signature"></i></button>' +
+              (int.paye ? '' : '<button class="pay" data-id="' + int.id + '" title="Payée"><i class="fas fa-check"></i></button>') +
+              '<button class="del" data-id="' + int.id + '" title="Supprimer"><i class="fas fa-trash-alt"></i></button>' +
+            '</div>';
+          frag.appendChild(item);
+        });
+        container.appendChild(frag);
+        container.querySelectorAll('.facture-item').forEach(function(item) {
+          item.addEventListener('click', function(e) {
+            if (e.target.closest('.fact-actions button')) return;
+            openFacture(item.dataset.id);
+          });
+        });
+        container.querySelectorAll('.fact-actions .view').forEach(function(btn) {
+          btn.addEventListener('click', function(e) { e.stopPropagation(); openFacture(btn.dataset.id); });
+        });
+        container.querySelectorAll('.fact-actions .pdf').forEach(function(btn) {
+          btn.addEventListener('click', function(e) { e.stopPropagation(); generateFacturePDF(btn.dataset.id); });
+        });
+        container.querySelectorAll('.fact-actions .mail').forEach(function(btn) {
+          btn.addEventListener('click', function(e) { e.stopPropagation(); openMailModal(btn.dataset.id, 'facture'); });
+        });
+        container.querySelectorAll('.fact-actions .sign').forEach(function(btn) {
+          btn.addEventListener('click', function(e) { e.stopPropagation(); openSignatureModal(btn.dataset.id, 'facture'); });
+        });
+        container.querySelectorAll('.fact-actions .pay').forEach(function(btn) {
+          btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            showConfirm('Marquer comme payée ?', function(c) { if (c) markAsPaid(btn.dataset.id); });
+          });
+        });
+        container.querySelectorAll('.fact-actions .del').forEach(function(btn) {
+          btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            showConfirm('Supprimer cette facture ?', function(c) { if (c) deleteIntervention(btn.dataset.id); });
+          });
+        });
+      }
+
+      // ----- Rendu devis -----
+      function renderDevis() {
+        var container = document.getElementById('devisList');
+        var term = searchDevisTerm.trim().toLowerCase();
+        var filtered = devisList.filter(function(d) {
+          if (!term) return true;
+          return (d.numeroDevis || '').toLowerCase().indexOf(term) !== -1 ||
+                 (d.client || '').toLowerCase().indexOf(term) !== -1 ||
+                 (d.date || '').toLowerCase().indexOf(term) !== -1;
+        });
+        filtered.sort(function(a, b) { return (b.date || '').localeCompare(a.date || ''); });
+        container.innerHTML = '';
+        if (filtered.length === 0) {
+          container.innerHTML = '<div class="empty-state"><i class="fas fa-file-signature" style="font-size:2rem; display:block; margin-bottom:10px; opacity:0.5;"></i>Aucun devis</div>';
+          return;
+        }
+        var frag = document.createDocumentFragment();
+        filtered.forEach(function(d) {
+          var total = getTotalTTC(d);
+          var statusLabel, statusClass;
+          if (d.statut === 'accepte') { statusLabel = 'Accepté'; statusClass = 'accepted'; }
+          else if (d.statut === 'refuse') { statusLabel = 'Refusé'; statusClass = 'refused'; }
+          else { statusLabel = 'En attente'; statusClass = 'pending'; }
+          var item = document.createElement('div');
+          item.className = 'facture-item ' + (d.statut === 'accepte' ? 'paid' : (d.statut === 'refuse' ? 'unpaid' : ''));
+          item.dataset.id = d.id;
+          item.innerHTML =
+            '<div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap; flex:1;">' +
+              '<span class="fact-num" style="background:#e0e7ff; color:#4338ca;">' + (d.numeroDevis || '—') + '</span>' +
+              '<span class="fact-client">' + escapeHtml(d.client || '—') + '</span>' +
+              '<span class="devis-badge ' + statusClass + '">' + statusLabel + '</span>' +
+              (d.signatureClient ? '<span style="font-size:0.6rem; color:#2e7d32;"><i class="fas fa-signature"></i></span>' : '') +
+            '</div>' +
+            '<div class="fact-info">' +
+              '<span><i class="far fa-calendar-alt"></i> ' + formatDate(d.date) + '</span>' +
+              '<span class="fact-total">' + formatEuro(total) + '</span>' +
+            '</div>' +
+            '<div class="fact-actions">' +
+              '<button class="view" data-id="' + d.id + '" title="Voir"><i class="fas fa-eye"></i></button>' +
+              '<button class="pdf" data-id="' + d.id + '" title="PDF"><i class="fas fa-file-pdf"></i></button>' +
+              '<button class="mail" data-id="' + d.id + '" title="Mail"><i class="fas fa-envelope"></i></button>' +
+              '<button class="sign" data-id="' + d.id + '" title="Signer"><i class="fas fa-signature"></i></button>' +
+              '<button class="del" data-id="' + d.id + '" title="Supprimer"><i class="fas fa-trash-alt"></i></button>' +
+            '</div>';
+          frag.appendChild(item);
+        });
+        container.appendChild(frag);
+        container.querySelectorAll('.facture-item').forEach(function(item) {
+          item.addEventListener('click', function(e) {
+            if (e.target.closest('.fact-actions button')) return;
+            openDevisDetail(item.dataset.id);
+          });
+        });
+        container.querySelectorAll('.fact-actions .view').forEach(function(btn) {
+          btn.addEventListener('click', function(e) { e.stopPropagation(); openDevisDetail(btn.dataset.id); });
+        });
+        container.querySelectorAll('.fact-actions .pdf').forEach(function(btn) {
+          btn.addEventListener('click', function(e) { e.stopPropagation(); generateDevisPDF(btn.dataset.id); });
+        });
+        container.querySelectorAll('.fact-actions .mail').forEach(function(btn) {
+          btn.addEventListener('click', function(e) { e.stopPropagation(); openMailModal(btn.dataset.id, 'devis'); });
+        });
+        container.querySelectorAll('.fact-actions .sign').forEach(function(btn) {
+          btn.addEventListener('click', function(e) { e.stopPropagation(); openSignatureModal(btn.dataset.id, 'devis'); });
+        });
+        container.querySelectorAll('.fact-actions .del').forEach(function(btn) {
+          btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            showConfirm('Supprimer ce devis ?', function(c) { if (c) deleteDevis(btn.dataset.id); });
+          });
+        });
+      }
+
+      // ----- Planning -----
+      function getWeekDays(date) {
+        var d = new Date(date);
+        var day = d.getDay();
+        var diff = d.getDate() - day + (day === 0 ? -6 : 1);
+        var monday = new Date(d.setDate(diff));
+        monday.setHours(0,0,0,0);
+        var days = [];
+        for (var i = 0; i < 7; i++) {
+          var dd = new Date(monday);
+          dd.setDate(monday.getDate() + i);
+          days.push(dd);
+        }
+        return days;
+      }
+
+      function renderPlanning() {
+        var grid = document.getElementById('planningGrid');
+        var days = getWeekDays(planningDate);
+        var today = new Date();
+        today.setHours(0, 0, 0, 0);
+        document.getElementById('planningMonthLabel').textContent = formatMois(days[0]);
+        grid.innerHTML = '';
+        var dayNames = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
+        days.forEach(function(day, i) {
+          var dayStr = day.getFullYear() + '-' + String(day.getMonth() + 1).padStart(2, '0') + '-' + String(day.getDate()).padStart(2, '0');
+          var events = interventions.filter(function(int) { return int.date === dayStr; });
+          var isToday = day.getTime() === today.getTime();
+          var isSelected = day.toDateString() === selectedPlanningDate.toDateString();
+          var el = document.createElement('div');
+          el.className = 'planning-day' + (isToday ? ' today' : '') + (isSelected ? ' selected' : '') + (events.length > 0 ? ' has-events' : '');
+          el.innerHTML =
+            '<div class="planning-day-name">' + dayNames[i] + '</div>' +
+            '<div class="planning-day-num">' + day.getDate() + '</div>' +
+            (events.length > 0 ? '<div class="planning-day-events">' + events.length + '</div>' : '');
+          el.addEventListener('click', function() {
+            selectedPlanningDate = new Date(day);
+            renderPlanning();
+          });
+          grid.appendChild(el);
+        });
+        var eventsContainer = document.getElementById('planningEvents');
+        var selStr = selectedPlanningDate.getFullYear() + '-' + String(selectedPlanningDate.getMonth() + 1).padStart(2, '0') + '-' + String(selectedPlanningDate.getDate()).padStart(2, '0');
+        var selEvents = interventions.filter(function(int) { return int.date === selStr; });
+        selEvents.sort(function(a, b) { return (a.heure || '99:99').localeCompare(b.heure || '99:99'); });
+        document.getElementById('planningDayLabel').textContent = selectedPlanningDate.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+        eventsContainer.innerHTML = '';
+        if (selEvents.length === 0) {
+          eventsContainer.innerHTML = '<div class="empty-state" style="padding:20px;"><i class="fas fa-calendar-day" style="font-size:1.5rem; display:block; margin-bottom:8px; opacity:0.5;"></i>Aucune intervention ce jour</div>';
+        } else {
+          var frag = document.createDocumentFragment();
+          selEvents.forEach(function(int) {
+            var typeInfo = TYPES_TACHES[int.type] || TYPES_TACHES.autre;
+            var el = document.createElement('div');
+            el.className = 'planning-event ' + (int.paye ? 'paid' : 'unpaid');
+            el.innerHTML =
+              '<div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; flex:1;">' +
+                '<span class="pe-time">' + (int.heure || '--:--') + '</span>' +
+                '<span class="pe-client">' + escapeHtml(int.client) + '</span>' +
+                '<span class="pe-type">' + typeInfo.label + '</span>' +
+              '</div>' +
+              '<div class="pe-actions">' +
+                '<button data-id="' + int.id + '" class="view-ev"><i class="fas fa-eye"></i></button>' +
+                '<button data-id="' + int.id + '" class="del-ev"><i class="fas fa-trash-alt"></i></button>' +
+              '</div>';
+            el.addEventListener('click', function(e) {
+              if (e.target.closest('button')) return;
+              openFacture(int.id);
+            });
+            frag.appendChild(el);
+          });
+          eventsContainer.appendChild(frag);
+          eventsContainer.querySelectorAll('.view-ev').forEach(function(btn) {
+            btn.addEventListener('click', function(e) { e.stopPropagation(); openFacture(btn.dataset.id); });
+          });
+          eventsContainer.querySelectorAll('.del-ev').forEach(function(btn) {
+            btn.addEventListener('click', function(e) {
+              e.stopPropagation();
+              showConfirm('Supprimer cette intervention ?', function(c) { if (c) deleteIntervention(btn.dataset.id); });
+            });
+          });
+        }
+      }
+
+      document.getElementById('prevWeekBtn').addEventListener('click', function() {
+        planningDate.setDate(planningDate.getDate() - 7);
+        renderPlanning();
+      });
+      document.getElementById('nextWeekBtn').addEventListener('click', function() {
+        planningDate.setDate(planningDate.getDate() + 7);
+        renderPlanning();
+      });
+
+      // ----- Modale planning -----
+      function openPlanningModal() {
+        var selStr = selectedPlanningDate.getFullYear() + '-' + String(selectedPlanningDate.getMonth() + 1).padStart(2, '0') + '-' + String(selectedPlanningDate.getDate()).padStart(2, '0');
+        document.getElementById('planDate').value = selStr;
+        document.getElementById('planHeure').value = '';
+        document.getElementById('planClient').value = '';
+        document.getElementById('planDescription').value = '';
+        document.getElementById('planningModal').classList.add('show');
+        setTimeout(function() { document.getElementById('planClient').focus(); }, 100);
+      }
+
+      document.getElementById('addFromPlanningBtn').addEventListener('click', openPlanningModal);
+      document.getElementById('cancelPlanning').addEventListener('click', function() {
+        document.getElementById('planningModal').classList.remove('show');
+      });
+
+      document.getElementById('confirmPlanning').addEventListener('click', function() {
+        var type = document.getElementById('planTypeSelect').value;
+        var date = document.getElementById('planDate').value;
+        var heure = document.getElementById('planHeure').value;
+        var client = document.getElementById('planClient').value.trim();
+        var description = document.getElementById('planDescription').value.trim();
+        if (!client) { toast('Client / Adresse requis'); return; }
+        if (!description) { toast('Description requise'); return; }
+        if (!date) { toast('Date requise'); return; }
+        var newInt = {
+          id: 'int_' + Date.now(),
+          numeroFacture: genererNumeroFacture(),
+          client: client, email: '', description: description, type: type,
+          date: date, heure: heure, duree: 0, taux: settings.tauxDefaut,
+          deplacement: settings.deplacementDefaut, pieces: [], notes: '',
+          paye: false, datePaiement: null, signatureClient: null, signatureTech: null,
+          createdAt: new Date().toISOString()
+        };
+        interventions.push(newInt);
+        document.getElementById('planningModal').classList.remove('show');
+        markAsDirty();
+        renderAll();
+        showToastSave('Ajouté au planning', 'success');
+      });
+
+      // ----- Signatures -----
+      var clientCanvas, clientCtx, techCanvas, techCtx;
+      var clientDrawing = false, techDrawing = false;
+      var clientLastX = 0, clientLastY = 0, techLastX = 0, techLastY = 0;
+
+      function initSignatureCanvases() {
+        clientCanvas = document.getElementById('clientSignatureCanvas');
+        techCanvas = document.getElementById('techSignatureCanvas');
+        [clientCanvas, techCanvas].forEach(function(canvas) {
+          var rect = canvas.getBoundingClientRect();
+          canvas.width = rect.width * 2;
+          canvas.height = rect.height * 2;
+          var ctx = canvas.getContext('2d');
+          ctx.scale(2, 2);
+          ctx.lineWidth = 2;
+          ctx.lineCap = 'round';
+          ctx.lineJoin = 'round';
+          ctx.strokeStyle = '#1a5279';
+        });
+        clientCtx = clientCanvas.getContext('2d');
+        techCtx = techCanvas.getContext('2d');
+        ['client', 'tech'].forEach(function(who) {
+          var canvas = who === 'client' ? clientCanvas : techCanvas;
+          canvas.addEventListener('touchstart', function(e) { e.preventDefault(); startDraw(e, who); }, { passive: false });
+          canvas.addEventListener('touchmove', function(e) { e.preventDefault(); draw(e, who); }, { passive: false });
+          canvas.addEventListener('touchend', function(e) { e.preventDefault(); endDraw(who); }, { passive: false });
+          canvas.addEventListener('mousedown', function(e) { startDraw(e, who); });
+          canvas.addEventListener('mousemove', function(e) { draw(e, who); });
+          canvas.addEventListener('mouseup', function() { endDraw(who); });
+          canvas.addEventListener('mouseleave', function() { endDraw(who); });
+        });
+      }
+
+      function getPos(e, canvas) {
+        var rect = canvas.getBoundingClientRect();
+        var clientX, clientY;
+        if (e.touches && e.touches.length > 0) { clientX = e.touches[0].clientX; clientY = e.touches[0].clientY; }
+        else if (e.changedTouches && e.changedTouches.length > 0) { clientX = e.changedTouches[0].clientX; clientY = e.changedTouches[0].clientY; }
+        else { clientX = e.clientX; clientY = e.clientY; }
+        return { x: clientX - rect.left, y: clientY - rect.top };
+      }
+
+      function startDraw(e, who) {
+        var canvas = who === 'client' ? clientCanvas : techCanvas;
+        var pos = getPos(e, canvas);
+        if (who === 'client') { clientDrawing = true; clientLastX = pos.x; clientLastY = pos.y; }
+        else { techDrawing = true; techLastX = pos.x; techLastY = pos.y; }
+      }
+
+      function draw(e, who) {
+        var canvas = who === 'client' ? clientCanvas : techCanvas;
+        var ctx = who === 'client' ? clientCtx : techCtx;
+        var drawing = who === 'client' ? clientDrawing : techDrawing;
+        if (!drawing) return;
+        var pos = getPos(e, canvas);
+        ctx.beginPath();
+        if (who === 'client') { ctx.moveTo(clientLastX, clientLastY); ctx.lineTo(pos.x, pos.y); clientLastX = pos.x; clientLastY = pos.y; }
+        else { ctx.moveTo(techLastX, techLastY); ctx.lineTo(pos.x, pos.y); techLastX = pos.x; techLastY = pos.y; }
+        ctx.stroke();
+      }
+
+      function endDraw(who) {
+        if (who === 'client') clientDrawing = false; else techDrawing = false;
+      }
+
+      function clearCanvas(who) {
+        var canvas = who === 'client' ? clientCanvas : techCanvas;
+        var ctx = who === 'client' ? clientCtx : techCtx;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }
+
+      function isCanvasEmpty(canvas) {
+        var ctx = canvas.getContext('2d');
+        var data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+        for (var i = 0; i < data.length; i += 4) { if (data[i + 3] !== 0) return false; }
+        return true;
+      }
+
+      function openSignatureModal(id, type) {
+        currentSignatureTarget = { id: id, type: type };
+        clientSignatureData = null;
+        techSignatureData = null;
+        document.getElementById('signatureModal').classList.add('show');
+        setTimeout(function() {
+          initSignatureCanvases();
+          var item = type === 'facture' ? interventions.find(function(i) { return i.id === id; }) : devisList.find(function(d) { return d.id === id; });
+          if (item && item.signatureClient) {
+            var img = new Image();
+            img.onload = function() { clientCtx.drawImage(img, 0, 0, clientCanvas.width / 2, clientCanvas.height / 2); };
+            img.src = item.signatureClient;
+          }
+          if (item && item.signatureTech) {
+            var img2 = new Image();
+            img2.onload = function() { techCtx.drawImage(img2, 0, 0, techCanvas.width / 2, techCanvas.height / 2); };
+            img2.src = item.signatureTech;
+          }
+        }, 150);
+      }
+
+      document.getElementById('clearClientSig').addEventListener('click', function() { clearCanvas('client'); });
+      document.getElementById('clearTechSig').addEventListener('click', function() { clearCanvas('tech'); });
+
+      document.getElementById('saveClientSig').addEventListener('click', function() {
+        if (isCanvasEmpty(clientCanvas)) { toast('Veuillez signer avant de valider'); return; }
+        clientSignatureData = clientCanvas.toDataURL('image/png');
+        showToastSave('Signature client enregistrée', 'success');
+      });
+
+      document.getElementById('saveTechSig').addEventListener('click', function() {
+        if (isCanvasEmpty(techCanvas)) { toast('Veuillez signer avant de valider'); return; }
+        techSignatureData = techCanvas.toDataURL('image/png');
+        showToastSave('Signature technicien enregistrée', 'success');
+      });
+
+      function saveSignatures() {
+        if (!currentSignatureTarget) return;
+        var item = currentSignatureTarget.type === 'facture'
+          ? interventions.find(function(i) { return i.id === currentSignatureTarget.id; })
+          : devisList.find(function(d) { return d.id === currentSignatureTarget.id; });
+        if (!item) return;
+        if (clientSignatureData) item.signatureClient = clientSignatureData;
+        if (techSignatureData) item.signatureTech = techSignatureData;
+        if (clientSignatureData || techSignatureData) {
+          markAsDirty();
+          renderAll();
+          showToastSave('Signatures enregistrées', 'success');
+        }
+        clientSignatureData = null;
+        techSignatureData = null;
+        currentSignatureTarget = null;
+      }
+
+      document.getElementById('closeSignatureModal').addEventListener('click', function() {
+        saveSignatures();
+        document.getElementById('signatureModal').classList.remove('show');
+      });
+
+      // ----- Pieces -----
+      function renderPieces() {
+        var container = document.getElementById('piecesContainer');
+        container.innerHTML = '';
+        tempPieces.forEach(function(p, i) {
+          var row = document.createElement('div');
+          row.className = 'piece-row';
+          row.innerHTML =
+            '<input type="text" class="piece-nom" placeholder="Nom (ex: Robinet)" value="' + escapeHtml(p.nom || '') + '" data-idx="' + i + '" data-field="nom" />' +
+            '<input type="number" class="piece-prix" placeholder="Prix €" value="' + (p.prix || '') + '" step="0.01" min="0" data-idx="' + i + '" data-field="prix" />' +
+            '<button data-idx="' + i + '" class="del-piece"><i class="fas fa-times"></i></button>';
+          container.appendChild(row);
+        });
+        container.querySelectorAll('input').forEach(function(inp) {
+          inp.addEventListener('input', function() {
+            var idx = parseInt(this.dataset.idx);
+            tempPieces[idx][this.dataset.field] = this.value;
+            updatePiecesTotal();
+          });
+        });
+        container.querySelectorAll('.del-piece').forEach(function(btn) {
+          btn.addEventListener('click', function() {
+            tempPieces.splice(parseInt(this.dataset.idx), 1);
+            renderPieces();
+          });
+        });
+        updatePiecesTotal();
+      }
+
+      function updatePiecesTotal() {
+        document.getElementById('piecesTotal').textContent = formatEuro(getPiecesTotal(tempPieces));
+      }
+
+      document.getElementById('addPieceBtn').addEventListener('click', function() {
+        tempPieces.push({ nom: '', prix: '' });
+        renderPieces();
+      });
+
+      function renderDevisPieces() {
+        var container = document.getElementById('devisPiecesContainer');
+        container.innerHTML = '';
+        tempDevisPieces.forEach(function(p, i) {
+          var row = document.createElement('div');
+          row.className = 'piece-row';
+          row.innerHTML =
+            '<input type="text" class="piece-nom" placeholder="Nom" value="' + escapeHtml(p.nom || '') + '" data-idx="' + i + '" data-field="nom" />' +
+            '<input type="number" class="piece-prix" placeholder="Prix €" value="' + (p.prix || '') + '" step="0.01" min="0" data-idx="' + i + '" data-field="prix" />' +
+            '<button data-idx="' + i + '" class="del-piece"><i class="fas fa-times"></i></button>';
+          container.appendChild(row);
+        });
+        container.querySelectorAll('input').forEach(function(inp) {
+          inp.addEventListener('input', function() {
+            var idx = parseInt(this.dataset.idx);
+            tempDevisPieces[idx][this.dataset.field] = this.value;
+            updateDevisPiecesTotal();
+          });
+        });
+        container.querySelectorAll('.del-piece').forEach(function(btn) {
+          btn.addEventListener('click', function() {
+            tempDevisPieces.splice(parseInt(this.dataset.idx), 1);
+            renderDevisPieces();
+          });
+        });
+        updateDevisPiecesTotal();
+      }
+
+      function updateDevisPiecesTotal() {
+        document.getElementById('devisPiecesTotal').textContent = formatEuro(getPiecesTotal(tempDevisPieces));
+      }
+
+      document.getElementById('addDevisPieceBtn').addEventListener('click', function() {
+        tempDevisPieces.push({ nom: '', prix: '' });
+        renderDevisPieces();
+      });
+
+      // ----- Durée -----
+      function updateDureeTotal(prefix) {
+        var j = document.getElementById(prefix + 'DureeJours');
+        var h = document.getElementById(prefix + 'DureeHeures');
+        var m = document.getElementById(prefix + 'DureeMinutes');
+        var badge = document.getElementById(prefix + 'DureeTotalBadge');
+        if (!j || !h || !m || !badge) return;
+        var total = dureeEnMinutes(j.value, h.value, m.value);
+        badge.textContent = 'Total : ' + formatDuree(total);
+      }
+
+      ['int', 'devis'].forEach(function(prefix) {
+        ['DureeJours', 'DureeHeures', 'DureeMinutes'].forEach(function(field) {
+          var el = document.getElementById(prefix + field);
+          if (el) el.addEventListener('input', function() { updateDureeTotal(prefix); });
+        });
+      });
+
+      // ----- Modale intervention -----
+      var interventionModal = document.getElementById('interventionModal');
+
+      function openInterventionModal(prefill) {
+        prefill = prefill || {};
+        tempPieces = (prefill.pieces || []).map(function(p) { return { nom: p.nom, prix: p.prix }; });
+        renderPieces();
+        document.getElementById('interventionModalTitle').innerHTML = '<i class="fas fa-plus-circle" style="color:#1a5279;"></i> Nouvelle intervention';
+        document.getElementById('intTypeSelect').value = prefill.type || 'depannage';
+        document.getElementById('intClient').value = prefill.client || '';
+        document.getElementById('intEmail').value = prefill.email || '';
+        document.getElementById('intDescription').value = prefill.description || '';
+        document.getElementById('intDate').value = prefill.date || new Date().toISOString().slice(0, 10);
+        document.getElementById('intHeure').value = prefill.heure || '';
+        var dureeMin = prefill.duree || 0;
+        document.getElementById('intDureeJours').value = Math.floor(dureeMin / 1440);
+        document.getElementById('intDureeHeures').value = Math.floor((dureeMin % 1440) / 60);
+        document.getElementById('intDureeMinutes').value = dureeMin % 60;
+        updateDureeTotal('int');
+        document.getElementById('intTaux').value = prefill.taux || settings.tauxDefaut;
+        document.getElementById('intDeplacement').value = prefill.deplacement || settings.deplacementDefaut;
+        document.getElementById('intNotes').value = prefill.notes || '';
+        document.getElementById('intPaye').checked = prefill.paye || false;
+        interventionModal.dataset.editId = prefill.editId || '';
+        if (prefill.editId) {
+          document.getElementById('interventionModalTitle').innerHTML = '<i class="fas fa-edit" style="color:#1a5279;"></i> Modifier l\'intervention';
+          document.getElementById('confirmIntervention').innerHTML = '<i class="fas fa-save"></i> Mettre à jour';
+        } else {
+          document.getElementById('confirmIntervention').innerHTML = '<i class="fas fa-check"></i> Enregistrer';
+        }
+        interventionModal.classList.add('show');
+        setTimeout(function() { document.getElementById('intClient').focus(); }, 150);
+      }
+
+      document.getElementById('addInterventionBtn').addEventListener('click', function() { openInterventionModal(); });
+      document.getElementById('addFactureBtn').addEventListener('click', function() {
+        switchTab('interventions');
+        openInterventionModal();
+      });
+
+      document.getElementById('cancelIntervention').addEventListener('click', function() {
+        interventionModal.classList.remove('show');
+        interventionModal.dataset.editId = '';
+      });
+
+      document.getElementById('confirmIntervention').addEventListener('click', function() {
+        var editId = interventionModal.dataset.editId;
+        var client = document.getElementById('intClient').value.trim();
+        var email = document.getElementById('intEmail').value.trim();
+        var description = document.getElementById('intDescription').value.trim();
+        var type = document.getElementById('intTypeSelect').value;
+        var date = document.getElementById('intDate').value;
+        var heure = document.getElementById('intHeure').value;
+        var duree = dureeEnMinutes(
+          document.getElementById('intDureeJours').value,
+          document.getElementById('intDureeHeures').value,
+          document.getElementById('intDureeMinutes').value
+        );
+        var taux = parseFloat(document.getElementById('intTaux').value) || settings.tauxDefaut;
+        var deplacement = parseFloat(document.getElementById('intDeplacement').value) || 0;
+        var notes = document.getElementById('intNotes').value.trim();
+        var paye = document.getElementById('intPaye').checked;
+        if (!client) { toast('Nom du client requis'); return; }
+        if (!description) { toast('Description requise'); return; }
+        if (!date) { toast('Date requise'); return; }
+        if (duree <= 0) { toast('Durée requise'); return; }
+        var pieces = tempPieces.filter(function(p) { return p.nom && p.nom.trim() && parseFloat(p.prix) > 0; });
+        if (editId) {
+          var int = interventions.find(function(i) { return i.id === editId; });
+          if (int) {
+            int.client = client; int.email = email; int.description = description;
+            int.type = type; int.date = date; int.heure = heure; int.duree = duree;
+            int.taux = taux; int.deplacement = deplacement; int.notes = notes; int.pieces = pieces;
+            if (paye && !int.paye) { int.paye = true; int.datePaiement = new Date().toISOString().slice(0, 10); }
+            else if (!paye && int.paye) { int.paye = false; int.datePaiement = null; }
+          }
+          showToastSave('Intervention modifiée', 'success');
+        } else {
+          var newInt = {
+            id: 'int_' + Date.now(),
+            numeroFacture: genererNumeroFacture(),
+            client: client, email: email, description: description, type: type,
+            date: date, heure: heure, duree: duree, taux: taux, deplacement: deplacement,
+            pieces: pieces, notes: notes, paye: paye,
+            datePaiement: paye ? new Date().toISOString().slice(0, 10) : null,
+            signatureClient: null, signatureTech: null, createdAt: new Date().toISOString()
+          };
+          interventions.push(newInt);
+          if (email && !clients.find(function(c) { return c.email === email; })) {
+            clients.push({ nom: client, email: email });
+          }
+          showToastSave('Facture ' + newInt.numeroFacture + ' créée', 'success');
+        }
+        interventionModal.classList.remove('show');
+        interventionModal.dataset.editId = '';
+        markAsDirty();
+        renderAll();
+      });
+
+      // ----- Modale devis -----
+      function openDevisModal() {
+        tempDevisPieces = [];
+        renderDevisPieces();
+        document.getElementById('devisClient').value = '';
+        document.getElementById('devisEmail').value = '';
+        document.getElementById('devisDescription').value = '';
+        document.getElementById('devisDate').value = new Date().toISOString().slice(0, 10);
+        document.getElementById('devisValidite').value = '30';
+        document.getElementById('devisDureeJours').value = 0;
+        document.getElementById('devisDureeHeures').value = 0;
+        document.getElementById('devisDureeMinutes').value = 0;
+        updateDureeTotal('devis');
+        document.getElementById('devisTaux').value = settings.tauxDefaut;
+        document.getElementById('devisDeplacement').value = settings.deplacementDefaut;
+        document.getElementById('devisNotes').value = '';
+        document.getElementById('devisModal').classList.add('show');
+      }
+
+      document.getElementById('addDevisBtn').addEventListener('click', openDevisModal);
+      document.getElementById('cancelDevis').addEventListener('click', function() {
+        document.getElementById('devisModal').classList.remove('show');
+      });
+
+      document.getElementById('confirmDevis').addEventListener('click', function() {
+        var client = document.getElementById('devisClient').value.trim();
+        var email = document.getElementById('devisEmail').value.trim();
+        var description = document.getElementById('devisDescription').value.trim();
+        var date = document.getElementById('devisDate').value;
+        var validite = parseInt(document.getElementById('devisValidite').value) || 30;
+        var duree = dureeEnMinutes(
+          document.getElementById('devisDureeJours').value,
+          document.getElementById('devisDureeHeures').value,
+          document.getElementById('devisDureeMinutes').value
+        );
+        var taux = parseFloat(document.getElementById('devisTaux').value) || settings.tauxDefaut;
+        var deplacement = parseFloat(document.getElementById('devisDeplacement').value) || 0;
+        var notes = document.getElementById('devisNotes').value.trim();
+        if (!client || !description || !date) { toast('Champs obligatoires manquants'); return; }
+        var pieces = tempDevisPieces.filter(function(p) { return p.nom && p.nom.trim() && parseFloat(p.prix) > 0; });
+        var newDevis = {
+          id: 'dev_' + Date.now(),
+          numeroDevis: genererNumeroDevis(),
+          client: client, email: email, description: description, date: date,
+          validite: validite, duree: duree, taux: taux, deplacement: deplacement,
+          pieces: pieces, notes: notes, statut: 'en_attente',
+          signatureClient: null, signatureTech: null, createdAt: new Date().toISOString()
+        };
+        devisList.push(newDevis);
+        document.getElementById('devisModal').classList.remove('show');
+        markAsDirty();
+        renderAll();
+        showToastSave('Devis ' + newDevis.numeroDevis + ' créé', 'success');
+      });
+
+      // ----- Devis détail -----
+      function openDevisDetail(id) {
+        var d = devisList.find(function(x) { return x.id === id; });
+        if (!d) return;
+        currentDevisId = id;
+        var heures = (d.duree || 0) / 60;
+        var mainOeuvre = heures * (d.taux || settings.tauxDefaut);
+        var ht = getTotalHT(d);
+        var ttc = getTotalTTC(d);
+        document.getElementById('devisNumeroDisplay').textContent = d.numeroDevis || '';
+        var html = '';
+        html += '<div class="facture-line"><span>Client</span><strong>' + escapeHtml(d.client) + '</strong></div>';
+        if (d.email) html += '<div class="facture-line"><span>Email</span><span>' + escapeHtml(d.email) + '</span></div>';
+        html += '<div class="facture-line"><span>Date</span><span>' + formatDate(d.date) + '</span></div>';
+        html += '<div class="facture-line"><span>Validité</span><span>' + d.validite + ' jours</span></div>';
+        html += '<div class="facture-line"><span>Description</span><span style="text-align:right; max-width:60%;">' + escapeHtml(d.description) + '</span></div>';
+        if (d.notes) html += '<div class="facture-line"><span>Notes</span><span style="text-align:right; max-width:60%; font-style:italic; color:#777;">' + escapeHtml(d.notes) + '</span></div>';
+        html += '<div class="facture-line" style="margin-top:10px; padding-top:10px; border-top:1px solid #e3ebf3;"><span>Main d\'œuvre (' + formatDuree(d.duree) + ')</span><span>' + (d.taux || settings.tauxDefaut) + ' €/h = ' + mainOeuvre.toFixed(2) + ' €</span></div>';
+        html += '<div class="facture-line"><span>Déplacement</span><span>' + (d.deplacement || 0).toFixed(2) + ' €</span></div>';
+        if (d.pieces && d.pieces.length > 0) {
+          d.pieces.forEach(function(p) {
+            html += '<div class="facture-line"><span>• ' + escapeHtml(p.nom) + '</span><span>' + parseFloat(p.prix).toFixed(2) + ' €</span></div>';
+          });
+        }
+        html += '<div class="facture-line" style="font-weight:600;"><span>Total HT</span><span>' + formatEuro(ht) + '</span></div>';
+        if (settings.tvaActive) {
+          html += '<div class="facture-line"><span>TVA (' + settings.tva + '%)</span><span>' + formatEuro(ht * settings.tva / 100) + '</span></div>';
+        }
+        html += '<div class="facture-line total"><span>TOTAL TTC</span><span>' + formatEuro(ttc) + '</span></div>';
+        var statutLabel = d.statut === 'accepte' ? 'Accepté' : (d.statut === 'refuse' ? 'Refusé' : 'En attente');
+        var statutColor = d.statut === 'accepte' ? '#2e7d32' : (d.statut === 'refuse' ? '#c62828' : '#b16b1a');
+        html += '<div style="margin-top:12px; padding:10px; border-radius:12px; text-align:center; font-weight:600; font-size:0.85rem; background:' + statutColor + '20; color:' + statutColor + ';">' + statutLabel + '</div>';
+        if (d.signatureClient || d.signatureTech) {
+          html += '<div style="margin-top:12px; display:flex; gap:10px; justify-content:center;">';
+          if (d.signatureClient) html += '<div style="text-align:center; font-size:0.65rem; color:#4f718d;"><img src="' + d.signatureClient + '" style="height:50px; border:1px solid #e3ebf3; border-radius:8px; background:white;" /><div>Client</div></div>';
+          if (d.signatureTech) html += '<div style="text-align:center; font-size:0.65rem; color:#4f718d;"><img src="' + d.signatureTech + '" style="height:50px; border:1px solid #e3ebf3; border-radius:8px; background:white;" /><div>Technicien</div></div>';
+          html += '</div>';
+        }
+        document.getElementById('devisDetailContent').innerHTML = html;
+        document.getElementById('acceptDevisBtn').style.display = d.statut === 'accepte' ? 'none' : 'inline-flex';
+        document.getElementById('refuseDevisBtn').style.display = d.statut === 'refuse' ? 'none' : 'inline-flex';
+        document.getElementById('convertDevisBtn').style.display = d.statut === 'accepte' ? 'inline-flex' : 'none';
+        document.getElementById('devisDetailModal').classList.add('show');
+      }
+
+      document.getElementById('closeDevisDetail').addEventListener('click', function() {
+        document.getElementById('devisDetailModal').classList.remove('show');
+      });
+
+      document.getElementById('acceptDevisBtn').addEventListener('click', function() {
+        var d = devisList.find(function(x) { return x.id === currentDevisId; });
+        if (d) { d.statut = 'accepte'; markAsDirty(); renderAll(); openDevisDetail(currentDevisId); showToastSave('Devis accepté', 'success'); }
+      });
+
+      document.getElementById('refuseDevisBtn').addEventListener('click', function() {
+        var d = devisList.find(function(x) { return x.id === currentDevisId; });
+        if (d) { d.statut = 'refuse'; markAsDirty(); renderAll(); openDevisDetail(currentDevisId); showToastSave('Devis refusé', 'warning'); }
+      });
+
+      document.getElementById('convertDevisBtn').addEventListener('click', function() {
+        var d = devisList.find(function(x) { return x.id === currentDevisId; });
+        if (!d) return;
+        showConfirm('Convertir ce devis en facture ?', function(c) {
+          if (!c) return;
+          var newInt = {
+            id: 'int_' + Date.now(),
+            numeroFacture: genererNumeroFacture(),
+            client: d.client, email: d.email, description: d.description,
+            type: 'autre', date: new Date().toISOString().slice(0, 10), heure: '',
+            duree: d.duree, taux: d.taux, deplacement: d.deplacement,
+            pieces: d.pieces || [], notes: d.notes, paye: false,
+            datePaiement: null, signatureClient: d.signatureClient,
+            signatureTech: d.signatureTech, fromDevis: d.numeroDevis,
+            createdAt: new Date().toISOString()
+          };
+          interventions.push(newInt);
+          d.statut = 'accepte';
+          d.converti = true;
+          markAsDirty();
+          renderAll();
+          document.getElementById('devisDetailModal').classList.remove('show');
+          switchTab('interventions');
+          openFacture(newInt.id);
+          showToastSave('Devis converti en facture ' + newInt.numeroFacture, 'success');
+        });
+      });
+
+      document.getElementById('downloadDevisPdfBtn').addEventListener('click', function() {
+        if (currentDevisId) generateDevisPDF(currentDevisId);
+      });
+
+      document.getElementById('sendDevisMailBtn').addEventListener('click', function() {
+        if (currentDevisId) openMailModal(currentDevisId, 'devis');
+      });
+
+      function deleteDevis(id) {
+        devisList = devisList.filter(function(d) { return d.id !== id; });
+        markAsDirty();
+        renderAll();
+        toast('Devis supprimé');
+      }
+
+      // ----- Facture détail -----
+      function openFacture(id) {
+        var int = interventions.find(function(i) { return i.id === id; });
+        if (!int) return;
+        currentFactureId = id;
+        var typeInfo = TYPES_TACHES[int.type] || TYPES_TACHES.autre;
+        var heures = (int.duree || 0) / 60;
+        var mainOeuvre = heures * (int.taux || settings.tauxDefaut);
+        var ht = getTotalHT(int);
+        var ttc = getTotalTTC(int);
+        document.getElementById('factureNumeroDisplay').textContent = int.numeroFacture || '';
+        var html = '';
+        html += '<div class="facture-line"><span>Client</span><strong>' + escapeHtml(int.client || '—') + '</strong></div>';
+        if (int.email) html += '<div class="facture-line"><span>Email</span><span>' + escapeHtml(int.email) + '</span></div>';
+        html += '<div class="facture-line"><span>Type</span><span>' + typeInfo.label + '</span></div>';
+        html += '<div class="facture-line"><span>Date</span><span>' + formatDate(int.date) + (int.heure ? ' à ' + int.heure : '') + '</span></div>';
+        html += '<div class="facture-line"><span>Description</span><span style="text-align:right; max-width:60%;">' + escapeHtml(int.description || '—') + '</span></div>';
+        if (int.notes) html += '<div class="facture-line"><span>Notes</span><span style="text-align:right; max-width:60%; font-style:italic; color:#777;">' + escapeHtml(int.notes) + '</span></div>';
+        html += '<div class="facture-line" style="margin-top:10px; padding-top:10px; border-top:1px solid #e3ebf3;"><span>Main d\'œuvre (' + formatDuree(int.duree) + ')</span><span>' + (int.taux || settings.tauxDefaut) + ' €/h = ' + mainOeuvre.toFixed(2) + ' €</span></div>';
+        html += '<div class="facture-line"><span>Déplacement</span><span>' + (int.deplacement || 0).toFixed(2) + ' €</span></div>';
+        if (int.pieces && int.pieces.length > 0) {
+          html += '<div class="facture-line" style="margin-top:6px; font-weight:600; color:#1a5279;"><span>Pièces & Matériels</span><span></span></div>';
+          int.pieces.forEach(function(p) {
+            html += '<div class="facture-line"><span>• ' + escapeHtml(p.nom) + '</span><span>' + parseFloat(p.prix).toFixed(2) + ' €</span></div>';
+          });
+        }
+        html += '<div class="facture-line" style="font-weight:600;"><span>Total HT</span><span>' + formatEuro(ht) + '</span></div>';
+        if (settings.tvaActive) {
+          html += '<div class="facture-line"><span>TVA (' + settings.tva + '%)</span><span>' + formatEuro(ht * settings.tva / 100) + '</span></div>';
+        }
+        html += '<div class="facture-line total"><span>TOTAL TTC</span><span>' + formatEuro(ttc) + '</span></div>';
+        html += '<div class="facture-line" style="font-size:0.75rem; color:#2e7d32;"><span>CA Net (après impôts ' + settings.taxe + '%)</span><span>' + formatEuro(getTotalNet(int)) + '</span></div>';
+        if (int.paye) {
+          html += '<div style="margin-top:12px; padding:10px; background:#e8f5e9; border-radius:12px; text-align:center; color:#2e7d32; font-weight:600; font-size:0.85rem;"><i class="fas fa-check-circle"></i> Payée le ' + formatDate(int.datePaiement) + '</div>';
+        } else {
+          html += '<div style="margin-top:12px; padding:10px; background:#ffebee; border-radius:12px; text-align:center; color:#c62828; font-weight:600; font-size:0.85rem;"><i class="fas fa-exclamation-circle"></i> En attente de paiement</div>';
+        }
+        if (int.signatureClient || int.signatureTech) {
+          html += '<div style="margin-top:12px; display:flex; gap:10px; justify-content:center;">';
+          if (int.signatureClient) html += '<div style="text-align:center; font-size:0.65rem; color:#4f718d;"><img src="' + int.signatureClient + '" style="height:50px; border:1px solid #e3ebf3; border-radius:8px; background:white;" /><div>Client</div></div>';
+          if (int.signatureTech) html += '<div style="text-align:center; font-size:0.65rem; color:#4f718d;"><img src="' + int.signatureTech + '" style="height:50px; border:1px solid #e3ebf3; border-radius:8px; background:white;" /><div>Technicien</div></div>';
+          html += '</div>';
+        }
+        document.getElementById('factureContent').innerHTML = html;
+        document.getElementById('markPaidBtn').style.display = int.paye ? 'none' : 'inline-flex';
+        document.getElementById('sendMailBtn').style.display = int.email ? 'inline-flex' : 'none';
+        document.getElementById('factureModal').classList.add('show');
+      }
+
+      document.getElementById('closeFacture').addEventListener('click', function() {
+        document.getElementById('factureModal').classList.remove('show');
+      });
+
+      document.getElementById('markPaidBtn').addEventListener('click', function() {
+        if (!currentFactureId) return;
+        markAsPaid(currentFactureId);
+        document.getElementById('factureModal').classList.remove('show');
+      });
+
+      document.getElementById('downloadPdfBtn').addEventListener('click', function() {
+        if (currentFactureId) generateFacturePDF(currentFactureId);
+      });
+
+      document.getElementById('sendMailBtn').addEventListener('click', function() {
+        if (currentFactureId) openMailModal(currentFactureId, 'facture');
+      });
+
+      document.getElementById('signFactureBtn').addEventListener('click', function() {
+        if (currentFactureId) {
+          document.getElementById('factureModal').classList.remove('show');
+          openSignatureModal(currentFactureId, 'facture');
+        }
+      });
+
+      document.getElementById('editFactureBtn').addEventListener('click', function() {
+        if (!currentFactureId) return;
+        var int = interventions.find(function(i) { return i.id === currentFactureId; });
+        if (!int) return;
+        document.getElementById('factureModal').classList.remove('show');
+        openInterventionModal({
+          editId: int.id, client: int.client, email: int.email,
+          description: int.description, type: int.type, date: int.date,
+          heure: int.heure, duree: int.duree, taux: int.taux,
+          deplacement: int.deplacement, notes: int.notes, paye: int.paye,
+          pieces: int.pieces
+        });
+      });
+
+      function markAsPaid(id) {
+        var int = interventions.find(function(i) { return i.id === id; });
+        if (int) {
+          int.paye = true;
+          int.datePaiement = new Date().toISOString().slice(0, 10);
+          markAsDirty();
+          renderAll();
+          showToastSave('Marquée comme payée', 'success');
+        }
+      }
+
+      function deleteIntervention(id) {
+        interventions = interventions.filter(function(i) { return i.id !== id; });
+        markAsDirty();
+        renderAll();
+        toast('Supprimée');
+      }
+
+      // ----- Mail -----
+      function openMailModal(id, type) {
+        currentMailType = type;
+        currentMailId = id;
+        var item = type === 'facture' ? interventions.find(function(i) { return i.id === id; }) : devisList.find(function(d) { return d.id === id; });
+        if (!item) return;
+        if (!item.email) { toast('Aucun email renseigné'); return; }
+        var total = getTotalTTC(item);
+        var num = type === 'facture' ? item.numeroFacture : item.numeroDevis;
+        document.getElementById('mailTo').value = item.email;
+        document.getElementById('mailSubject').value = (type === 'facture' ? 'Facture ' : 'Devis ') + (num || '') + ' - ' + settings.nom;
+        document.getElementById('mailBody').value =
+          'Bonjour ' + item.client + ',\n\n' +
+          'Veuillez trouver ci-joint ' + (type === 'facture' ? 'la facture ' : 'le devis ') + (num || '') + ' d\'un montant de ' + formatEuro(total) + ' TTC.\n\n' +
+          'Détail :\n' +
+          '- Date : ' + formatDate(item.date) + '\n' +
+          '- Description : ' + (item.description || '') + '\n\n' +
+          'Cordialement,\n' + settings.nom + '\n' + settings.tel + '\n' + settings.email;
+        document.getElementById('mailModal').classList.add('show');
+      }
+
+      document.getElementById('cancelMail').addEventListener('click', function() {
+        document.getElementById('mailModal').classList.remove('show');
+      });
+
+      document.getElementById('confirmMail').addEventListener('click', function() {
+        var to = document.getElementById('mailTo').value;
+        var subject = document.getElementById('mailSubject').value;
+        var body = document.getElementById('mailBody').value;
+        if (currentMailType === 'facture') generateFacturePDF(currentMailId, true);
+        else generateDevisPDF(currentMailId, true);
+        var mailtoLink = 'mailto:' + encodeURIComponent(to) + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
+        window.location.href = mailtoLink;
+        document.getElementById('mailModal').classList.remove('show');
+        showToastSave('Client mail ouvert. Joignez le PDF.', 'success');
+      });
+
+      // ----- PDF Facture -----
+      function generateFacturePDF(id, silent) {
+        var int = interventions.find(function(i) { return i.id === id; });
+        if (!int) return;
+        try {
+          var jsPDF = window.jspdf.jsPDF;
+          var doc = new jsPDF('p', 'mm', 'a4');
+          var pageWidth = doc.internal.pageSize.getWidth();
+          var pageHeight = doc.internal.pageSize.getHeight();
+          var margin = 15;
+          var y = margin;
+          doc.setFillColor('#1a5279');
+          doc.rect(0, 0, pageWidth, 40, 'F');
+          doc.setTextColor('#ffffff');
+          doc.setFontSize(20);
+          doc.setFont('helvetica', 'bold');
+          doc.text(settings.nom.toUpperCase(), pageWidth / 2, 22, { align: 'center' });
+          doc.setFontSize(9);
+          doc.setFont('helvetica', 'normal');
+          doc.text('Artisan Plombier - Dépannage & Entretien', pageWidth / 2, 31, { align: 'center' });
+          y = 50;
+          doc.setTextColor('#1a5279');
+          doc.setFontSize(16);
+          doc.setFont('helvetica', 'bold');
+          doc.text('FACTURE', margin + 10, y);
+          doc.setFontSize(11);
+          doc.setFont('helvetica', 'normal');
+          doc.text(int.numeroFacture || '', pageWidth - margin - 10, y, { align: 'right' });
+          y += 10;
+          doc.setDrawColor('#1a5279');
+          doc.line(margin + 10, y, pageWidth - margin - 10, y);
+          y += 10;
+          doc.setTextColor('#333333');
+          doc.setFontSize(10);
+          doc.setFont('helvetica', 'bold');
+          doc.text('Client :', margin + 10, y);
+          doc.setFont('helvetica', 'normal');
+          doc.text(int.client || '—', margin + 45, y);
+          if (int.email) {
+            y += 7;
+            doc.setFont('helvetica', 'bold');
+            doc.text('Email :', margin + 10, y);
+            doc.setFont('helvetica', 'normal');
+            doc.text(int.email, margin + 45, y);
+          }
+          y += 7;
+          doc.setFont('helvetica', 'bold');
+          doc.text('Date :', margin + 10, y);
+          doc.setFont('helvetica', 'normal');
+          doc.text(formatDate(int.date) + (int.heure ? ' à ' + int.heure : ''), margin + 45, y);
+          var typeInfo = TYPES_TACHES[int.type] || TYPES_TACHES.autre;
+          y += 7;
+          doc.setFont('helvetica', 'bold');
+          doc.text('Type :', margin + 10, y);
+          doc.setFont('helvetica', 'normal');
+          doc.text(typeInfo.label, margin + 45, y);
+          y += 7;
+          doc.setFont('helvetica', 'bold');
+          doc.text('Durée :', margin + 10, y);
+          doc.setFont('helvetica', 'normal');
+          doc.text(formatDuree(int.duree), margin + 45, y);
+          y += 7;
+          doc.setFont('helvetica', 'bold');
+          doc.text('Description :', margin + 10, y);
+          doc.setFont('helvetica', 'normal');
+          var descLines = doc.splitTextToSize(int.description || '—', pageWidth - margin - 55);
+          doc.text(descLines, margin + 45, y);
+          y += descLines.length * 5;
+          y += 12;
+          doc.setFillColor('#f0f7ff');
+          doc.rect(margin + 10, y, pageWidth - 2 * margin - 20, 9, 'F');
+          doc.setTextColor('#1a5279');
+          doc.setFontSize(9);
+          doc.setFont('helvetica', 'bold');
+          doc.text('DÉSIGNATION', margin + 15, y + 6.5);
+          doc.text('MONTANT', pageWidth - margin - 15, y + 6.5, { align: 'right' });
+          y += 10;
+          doc.setTextColor('#333333');
+          doc.setFontSize(9);
+          doc.setFont('helvetica', 'normal');
+          var heures = (int.duree || 0) / 60;
+          var mainOeuvre = heures * (int.taux || settings.tauxDefaut);
+          doc.text('Main d\'œuvre (' + formatDuree(int.duree) + ')', margin + 15, y + 5);
+          doc.text(mainOeuvre.toFixed(2) + ' €', pageWidth - margin - 15, y + 5, { align: 'right' });
+          y += 7;
+          if ((int.deplacement || 0) > 0) {
+            doc.text('Frais de déplacement', margin + 15, y + 5);
+            doc.text((int.deplacement || 0).toFixed(2) + ' €', pageWidth - margin - 15, y + 5, { align: 'right' });
+            y += 7;
+          }
+          if (int.pieces && int.pieces.length > 0) {
+            int.pieces.forEach(function(p) {
+              doc.text('• ' + p.nom, margin + 15, y + 5);
+              doc.text(parseFloat(p.prix).toFixed(2) + ' €', pageWidth - margin - 15, y + 5, { align: 'right' });
+              y += 7;
+            });
+          }
+          var ht = getTotalHT(int);
+          var ttc = getTotalTTC(int);
+          doc.setDrawColor('#cccccc');
+          doc.line(margin + 10, y, pageWidth - margin - 10, y);
+          y += 6;
+          doc.text('Total HT', margin + 15, y + 4);
+          doc.text(ht.toFixed(2) + ' €', pageWidth - margin - 15, y + 4, { align: 'right' });
+          y += 6;
+          if (settings.tvaActive) {
+            doc.text('TVA (' + settings.tva + '%)', margin + 15, y + 4);
+            doc.text((ht * settings.tva / 100).toFixed(2) + ' €', pageWidth - margin - 15, y + 4, { align: 'right' });
+            y += 6;
+          }
+          doc.setDrawColor('#1a5279');
+          doc.line(margin + 10, y, pageWidth - margin - 10, y);
+          y += 8;
+          doc.setTextColor('#1a5279');
+          doc.setFontSize(13);
+          doc.setFont('helvetica', 'bold');
+          doc.text('TOTAL TTC', margin + 15, y + 5);
+          doc.text(ttc.toFixed(2) + ' €', pageWidth - margin - 15, y + 5, { align: 'right' });
+          y += 20;
+          if (int.paye) {
+            doc.setFillColor('#2e7d32');
+            doc.rect(margin + 10, y, pageWidth - 2 * margin - 20, 10, 'F');
+            doc.setTextColor('#ffffff');
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'bold');
+            doc.text('PAYÉE le ' + formatDate(int.datePaiement), pageWidth / 2, y + 6.5, { align: 'center' });
+          } else {
+            doc.setFillColor('#c62828');
+            doc.rect(margin + 10, y, pageWidth - 2 * margin - 20, 10, 'F');
+            doc.setTextColor('#ffffff');
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'bold');
+            doc.text('EN ATTENTE DE PAIEMENT', pageWidth / 2, y + 6.5, { align: 'center' });
+          }
+          if (int.signatureClient || int.signatureTech) {
+            y += 18;
+            doc.setTextColor('#1a5279');
+            doc.setFontSize(9);
+            doc.setFont('helvetica', 'bold');
+            doc.text('Signatures :', margin + 10, y);
+            y += 4;
+            var sigY = y;
+            if (int.signatureTech) {
+              try {
+                doc.addImage(int.signatureTech, 'PNG', margin + 10, sigY, 50, 20);
+                doc.setFontSize(7);
+                doc.setTextColor('#666666');
+                doc.text('Technicien', margin + 35, sigY + 25, { align: 'center' });
+              } catch(e) {}
+            }
+            if (int.signatureClient) {
+              try {
+                doc.addImage(int.signatureClient, 'PNG', pageWidth - margin - 60, sigY, 50, 20);
+                doc.setFontSize(7);
+                doc.setTextColor('#666666');
+                doc.text('Client', pageWidth - margin - 35, sigY + 25, { align: 'center' });
+              } catch(e) {}
+            }
+            y += 30;
+          }
+          y = pageHeight - 25;
+          doc.setDrawColor('#cccccc');
+          doc.line(margin + 10, y, pageWidth - margin - 10, y);
+          y += 5;
+          doc.setTextColor('#666666');
+          doc.setFontSize(7);
+          doc.setFont('helvetica', 'normal');
+          doc.text(settings.nom + ' - ' + settings.adresse + ' - SIRET : ' + settings.siret, pageWidth / 2, y, { align: 'center' });
+          y += 4;
+          doc.text('Tel : ' + settings.tel + ' - ' + settings.email, pageWidth / 2, y, { align: 'center' });
+          var fileName = 'Facture_' + (int.numeroFacture || 'Client').replace(/[^a-zA-Z0-9\-]/g, '_') + '.pdf';
+          doc.save(fileName);
+          if (!silent) toast('Facture PDF téléchargée');
+        } catch (e) {
+          toast('Erreur PDF : ' + e.message);
+          console.error(e);
+        }
+      }
+
+      // ----- PDF Devis -----
+      function generateDevisPDF(id, silent) {
+        var d = devisList.find(function(x) { return x.id === id; });
+        if (!d) return;
+        try {
+          var jsPDF = window.jspdf.jsPDF;
+          var doc = new jsPDF('p', 'mm', 'a4');
+          var pageWidth = doc.internal.pageSize.getWidth();
+          var pageHeight = doc.internal.pageSize.getHeight();
+          var margin = 15;
+          var y = margin;
+          doc.setFillColor('#4338ca');
+          doc.rect(0, 0, pageWidth, 40, 'F');
+          doc.setTextColor('#ffffff');
+          doc.setFontSize(20);
+          doc.setFont('helvetica', 'bold');
+          doc.text(settings.nom.toUpperCase(), pageWidth / 2, 22, { align: 'center' });
+          doc.setFontSize(9);
+          doc.setFont('helvetica', 'normal');
+          doc.text('Artisan Plombier - Devis', pageWidth / 2, 31, { align: 'center' });
+          y = 50;
+          doc.setTextColor('#4338ca');
+          doc.setFontSize(16);
+          doc.setFont('helvetica', 'bold');
+          doc.text('DEVIS', margin + 10, y);
+          doc.setFontSize(11);
+          doc.setFont('helvetica', 'normal');
+          doc.text(d.numeroDevis || '', pageWidth - margin - 10, y, { align: 'right' });
+          y += 10;
+          doc.setDrawColor('#4338ca');
+          doc.line(margin + 10, y, pageWidth - margin - 10, y);
+          y += 10;
+          doc.setTextColor('#333333');
+          doc.setFontSize(10);
+          doc.setFont('helvetica', 'bold');
+          doc.text('Client :', margin + 10, y);
+          doc.setFont('helvetica', 'normal');
+          doc.text(d.client || '—', margin + 45, y);
+          if (d.email) {
+            y += 7;
+            doc.setFont('helvetica', 'bold');
+            doc.text('Email :', margin + 10, y);
+            doc.setFont('helvetica', 'normal');
+            doc.text(d.email, margin + 45, y);
+          }
+          y += 7;
+          doc.setFont('helvetica', 'bold');
+          doc.text('Date :', margin + 10, y);
+          doc.setFont('helvetica', 'normal');
+          doc.text(formatDate(d.date), margin + 45, y);
+          y += 7;
+          doc.setFont('helvetica', 'bold');
+          doc.text('Validité :', margin + 10, y);
+          doc.setFont('helvetica', 'normal');
+          doc.text(d.validite + ' jours', margin + 45, y);
+          y += 7;
+          doc.setFont('helvetica', 'bold');
+          doc.text('Durée :', margin + 10, y);
+          doc.setFont('helvetica', 'normal');
+          doc.text(formatDuree(d.duree), margin + 45, y);
+          y += 7;
+          doc.setFont('helvetica', 'bold');
+          doc.text('Description :', margin + 10, y);
+          doc.setFont('helvetica', 'normal');
+          var descLines = doc.splitTextToSize(d.description || '—', pageWidth - margin - 55);
+          doc.text(descLines, margin + 45, y);
+          y += descLines.length * 5;
+          y += 12;
+          doc.setFillColor('#eef2ff');
+          doc.rect(margin + 10, y, pageWidth - 2 * margin - 20, 9, 'F');
+          doc.setTextColor('#4338ca');
+          doc.setFontSize(9);
+          doc.setFont('helvetica', 'bold');
+          doc.text('DÉSIGNATION', margin + 15, y + 6.5);
+          doc.text('MONTANT', pageWidth - margin - 15, y + 6.5, { align: 'right' });
+          y += 10;
+          doc.setTextColor('#333333');
+          doc.setFontSize(9);
+          doc.setFont('helvetica', 'normal');
+          var heures = (d.duree || 0) / 60;
+          var mainOeuvre = heures * (d.taux || settings.tauxDefaut);
+          doc.text('Main d\'œuvre (' + formatDuree(d.duree) + ')', margin + 15, y + 5);
+          doc.text(mainOeuvre.toFixed(2) + ' €', pageWidth - margin - 15, y + 5, { align: 'right' });
+          y += 7;
+          if ((d.deplacement || 0) > 0) {
+            doc.text('Frais de déplacement', margin + 15, y + 5);
+            doc.text((d.deplacement || 0).toFixed(2) + ' €', pageWidth - margin - 15, y + 5, { align: 'right' });
+            y += 7;
+          }
+          if (d.pieces && d.pieces.length > 0) {
+            d.pieces.forEach(function(p) {
+              doc.text('• ' + p.nom, margin + 15, y + 5);
+              doc.text(parseFloat(p.prix).toFixed(2) + ' €', pageWidth - margin - 15, y + 5, { align: 'right' });
+              y += 7;
+            });
+          }
+          var ht = getTotalHT(d);
+          var ttc = getTotalTTC(d);
+          doc.setDrawColor('#cccccc');
+          doc.line(margin + 10, y, pageWidth - margin - 10, y);
+          y += 6;
+          doc.text('Total HT', margin + 15, y + 4);
+          doc.text(ht.toFixed(2) + ' €', pageWidth - margin - 15, y + 4, { align: 'right' });
+          y += 6;
+          if (settings.tvaActive) {
+            doc.text('TVA (' + settings.tva + '%)', margin + 15, y + 4);
+            doc.text((ht * settings.tva / 100).toFixed(2) + ' €', pageWidth - margin - 15, y + 4, { align: 'right' });
+            y += 6;
+          }
+          doc.setDrawColor('#4338ca');
+          doc.line(margin + 10, y, pageWidth - margin - 10, y);
+          y += 8;
+          doc.setTextColor('#4338ca');
+          doc.setFontSize(13);
+          doc.setFont('helvetica', 'bold');
+          doc.text('TOTAL TTC', margin + 15, y + 5);
+          doc.text(ttc.toFixed(2) + ' €', pageWidth - margin - 15, y + 5, { align: 'right' });
+          y += 16;
+          var statutLabel = d.statut === 'accepte' ? 'DEVIS ACCEPTÉ' : (d.statut === 'refuse' ? 'DEVIS REFUSÉ' : 'DEVIS EN ATTENTE');
+          var statutColor = d.statut === 'accepte' ? '#2e7d32' : (d.statut === 'refuse' ? '#c62828' : '#b16b1a');
+          doc.setFillColor(statutColor);
+          doc.rect(margin + 10, y, pageWidth - 2 * margin - 20, 10, 'F');
+          doc.setTextColor('#ffffff');
+          doc.setFontSize(10);
+          doc.setFont('helvetica', 'bold');
+          doc.text(statutLabel, pageWidth / 2, y + 6.5, { align: 'center' });
+          if (d.signatureClient || d.signatureTech) {
+            y += 18;
+            doc.setTextColor('#4338ca');
+            doc.setFontSize(9);
+            doc.setFont('helvetica', 'bold');
+            doc.text('Signatures :', margin + 10, y);
+            y += 4;
+            if (d.signatureTech) {
+              try {
+                doc.addImage(d.signatureTech, 'PNG', margin + 10, y, 50, 20);
+                doc.setFontSize(7);
+                doc.setTextColor('#666666');
+                doc.text('Technicien', margin + 35, y + 25, { align: 'center' });
+              } catch(e) {}
+            }
+            if (d.signatureClient) {
+              try {
+                doc.addImage(d.signatureClient, 'PNG', pageWidth - margin - 60, y, 50, 20);
+                doc.setFontSize(7);
+                doc.setTextColor('#666666');
+                doc.text('Client', pageWidth - margin - 35, y + 25, { align: 'center' });
+              } catch(e) {}
+            }
+          }
+          y = pageHeight - 25;
+          doc.setDrawColor('#cccccc');
+          doc.line(margin + 10, y, pageWidth - margin - 10, y);
+          y += 5;
+          doc.setTextColor('#666666');
+          doc.setFontSize(7);
+          doc.setFont('helvetica', 'normal');
+          doc.text(settings.nom + ' - ' + settings.adresse + ' - SIRET : ' + settings.siret, pageWidth / 2, y, { align: 'center' });
+          y += 4;
+          doc.text('Tel : ' + settings.tel + ' - ' + settings.email, pageWidth / 2, y, { align: 'center' });
+          var fileName = 'Devis_' + (d.numeroDevis || 'Client').replace(/[^a-zA-Z0-9\-]/g, '_') + '.pdf';
+          doc.save(fileName);
+          if (!silent) toast('Devis PDF téléchargé');
+        } catch (e) {
+          toast('Erreur PDF : ' + e.message);
+          console.error(e);
+        }
+      }
+
+      // ----- Impression -----
+      document.getElementById('printFactureBtn').addEventListener('click', function() {
+        if (!currentFactureId) return;
+        var int = interventions.find(function(i) { return i.id === currentFactureId; });
+        if (!int) return;
+        var printSection = document.getElementById('printSection');
+        var typeInfo = TYPES_TACHES[int.type] || TYPES_TACHES.autre;
+        var heures = (int.duree || 0) / 60;
+        var mainOeuvre = heures * (int.taux || settings.tauxDefaut);
+        var ht = getTotalHT(int);
+        var ttc = getTotalTTC(int);
+        var piecesHtml = '';
+        if (int.pieces && int.pieces.length > 0) {
+          int.pieces.forEach(function(p) {
+            piecesHtml += '<tr><td style="padding:6px 8px; border-bottom:1px solid #eee;">' + escapeHtml(p.nom) + '</td><td style="text-align:right; padding:6px 8px; border-bottom:1px solid #eee;">' + parseFloat(p.prix).toFixed(2) + ' €</td></tr>';
+          });
+        }
+        printSection.innerHTML =
+          '<div style="font-family:Arial, sans-serif; max-width:800px; margin:0 auto; padding:20px;">' +
+            '<div style="background:#1a5279; color:white; padding:20px; text-align:center;">' +
+              '<h1 style="margin:0; font-size:1.8rem;">' + escapeHtml(settings.nom.toUpperCase()) + '</h1>' +
+              '<p style="margin:4px 0 0; font-size:0.9rem;">Artisan Plombier - Dépannage & Entretien</p>' +
+            '</div>' +
+            '<div style="padding:20px; border:1px solid #ddd;">' +
+              '<div style="display:flex; justify-content:space-between; margin-bottom:20px;">' +
+                '<h2 style="color:#1a5279; margin:0;">FACTURE</h2>' +
+                '<span style="font-family:monospace; font-weight:bold; color:#1a5279;">' + escapeHtml(int.numeroFacture || '') + '</span>' +
+              '</div>' +
+              '<table style="width:100%; border-collapse:collapse; margin-bottom:20px;">' +
+                '<tr><td style="padding:4px 0; font-weight:bold; width:120px;">Client :</td><td>' + escapeHtml(int.client) + '</td></tr>' +
+                (int.email ? '<tr><td style="padding:4px 0; font-weight:bold;">Email :</td><td>' + escapeHtml(int.email) + '</td></tr>' : '') +
+                '<tr><td style="padding:4px 0; font-weight:bold;">Date :</td><td>' + formatDate(int.date) + (int.heure ? ' à ' + int.heure : '') + '</td></tr>' +
+                '<tr><td style="padding:4px 0; font-weight:bold;">Type :</td><td>' + typeInfo.label + '</td></tr>' +
+                '<tr><td style="padding:4px 0; font-weight:bold;">Durée :</td><td>' + formatDuree(int.duree) + '</td></tr>' +
+                '<tr><td style="padding:4px 0; font-weight:bold;">Description :</td><td>' + escapeHtml(int.description) + '</td></tr>' +
+              '</table>' +
+              '<table style="width:100%; border-collapse:collapse; margin-bottom:20px;">' +
+                '<thead><tr style="background:#f0f7ff;">' +
+                  '<th style="text-align:left; padding:8px; border-bottom:2px solid #1a5279;">Désignation</th>' +
+                  '<th style="text-align:right; padding:8px; border-bottom:2px solid #1a5279;">Montant</th>' +
+                '</tr></thead>' +
+                '<tbody>' +
+                  '<tr><td style="padding:6px 8px; border-bottom:1px solid #eee;">Main d\'œuvre (' + formatDuree(int.duree) + ')</td><td style="text-align:right; padding:6px 8px; border-bottom:1px solid #eee;">' + mainOeuvre.toFixed(2) + ' €</td></tr>' +
+                  ((int.deplacement || 0) > 0 ? '<tr><td style="padding:6px 8px; border-bottom:1px solid #eee;">Déplacement</td><td style="text-align:right; padding:6px 8px; border-bottom:1px solid #eee;">' + int.deplacement.toFixed(2) + ' €</td></tr>' : '') +
+                  piecesHtml +
+                  '<tr><td style="padding:6px 8px; border-bottom:1px solid #eee; font-weight:bold;">Total HT</td><td style="text-align:right; padding:6px 8px; border-bottom:1px solid #eee; font-weight:bold;">' + ht.toFixed(2) + ' €</td></tr>' +
+                  (settings.tvaActive ? '<tr><td style="padding:6px 8px; border-bottom:1px solid #eee;">TVA (' + settings.tva + '%)</td><td style="text-align:right; padding:6px 8px; border-bottom:1px solid #eee;">' + (ht * settings.tva / 100).toFixed(2) + ' €</td></tr>' : '') +
+                '</tbody>' +
+                '<tfoot><tr style="background:#f0f7ff;">' +
+                  '<td style="padding:10px 8px; font-weight:bold; font-size:1.1rem; color:#1a5279;">TOTAL TTC</td>' +
+                  '<td style="text-align:right; padding:10px 8px; font-weight:bold; font-size:1.1rem; color:#1a5279;">' + ttc.toFixed(2) + ' €</td>' +
+                '</tr></tfoot>' +
+              '</table>' +
+              '<div style="text-align:center; padding:10px; font-weight:bold; ' + (int.paye ? 'background:#e8f5e9; color:#2e7d32;' : 'background:#ffebee; color:#c62828;') + '">' +
+                (int.paye ? '✓ PAYÉE le ' + formatDate(int.datePaiement) : '⚠ EN ATTENTE DE PAIEMENT') +
+              '</div>' +
+              ((int.signatureClient || int.signatureTech) ?
+                '<div style="display:flex; justify-content:space-between; margin-top:20px;">' +
+                  (int.signatureTech ? '<div style="text-align:center; font-size:0.7rem; color:#666;"><img src="' + int.signatureTech + '" style="height:60px;" /><div>Technicien</div></div>' : '<div></div>') +
+                  (int.signatureClient ? '<div style="text-align:center; font-size:0.7rem; color:#666;"><img src="' + int.signatureClient + '" style="height:60px;" /><div>Client</div></div>' : '<div></div>') +
+                '</div>' : '') +
+              '<div style="margin-top:20px; padding-top:10px; border-top:1px solid #eee; font-size:0.75rem; color:#666; text-align:center;">' +
+                escapeHtml(settings.nom) + ' - ' + escapeHtml(settings.adresse) + ' - SIRET : ' + escapeHtml(settings.siret) + '<br>' +
+                'Tel : ' + escapeHtml(settings.tel) + ' - ' + escapeHtml(settings.email) +
+              '</div>' +
+            '</div>' +
+          '</div>';
+        printSection.style.display = 'block';
+        window.print();
+        setTimeout(function() { printSection.style.display = 'none'; }, 1000);
+      });
+
+      // ----- Recherche (avec debounce) -----
+      var debounceSearch;
+      function debounce(fn, delay) {
+        return function() {
+          var args = arguments, ctx = this;
+          clearTimeout(debounceSearch);
+          debounceSearch = setTimeout(function() { fn.apply(ctx, args); }, delay);
+        };
+      }
+
+      document.getElementById('searchInput').addEventListener('input', debounce(function() {
+        searchTerm = this.value;
+        renderInterventions();
+      }, 250));
+      document.getElementById('searchBtn').addEventListener('click', function() {
+        searchTerm = document.getElementById('searchInput').value;
+        renderInterventions();
+      });
+      document.getElementById('searchFactureInput').addEventListener('input', debounce(function() {
+        searchFactureTerm = this.value;
+        renderFactures();
+      }, 250));
+      document.getElementById('searchFactureBtn').addEventListener('click', function() {
+        searchFactureTerm = document.getElementById('searchFactureInput').value;
+        renderFactures();
+      });
+      document.getElementById('searchDevisInput').addEventListener('input', debounce(function() {
+        searchDevisTerm = this.value;
+        renderDevis();
+      }, 250));
+      document.getElementById('searchDevisBtn').addEventListener('click', function() {
+        searchDevisTerm = document.getElementById('searchDevisInput').value;
+        renderDevis();
+      });
+
+      // ----- Export CSV -----
+      document.getElementById('exportFacturesBtn').addEventListener('click', function() {
+        var csv = 'Numéro;Client;Email;Date;Type;Description;Durée;Total TTC;Statut;Signée\n';
+        interventions.forEach(function(int) {
+          var typeInfo = TYPES_TACHES[int.type] || TYPES_TACHES.autre;
+          csv += '"' + (int.numeroFacture || '') + '";"' + (int.client || '') + '";"' + (int.email || '') + '";"' + (int.date || '') + '";"' + typeInfo.label + '";"' + (int.description || '').replace(/"/g, '""') + '";"' + formatDuree(int.duree) + '";"' + getTotalTTC(int).toFixed(2) + '";"' + (int.paye ? 'Payée' : 'Impayée') + '";"' + (int.signatureClient ? 'Oui' : 'Non') + '"\n';
+        });
+        var blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+        var link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = 'factures_' + new Date().toISOString().slice(0, 10) + '.csv';
+        link.click();
+        toast('Export CSV téléchargé');
+      });
+
+      // ----- Export données complètes (sauvegarde JSON) -----
+      document.getElementById('exportDataBtn').addEventListener('click', function() {
+        var data = {
+          interventions: interventions,
+          devisList: devisList,
+          clients: clients,
+          factureCounter: factureCounter,
+          devisCounter: devisCounter,
+          settings: settings,
+          exportedAt: new Date().toISOString()
+        };
+        var blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        var link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = 'plomberie_pro_sauvegarde_' + new Date().toISOString().slice(0, 10) + '.json';
+        link.click();
+        toast('Sauvegarde complète téléchargée');
+      });
+
+      // ----- Récap -----
+      function renderRecap() {
+        var month = recapDate.getMonth();
+        var year = recapDate.getFullYear();
+        document.getElementById('recapMonthLabel').textContent = formatMois(recapDate);
+        var filtered = interventions.filter(function(int) {
+          var d = new Date(int.date + 'T00:00:00');
+          return d.getMonth() === month && d.getFullYear() === year;
+        });
+        var totalHT = 0, totalTTC = 0, totalNet = 0, totalHeures = 0, payees = 0, impayees = 0;
+        filtered.forEach(function(int) {
+          totalHT += getTotalHT(int);
+          totalTTC += getTotalTTC(int);
+          totalNet += getTotalNet(int);
+          totalHeures += int.duree || 0;
+          if (int.paye) payees++; else impayees++;
+        });
+        document.getElementById('recapGrid').innerHTML =
+          '<div class="recap-card"><div class="recap-label">CA TTC</div><div class="recap-value">' + formatEuro(totalTTC) + '</div></div>' +
+          '<div class="recap-card"><div class="recap-label">CA Net (après ' + settings.taxe + '%)</div><div class="recap-value green">' + formatEuro(totalNet) + '</div></div>' +
+          '<div class="recap-card"><div class="recap-label">Interventions</div><div class="recap-value">' + filtered.length + '</div></div>' +
+          '<div class="recap-card"><div class="recap-label">Temps total</div><div class="recap-value">' + formatDuree(totalHeures) + '</div></div>' +
+          '<div class="recap-card"><div class="recap-label">Payées</div><div class="recap-value green">' + payees + '</div></div>' +
+          '<div class="recap-card"><div class="recap-label">Impayées</div><div class="recap-value red">' + impayees + '</div></div>';
+        var detail = document.getElementById('recapDetail');
+        if (filtered.length === 0) {
+          detail.innerHTML = '<div class="empty-state"><i class="fas fa-calendar-times" style="font-size:2rem; display:block; margin-bottom:10px; opacity:0.5;"></i>Aucune intervention ce mois</div>';
+        } else {
+          var html = '<h3 style="font-size:0.9rem; color:#1a5279; margin-bottom:10px;"><i class="fas fa-list"></i> Détail</h3><div style="display:flex; flex-direction:column; gap:6px;">';
+          filtered.sort(function(a, b) { return (b.date || '').localeCompare(a.date || ''); }).forEach(function(int) {
+            var typeInfo = TYPES_TACHES[int.type] || TYPES_TACHES.autre;
+            html += '<div style="display:flex; justify-content:space-between; align-items:center; padding:8px 12px; background:#f8fbfe; border-radius:12px; font-size:0.8rem; flex-wrap:wrap; gap:6px;">' +
+              '<div><span class="int-type-badge ' + typeInfo.color + '" style="font-size:0.55rem; margin-right:6px;">' + typeInfo.label + '</span><strong>' + escapeHtml(int.client) + '</strong></div>' +
+              '<div style="display:flex; gap:12px; align-items:center;">' +
+                '<span style="color:#4f718d;">' + formatDate(int.date) + '</span>' +
+                '<span style="font-weight:600; color:#1a5279;">' + formatEuro(getTotalTTC(int)) + '</span>' +
+                (int.paye ? '<span style="color:#2e7d32;"><i class="fas fa-check-circle"></i></span>' : '<span style="color:#c62828;"><i class="fas fa-exclamation-circle"></i></span>') +
+              '</div>' +
+            '</div>';
+          });
+          html += '</div>';
+          detail.innerHTML = html;
+        }
+      }
+
+      document.getElementById('prevMonthBtn').addEventListener('click', function() { recapDate.setMonth(recapDate.getMonth() - 1); renderRecap(); });
+      document.getElementById('nextMonthBtn').addEventListener('click', function() { recapDate.setMonth(recapDate.getMonth() + 1); renderRecap(); });
+
+      // ----- Tabs -----
+      function switchTab(tabName) {
+        document.querySelectorAll('.main-tab').forEach(function(t) {
+          if (t.dataset.tab === tabName) t.classList.add('active');
+          else t.classList.remove('active');
+        });
+        document.querySelectorAll('.tab-content').forEach(function(c) {
+          if (c.id === 'tab-' + tabName) c.classList.add('active');
+          else c.classList.remove('active');
+        });
+        if (tabName === 'recap') renderRecap();
+        if (tabName === 'planning') renderPlanning();
+      }
+
+      document.querySelectorAll('.main-tab').forEach(function(tab) {
+        tab.addEventListener('click', function() { switchTab(this.dataset.tab); });
+      });
+
+      // ----- Sauvegarde -----
+      document.getElementById('saveAllBtn').addEventListener('click', function() {
+        if (saveToStorage()) {
+          showToastSave('Données sauvegardées localement', 'success');
+          renderAll();
+        } else {
+          showToastSave('Erreur sauvegarde', 'error');
+        }
+      });
+
+      // Sauvegarde automatique périodique
+      setInterval(function() { saveToStorage(true); }, 180000);
+
+      // ----- Paramètres -----
+      document.getElementById('settingsBtn').addEventListener('click', function() {
+        document.getElementById('setNom').value = settings.nom;
+        document.getElementById('setAdresse').value = settings.adresse;
+        document.getElementById('setSiret').value = settings.siret;
+        document.getElementById('setTel').value = settings.tel;
+        document.getElementById('setEmail').value = settings.email;
+        document.getElementById('setTaxe').value = settings.taxe;
+        document.getElementById('setTva').value = settings.tva;
+        document.getElementById('setTvaActive').checked = settings.tvaActive;
+        document.getElementById('setTauxDefaut').value = settings.tauxDefaut;
+        document.getElementById('setDeplacementDefaut').value = settings.deplacementDefaut;
+        document.getElementById('settingsModal').classList.add('show');
+      });
+
+      document.getElementById('cancelSettings').addEventListener('click', function() {
+        document.getElementById('settingsModal').classList.remove('show');
+      });
+
+      document.getElementById('saveSettings').addEventListener('click', function() {
+        settings.nom = document.getElementById('setNom').value.trim() || 'Plomberie Pro';
+        settings.adresse = document.getElementById('setAdresse').value.trim();
+        settings.siret = document.getElementById('setSiret').value.trim();
+        settings.tel = document.getElementById('setTel').value.trim();
+        settings.email = document.getElementById('setEmail').value.trim();
+        settings.taxe = parseFloat(document.getElementById('setTaxe').value) || 21.2;
+        settings.tva = parseFloat(document.getElementById('setTva').value) || 10;
+        settings.tvaActive = document.getElementById('setTvaActive').checked;
+        settings.tauxDefaut = parseFloat(document.getElementById('setTauxDefaut').value) || 45;
+        settings.deplacementDefaut = parseFloat(document.getElementById('setDeplacementDefaut').value) || 30;
+        saveToStorage();
+        document.getElementById('settingsModal').classList.remove('show');
+        renderAll();
+        showToastSave('Paramètres sauvegardés', 'success');
+      });
+
+      // ----- Raccourcis clavier -----
+      document.addEventListener('keydown', function(e) {
+        if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+          e.preventDefault();
+          if (saveToStorage()) showToastSave('Sauvegardé (Ctrl+S)', 'success');
+        }
+        if (e.key === 'Escape') {
+          document.querySelectorAll('.modal-overlay.show').forEach(function(m) {
+            if (m.id === 'signatureModal') saveSignatures();
+            m.classList.remove('show');
+          });
+        }
+      });
+
+      // Sauvegarde avant fermeture
+      window.addEventListener('beforeunload', function() { saveToStorage(true); });
+      window.addEventListener('pagehide', function() { saveToStorage(true); });
+      document.addEventListener('visibilitychange', function() {
+        if (document.visibilityState === 'hidden') saveToStorage(true);
+      });
+
+      // ----- Rendu global -----
+      function renderAll() {
+        renderStats();
+        renderInterventions();
+        renderFactures();
+        renderDevis();
+        renderPlanning();
+        renderRecap();
+      }
+
+      // ----- Initialisation -----
+      var loaded = loadFromStorage();
+
+      if (!loaded || (interventions.length === 0 && devisList.length === 0)) {
+        var today = new Date();
+        var demoInt = [
+          { id: 'int_demo_1', numeroFacture: 'FAC-2025-0001', client: 'M. Dupont', email: 'dupont@email.com', description: 'Réparation fuite sous évier cuisine', type: 'reparation', date: new Date(today.getTime() - 2 * 86400000).toISOString().slice(0, 10), heure: '09:00', duree: 45, taux: 45, deplacement: 30, pieces: [{ nom: 'Joint', prix: 12 }], notes: 'Joint remplacé', paye: true, datePaiement: new Date(today.getTime() - 86400000).toISOString().slice(0, 10), signatureClient: null, signatureTech: null, createdAt: new Date().toISOString() },
+          { id: 'int_demo_2', numeroFacture: 'FAC-2025-0002', client: 'Résidence Les Lilas', email: 'contact@leslilas.fr', description: 'Entretien annuel chaudière gaz', type: 'entretien', date: new Date(today.getTime() + 86400000).toISOString().slice(0, 10), heure: '14:00', duree: 90, taux: 50, deplacement: 35, pieces: [], notes: 'Attestation remise', paye: false, datePaiement: null, signatureClient: null, signatureTech: null, createdAt: new Date().toISOString() },
+          { id: 'int_demo_3', numeroFacture: 'FAC-2025-0003', client: 'Café des Arts', email: '', description: 'Remplacement chasse d\'eau WC', type: 'depannage', date: new Date(today.getTime() + 2 * 86400000).toISOString().slice(0, 10), heure: '10:30', duree: 60, taux: 45, deplacement: 30, pieces: [{ nom: 'Mécanisme chasse', prix: 28 }], notes: '', paye: false, datePaiement: null, signatureClient: null, signatureTech: null, createdAt: new Date().toISOString() },
+          { id: 'int_demo_4', numeroFacture: 'FAC-2025-0004', client: 'Mme Martin', email: 'martin@email.com', description: 'Rénovation salle de bain complète', type: 'installation', date: new Date(today.getTime() - 5 * 86400000).toISOString().slice(0, 10), heure: '08:00', duree: 2880, taux: 45, deplacement: 30, pieces: [{ nom: 'Receveur douche', prix: 350 }, { nom: 'Mitigeur', prix: 120 }], notes: 'Chantier 2 jours', paye: false, datePaiement: null, signatureClient: null, signatureTech: null, createdAt: new Date().toISOString() }
+        ];
+        interventions = demoInt;
+        factureCounter = 5;
+        saveToStorage();
+      }
+
+      renderAll();
+      updateSaveIndicator(true);
+      if (loaded) setTimeout(function() { showToastSave('Données locales chargées', 'success'); }, 500);
+
+    })();
+  </script>
+</body>
+</html>
