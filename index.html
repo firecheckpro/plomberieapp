@@ -92,15 +92,6 @@
       gap: 8px;
     }
 
-    .app-header h1 i {
-      background: #1a5279;
-      -webkit-text-fill-color: white;
-      padding: 6px 12px;
-      border-radius: 60px;
-      font-size: 1rem;
-      color: white;
-    }
-
     .save-indicator {
       display: flex;
       align-items: center;
@@ -127,7 +118,39 @@
       50% { opacity: 0.4; }
     }
 
-    /* ---- STATS COMPACTES ---- */
+    /* ==== Bandeau alerte impayées ==== */
+    .alert-overdue {
+      display: none;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      margin-bottom: 10px;
+      background: linear-gradient(135deg, #fff3e0, #ffe0b2);
+      border: 1px solid #ffb74d;
+      border-left: 5px solid #ed6c02;
+      border-radius: 14px;
+      font-size: 0.8rem;
+      color: #7a3d00;
+      font-weight: 600;
+      cursor: pointer;
+      transition: 0.15s;
+    }
+    .alert-overdue:hover {
+      background: linear-gradient(135deg, #ffe0b2, #ffcc80);
+    }
+    .alert-overdue.show { display: flex; }
+    .alert-overdue i.alert-icon { font-size: 1.1rem; color: #ed6c02; }
+    .alert-overdue .alert-text { flex: 1; }
+    .alert-overdue .alert-action {
+      background: #ed6c02;
+      color: white;
+      padding: 4px 12px;
+      border-radius: 40px;
+      font-size: 0.7rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
     .stats-compact {
       display: flex;
       gap: 6px;
@@ -166,7 +189,6 @@
     .stat-chip.unpaid { background: #ffebee; border-color: #ffcdd2; }
     .stat-chip.unpaid .count, .stat-chip.unpaid i { color: #c62828; }
 
-    /* ---- CA COMPACT ---- */
     .ca-compact {
       display: flex;
       gap: 6px;
@@ -422,6 +444,11 @@
       background: #fffafa;
     }
 
+    .intervention-card.overdue {
+      border-left-color: #ed6c02;
+      background: #fffaf3;
+    }
+
     .int-header {
       display: flex;
       justify-content: space-between;
@@ -461,14 +488,6 @@
     .int-type-badge.urgence { background: #ffe1de; color: #b13b2e; }
     .int-type-badge.autre { background: #f0f0f0; color: #555; }
 
-    .int-date {
-      font-size: 0.7rem;
-      color: #5a7f9c;
-      display: flex;
-      align-items: center;
-      gap: 4px;
-    }
-
     .int-status {
       font-size: 0.65rem;
       font-weight: 700;
@@ -478,6 +497,7 @@
     }
     .int-status.paid { background: #2e7d32; color: white; }
     .int-status.unpaid { background: #c62828; color: white; }
+    .int-status.overdue { background: #ed6c02; color: white; }
 
     .int-description {
       font-size: 0.85rem;
@@ -527,6 +547,7 @@
     .int-actions {
       display: flex;
       gap: 4px;
+      flex-wrap: wrap;
     }
 
     .int-btn {
@@ -546,6 +567,8 @@
     .int-btn:hover { background: #e2ebf5; color: #1a5279; }
     .int-btn.pay:hover { background: #e8f5e9; color: #2e7d32; }
     .int-btn.delete:hover { background: #ffebee; color: #c62828; }
+    .int-btn.call:hover { background: #e8f5e9; color: #2e7d32; }
+    .int-btn.route:hover { background: #e0e7ff; color: #4338ca; }
 
     .empty-state {
       color: #7a96b1;
@@ -594,6 +617,15 @@
       background: #fffafa;
     }
 
+    .facture-item.overdue {
+      border-left: 4px solid #ed6c02;
+      background: #fffaf3;
+    }
+
+    .facture-item.devis-pending { border-left: 4px solid #b16b1a; background: #fffaf3; }
+    .facture-item.devis-accepted { border-left: 4px solid #2e7d32; background: #f9fdf9; }
+    .facture-item.devis-refused { border-left: 4px solid #c62828; background: #fffafa; }
+
     .fact-num {
       font-family: 'Courier New', monospace;
       font-weight: 700;
@@ -629,6 +661,7 @@
     .fact-actions {
       display: flex;
       gap: 2px;
+      flex-wrap: wrap;
     }
 
     .fact-actions button {
@@ -650,6 +683,9 @@
 
     .fact-actions .pay:hover { background: #e8f5e9; color: #2e7d32; }
     .fact-actions .del:hover { background: #ffebee; color: #c62828; }
+    .fact-actions .edit:hover { background: #e0e7ff; color: #4338ca; }
+    .fact-actions .call:hover { background: #e8f5e9; color: #2e7d32; }
+    .fact-actions .route:hover { background: #e0e7ff; color: #4338ca; }
 
     @media (max-width: 600px) {
       .facture-item {
@@ -767,14 +803,8 @@
       gap: 12px;
     }
 
-    .form-row-3 {
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      gap: 8px;
-    }
-
     @media (max-width: 480px) {
-      .form-row, .form-row-3 {
+      .form-row {
         grid-template-columns: 1fr;
       }
     }
@@ -817,6 +847,32 @@
       text-align: center;
       margin-top: 6px;
       display: inline-block;
+    }
+
+    .duree-presets {
+      display: flex;
+      gap: 6px;
+      margin-top: 8px;
+      flex-wrap: wrap;
+    }
+
+    .duree-presets button {
+      background: #eef4fa;
+      border: 1px solid #d4e4f2;
+      color: #1a5279;
+      padding: 5px 12px;
+      border-radius: 40px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: 0.15s;
+      -webkit-appearance: none;
+    }
+
+    .duree-presets button:hover {
+      background: #1a5279;
+      color: white;
+      border-color: #1a5279;
     }
 
     .pieces-section {
@@ -1082,6 +1138,7 @@
     .planning-event .pe-actions {
       display: flex;
       gap: 4px;
+      flex-wrap: wrap;
     }
 
     .planning-event .pe-actions button {
@@ -1099,6 +1156,13 @@
       background: #e2ebf5;
       color: #1a5279;
     }
+
+    .planning-event .pe-actions button.edit-ev:hover {
+      background: #e0e7ff;
+      color: #4338ca;
+    }
+    .planning-event .pe-actions button.call-ev:hover { background: #e8f5e9; color: #2e7d32; }
+    .planning-event .pe-actions button.route-ev:hover { background: #e0e7ff; color: #4338ca; }
 
     .signature-container {
       margin: 14px 0;
@@ -1334,7 +1398,6 @@
     .btn-pay { background: #2e7d32; color: white; }
     .btn-pay:hover { background: #1b5e20; }
 
-    /* Indicateur hors ligne */
     .offline-badge {
       position: fixed;
       top: calc(10px + var(--safe-top));
@@ -1386,7 +1449,13 @@
       </div>
     </div>
 
-    <!-- Stats compactes -->
+    <!-- Bandeau d'alerte impayées > 30 jours (amélioration 7) -->
+    <div class="alert-overdue" id="alertOverdue">
+      <i class="fas fa-exclamation-triangle alert-icon"></i>
+      <span class="alert-text" id="alertOverdueText">—</span>
+      <span class="alert-action">Voir</span>
+    </div>
+
     <div class="stats-compact">
       <span class="stat-chip"><i class="fas fa-list"></i> Interv. <span class="count" id="totalInterventions">0</span></span>
       <span class="stat-chip unpaid"><i class="fas fa-exclamation-circle"></i> Impayées <span class="count" id="totalImpayees">0</span></span>
@@ -1394,7 +1463,6 @@
       <span class="stat-chip"><i class="fas fa-file-signature"></i> Devis <span class="count" id="totalDevis">0</span></span>
     </div>
 
-    <!-- CA compact -->
     <div class="ca-compact">
       <div class="ca-chip">
         <span class="ca-chip-label">CA mois</span>
@@ -1471,7 +1539,9 @@
       <div class="action-bar">
         <button class="btn-primary" id="addFactureBtn"><i class="fas fa-plus-circle"></i> Nouvelle facture</button>
         <button class="btn-secondary" id="exportFacturesBtn"><i class="fas fa-download"></i> Export CSV</button>
-        <button class="btn-secondary" id="exportDataBtn"><i class="fas fa-file-export"></i> Sauvegarde complète</button>
+        <button class="btn-secondary" id="exportDataBtn"><i class="fas fa-file-export"></i> Exporter</button>
+        <button class="btn-secondary" id="importDataBtn"><i class="fas fa-file-import"></i> Importer</button>
+        <input type="file" id="importDataInput" accept=".json,application/json" style="display:none;" />
       </div>
       <div class="search-section">
         <div class="search-wrapper">
@@ -1508,7 +1578,7 @@
     <div id="toastArea" style="margin-top:8px;"></div>
   </div>
 
-  <!-- MODALES -->
+  <!-- MODALE INTERVENTION -->
   <div class="modal-overlay" id="interventionModal">
     <div class="modal-box">
       <h2 id="interventionModalTitle"><i class="fas fa-plus-circle" style="color:#1a5279;"></i> Nouvelle intervention</h2>
@@ -1532,6 +1602,14 @@
         <input type="email" id="intEmail" placeholder="client@email.com" />
       </div>
       <div class="form-group">
+        <label>Téléphone du client</label>
+        <input type="tel" id="intTel" placeholder="06 12 34 56 78" />
+      </div>
+      <div class="form-group">
+        <label>Adresse (pour itinéraire)</label>
+        <input type="text" id="intAdresse" placeholder="12 rue de la Paix, 75000 Paris" />
+      </div>
+      <div class="form-group">
         <label>Description de la tâche</label>
         <textarea id="intDescription" placeholder="Ex: Réparation fuite sous évier, entretien chaudière gaz..."></textarea>
       </div>
@@ -1541,7 +1619,7 @@
           <input type="date" id="intDate" />
         </div>
         <div class="form-group">
-          <label>Heure (optionnel)</label>
+          <label>Heure début</label>
           <input type="time" id="intHeure" />
         </div>
       </div>
@@ -1560,6 +1638,12 @@
             <label>Minutes</label>
             <input type="number" id="intDureeMinutes" min="0" max="59" step="5" value="0" placeholder="0" />
           </div>
+        </div>
+        <div class="duree-presets">
+          <button type="button" data-prefix="int" data-hours="7">1 journée (7h)</button>
+          <button type="button" data-prefix="int" data-hours="3.5">Demi-journée (3h30)</button>
+          <button type="button" data-prefix="int" data-hours="1">1 heure</button>
+          <button type="button" data-prefix="int" data-hours="2">2 heures</button>
         </div>
         <div class="duree-total-badge" id="intDureeTotalBadge">Total : 0 min</div>
       </div>
@@ -1597,9 +1681,10 @@
     </div>
   </div>
 
+  <!-- MODALE PLANNING -->
   <div class="modal-overlay" id="planningModal">
     <div class="modal-box" style="max-width:480px;">
-      <h2><i class="fas fa-calendar-plus" style="color:#1a5279;"></i> Ajouter au planning</h2>
+      <h2 id="planningModalTitle"><i class="fas fa-calendar-plus" style="color:#1a5279;"></i> Ajouter au planning</h2>
       <div class="form-group">
         <label>Type de prestation</label>
         <select id="planTypeSelect">
@@ -1617,13 +1702,40 @@
           <input type="date" id="planDate" />
         </div>
         <div class="form-group">
-          <label>Heure</label>
-          <input type="time" id="planHeure" />
+          <label>Heure début</label>
+          <input type="time" id="planHeureDebut" />
         </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Heure fin</label>
+          <input type="time" id="planHeureFin" />
+        </div>
+        <div class="form-group">
+          <label>Durée calculée</label>
+          <input type="text" id="planDureeCalc" readonly style="background:#eef4fa; font-weight:700; color:#1a5279; text-align:center;" value="—" />
+        </div>
+      </div>
+      <div class="duree-presets" style="margin-bottom:14px;">
+        <button type="button" id="planPreset7h">Journée (7h)</button>
+        <button type="button" id="planPresetDemi">Demi-journée (3h30)</button>
+        <button type="button" id="planPreset1h">1 heure</button>
+        <button type="button" id="planPreset2h">2 heures</button>
+        <button type="button" id="planPresetClear" style="background:#ffebee; color:#c62828; border-color:#ffcdd2;">Effacer</button>
       </div>
       <div class="form-group">
         <label>Client / Adresse</label>
         <input type="text" id="planClient" placeholder="Nom ou adresse" />
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Téléphone</label>
+          <input type="tel" id="planTel" placeholder="06 12 34 56 78" />
+        </div>
+        <div class="form-group">
+          <label>Adresse (itinéraire)</label>
+          <input type="text" id="planAdresse" placeholder="12 rue de la Paix, 75000 Paris" />
+        </div>
       </div>
       <div class="form-group">
         <label>Description de la tâche</label>
@@ -1636,9 +1748,10 @@
     </div>
   </div>
 
+  <!-- MODALE DEVIS -->
   <div class="modal-overlay" id="devisModal">
     <div class="modal-box">
-      <h2><i class="fas fa-file-signature" style="color:#4338ca;"></i> Nouveau devis</h2>
+      <h2 id="devisModalTitle"><i class="fas fa-file-signature" style="color:#4338ca;"></i> Nouveau devis</h2>
       <div class="form-group">
         <label>Client / Adresse</label>
         <input type="text" id="devisClient" placeholder="Nom du client ou adresse" />
@@ -1646,6 +1759,14 @@
       <div class="form-group">
         <label>Email du client</label>
         <input type="email" id="devisEmail" placeholder="client@email.com" />
+      </div>
+      <div class="form-group">
+        <label>Téléphone du client</label>
+        <input type="tel" id="devisTel" placeholder="06 12 34 56 78" />
+      </div>
+      <div class="form-group">
+        <label>Adresse (pour itinéraire)</label>
+        <input type="text" id="devisAdresse" placeholder="12 rue de la Paix, 75000 Paris" />
       </div>
       <div class="form-group">
         <label>Description des travaux</label>
@@ -1676,6 +1797,12 @@
             <label>Minutes</label>
             <input type="number" id="devisDureeMinutes" min="0" max="59" step="5" value="0" />
           </div>
+        </div>
+        <div class="duree-presets">
+          <button type="button" data-prefix="devis" data-hours="7">1 journée (7h)</button>
+          <button type="button" data-prefix="devis" data-hours="3.5">Demi-journée (3h30)</button>
+          <button type="button" data-prefix="devis" data-hours="1">1 heure</button>
+          <button type="button" data-prefix="devis" data-hours="2">2 heures</button>
         </div>
         <div class="duree-total-badge" id="devisDureeTotalBadge">Total : 0 min</div>
       </div>
@@ -1709,6 +1836,7 @@
     </div>
   </div>
 
+  <!-- MODALE SIGNATURE -->
   <div class="modal-overlay" id="signatureModal">
     <div class="modal-box" style="max-width:520px;">
       <h2><i class="fas fa-signature" style="color:#1a5279;"></i> Signatures</h2>
@@ -1738,6 +1866,7 @@
     </div>
   </div>
 
+  <!-- MODALE FACTURE DÉTAIL -->
   <div class="modal-overlay" id="factureModal">
     <div class="modal-box">
       <h2><i class="fas fa-file-invoice" style="color:#1a5279;"></i> Facture <span id="factureNumeroDisplay" style="font-family:monospace; font-size:0.9rem; color:#1a5279;"></span></h2>
@@ -1756,6 +1885,7 @@
     </div>
   </div>
 
+  <!-- MODALE DEVIS DÉTAIL -->
   <div class="modal-overlay" id="devisDetailModal">
     <div class="modal-box">
       <h2><i class="fas fa-file-signature" style="color:#4338ca;"></i> Devis <span id="devisNumeroDisplay" style="font-family:monospace; font-size:0.9rem; color:#4338ca;"></span></h2>
@@ -1764,6 +1894,7 @@
         <div style="display:flex; gap:6px; flex-wrap:wrap;">
           <button class="btn-secondary" id="acceptDevisBtn" style="background:#e8f5e9; color:#2e7d32; border-color:#c8e6c9;"><i class="fas fa-check"></i> Accepter</button>
           <button class="btn-secondary" id="refuseDevisBtn" style="background:#ffebee; color:#c62828; border-color:#ffcdd2;"><i class="fas fa-times"></i> Refuser</button>
+          <button class="btn-secondary" id="editDevisBtn" style="background:#e0e7ff; color:#4338ca; border-color:#c7d2fe;"><i class="fas fa-edit"></i> Modifier</button>
           <button class="btn-secondary" id="downloadDevisPdfBtn"><i class="fas fa-download"></i> PDF</button>
           <button class="btn-secondary" id="sendDevisMailBtn"><i class="fas fa-envelope"></i> Mail</button>
           <button class="btn-secondary" id="convertDevisBtn" style="background:#e0e7ff; color:#4338ca; border-color:#c7d2fe;"><i class="fas fa-exchange-alt"></i> Convertir en facture</button>
@@ -1773,6 +1904,7 @@
     </div>
   </div>
 
+  <!-- MODALE MAIL -->
   <div class="modal-overlay" id="mailModal">
     <div class="modal-box" style="max-width:480px;">
       <h2><i class="fas fa-envelope" style="color:#2e7d32;"></i> Envoyer</h2>
@@ -1798,6 +1930,7 @@
     </div>
   </div>
 
+  <!-- MODALE CONFIRMATION -->
   <div class="modal-overlay" id="confirmModal">
     <div class="modal-box" style="max-width:400px; text-align:center;">
       <p id="confirmMessage" style="font-size:1rem; color:#1b3b55; margin-bottom:20px; white-space:pre-line;"></p>
@@ -1808,6 +1941,7 @@
     </div>
   </div>
 
+  <!-- MODALE PARAMÈTRES -->
   <div class="modal-overlay" id="settingsModal">
     <div class="modal-box" style="max-width:460px;">
       <h2><i class="fas fa-cog" style="color:#1a5279;"></i> Paramètres</h2>
@@ -1851,6 +1985,10 @@
         <label>Frais de déplacement par défaut (€)</label>
         <input type="number" id="setDeplacementDefaut" value="30" step="5" min="0" />
       </div>
+      <div class="form-group">
+        <label>Seuil d'alerte impayés (jours)</label>
+        <input type="number" id="setSeuilAlerte" value="30" step="1" min="1" />
+      </div>
       <div style="margin-top:12px; padding:10px; background:#f8fbfe; border-radius:12px; font-size:0.7rem; color:#4f718d;">
         <i class="fas fa-shield-alt"></i> <strong>Confidentialité :</strong> Toutes vos données sont stockées uniquement sur votre appareil. Aucune information n'est envoyée sur Internet.
       </div>
@@ -1870,11 +2008,11 @@
 
   <script>
     // ============================================================
-    // SERVICE WORKER INLINE POUR HORS LIGNE
+    // SERVICE WORKER INLINE
     // ============================================================
     if ('serviceWorker' in navigator) {
       var swCode = `
-        const CACHE_NAME = 'plomberie-pro-v5';
+        const CACHE_NAME = 'plomberie-pro-v7';
         const ASSETS = [
           'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css',
           'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',
@@ -1944,10 +2082,10 @@
     (function() {
       'use strict';
 
-      var STORAGE_KEY = 'plomberie_pro_v5';
-      var SETTINGS_KEY = 'plomberie_pro_settings_v5';
+      var STORAGE_KEY = 'plomberie_pro_v7';
+      var SETTINGS_KEY = 'plomberie_pro_settings_v7';
       var SAVE_DELAY = 1500;
-      var WORK_HOURS_PER_DAY = 7; // 7h de travail par jour -> 35h/semaine
+      var WORK_HOURS_PER_DAY = 7;
 
       var TYPES_TACHES = {
         depannage: { label: 'Dépannage', color: 'depannage' },
@@ -1970,6 +2108,8 @@
       var clientSignatureData = null;
       var techSignatureData = null;
       var currentSignatureTarget = null;
+      var editingDevisId = null;
+      var editingPlanningId = null;
       var settings = {
         nom: 'Plomberie Pro',
         adresse: '12 rue des Artisans, 75000 Paris',
@@ -1980,7 +2120,8 @@
         tva: 10,
         tvaActive: false,
         tauxDefaut: 45,
-        deplacementDefaut: 30
+        deplacementDefaut: 30,
+        seuilAlerte: 30
       };
       var planningDate = new Date();
       var selectedPlanningDate = new Date();
@@ -2020,9 +2161,10 @@
 
       function formatDuree(minutes) {
         if (!minutes || minutes === 0) return '0 min';
-        var j = Math.floor(minutes / 1440);
-        var h = Math.floor((minutes % 1440) / 60);
-        var m = minutes % 60;
+        var j = Math.floor(minutes / (WORK_HOURS_PER_DAY * 60));
+        var reste = minutes % (WORK_HOURS_PER_DAY * 60);
+        var h = Math.floor(reste / 60);
+        var m = reste % 60;
         var parts = [];
         if (j > 0) parts.push(j + 'j');
         if (h > 0) parts.push(h + 'h');
@@ -2030,8 +2172,45 @@
         return parts.join(' ') || '0 min';
       }
 
-      function dureeEnMinutes(jours, heures, minutes) {
-        return (parseInt(jours) || 0) * 1440 + (parseInt(heures) || 0) * 60 + (parseInt(minutes) || 0);
+      function minutesVersDuree(minutes) {
+        var total = parseInt(minutes) || 0;
+        var jours = Math.floor(total / (WORK_HOURS_PER_DAY * 60));
+        var reste = total % (WORK_HOURS_PER_DAY * 60);
+        var heures = Math.floor(reste / 60);
+        var mins = reste % 60;
+        return { jours: jours, heures: heures, minutes: mins };
+      }
+
+      function dureeVersMinutes(jours, heures, minutes) {
+        return (parseInt(jours) || 0) * WORK_HOURS_PER_DAY * 60 + (parseInt(heures) || 0) * 60 + (parseInt(minutes) || 0);
+      }
+
+      function diffHeures(debut, fin) {
+        if (!debut || !fin) return 0;
+        var partsD = debut.split(':');
+        var partsF = fin.split(':');
+        var d = parseInt(partsD[0]) * 60 + parseInt(partsD[1]);
+        var f = parseInt(partsF[0]) * 60 + parseInt(partsF[1]);
+        var diff = f - d;
+        if (diff < 0) diff += 24 * 60;
+        return diff;
+      }
+
+      function ajouterMinutes(heure, minutes) {
+        if (!heure) return '';
+        var parts = heure.split(':');
+        var total = parseInt(parts[0]) * 60 + parseInt(parts[1]) + minutes;
+        total = ((total % (24 * 60)) + 24 * 60) % (24 * 60);
+        var h = Math.floor(total / 60);
+        var m = total % 60;
+        return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0');
+      }
+
+      // Calcule le nombre de jours entre deux dates
+      function joursEntre(dateStr1, dateStr2) {
+        var d1 = new Date(dateStr1 + 'T00:00:00');
+        var d2 = new Date(dateStr2 + 'T00:00:00');
+        return Math.floor((d2 - d1) / (24 * 3600 * 1000));
       }
 
       function genererNumeroFacture() {
@@ -2076,6 +2255,14 @@
 
       function getTotalNet(item) {
         return getTotalTTC(item) * (1 - settings.taxe / 100);
+      }
+
+      // Vérifie si une intervention est en retard de paiement
+      function isOverdue(int) {
+        if (int.paye) return false;
+        if (!int.date) return false;
+        var jours = joursEntre(int.date, new Date().toISOString().slice(0, 10));
+        return jours > (settings.seuilAlerte || 30);
       }
 
       // ----- Sauvegarde / chargement -----
@@ -2167,6 +2354,25 @@
         setTimeout(function() { area.innerHTML = ''; }, 3500);
       }
 
+      // ----- Actions rapides (téléphone / itinéraire) -----
+      function getPhoneHref(tel) {
+        if (!tel) return '';
+        // Nettoie le numéro (garde + et chiffres)
+        var cleaned = String(tel).replace(/[^0-9+]/g, '');
+        return 'tel:' + cleaned;
+      }
+
+      function getMapsHref(adresse) {
+        if (!adresse) return '';
+        var q = encodeURIComponent(adresse);
+        // Détection iOS pour Apple Plans
+        var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+        if (isIOS) {
+          return 'https://maps.apple.com/?q=' + q;
+        }
+        return 'https://www.google.com/maps/search/?api=1&query=' + q;
+      }
+
       // ----- Confirmation -----
       function showConfirm(message, callback) {
         document.getElementById('confirmMessage').textContent = message;
@@ -2183,10 +2389,10 @@
         if (confirmCallback) { confirmCallback(false); confirmCallback = null; }
       });
 
-      // ----- Rendu stats (version compacte) -----
+      // ----- Rendu stats + alerte impayés (améliorations 7) -----
       function renderStats() {
         var total = interventions.length;
-        var impayees = 0, payees = 0;
+        var impayees = 0, payees = 0, overdue = 0, overdueTotal = 0;
         var caMois = 0, caNetMois = 0, caAnnuel = 0, resteEncaisser = 0;
         var now = new Date();
         var currentMonth = now.getMonth();
@@ -2197,7 +2403,14 @@
           var ttc = getTotalTTC(int);
           var net = getTotalNet(int);
           if (int.paye) payees++;
-          else { impayees++; resteEncaisser += ttc; }
+          else {
+            impayees++;
+            resteEncaisser += ttc;
+            if (isOverdue(int)) {
+              overdue++;
+              overdueTotal += ttc;
+            }
+          }
           var intDate = new Date(int.date + 'T00:00:00');
           if (intDate.getMonth() === currentMonth && intDate.getFullYear() === currentYear) {
             caMois += ttc;
@@ -2220,6 +2433,18 @@
         document.getElementById('caMoisLabel').textContent = formatMois(now);
         document.getElementById('caAnnuelLabel').textContent = currentYear;
         document.getElementById('caNetMoisSub').textContent = '~' + settings.taxe + '%';
+
+        // Bandeau alerte impayés > seuil
+        var alertEl = document.getElementById('alertOverdue');
+        var alertText = document.getElementById('alertOverdueText');
+        if (overdue > 0) {
+          alertEl.classList.add('show');
+          alertText.innerHTML = '<strong>' + overdue + '</strong> facture' + (overdue > 1 ? 's' : '') +
+            ' impayée' + (overdue > 1 ? 's' : '') + ' depuis plus de ' + settings.seuilAlerte +
+            ' jours — Total : <strong>' + formatEuro(overdueTotal) + '</strong>';
+        } else {
+          alertEl.classList.remove('show');
+        }
       }
 
       // ----- Rendu interventions -----
@@ -2252,9 +2477,13 @@
           var int = filtered[j];
           var typeInfo = TYPES_TACHES[int.type] || TYPES_TACHES.autre;
           var total = getTotalTTC(int);
+          var overdue = isOverdue(int);
+          var cardClass = int.paye ? 'paid' : (overdue ? 'overdue' : 'unpaid');
           var card = document.createElement('div');
-          card.className = 'intervention-card ' + (int.paye ? 'paid' : 'unpaid');
+          card.className = 'intervention-card ' + cardClass;
           card.dataset.id = int.id;
+          var statusLabel = int.paye ? '✓ Payée' : (overdue ? '⏰ En retard' : '⚠ Impayée');
+          var statusClass = int.paye ? 'paid' : (overdue ? 'overdue' : 'unpaid');
           card.innerHTML =
             '<div class="int-header">' +
               '<div class="int-title">' +
@@ -2263,18 +2492,21 @@
                 (int.numeroFacture ? '<span style="font-size:0.65rem; font-family:monospace; background:#eef4fa; padding:2px 8px; border-radius:20px; color:#1a5279;">' + int.numeroFacture + '</span>' : '') +
                 (int.signatureClient ? '<span style="font-size:0.6rem; color:#2e7d32;"><i class="fas fa-signature"></i></span>' : '') +
               '</div>' +
-              '<span class="int-status ' + (int.paye ? 'paid' : 'unpaid') + '">' + (int.paye ? '✓ Payée' : '⚠ Impayée') + '</span>' +
+              '<span class="int-status ' + statusClass + '">' + statusLabel + '</span>' +
             '</div>' +
             '<div class="int-description">' + escapeHtml(int.description || '—') + '</div>' +
             '<div class="int-footer">' +
               '<div class="int-meta">' +
                 '<span class="int-meta-item"><i class="far fa-calendar-alt"></i> ' + formatDate(int.date) + '</span>' +
-                (int.heure ? '<span class="int-meta-item"><i class="far fa-clock"></i> ' + int.heure + '</span>' : '') +
+                (int.heure ? '<span class="int-meta-item"><i class="far fa-clock"></i> ' + int.heure + (int.heureFin ? ' → ' + int.heureFin : '') + '</span>' : '') +
                 '<span class="int-meta-item"><i class="fas fa-hourglass-half"></i> ' + formatDuree(int.duree) + '</span>' +
                 '<span class="int-meta-item total"><i class="fas fa-euro-sign"></i> ' + formatEuro(total) + '</span>' +
               '</div>' +
               '<div class="int-actions">' +
+                (int.tel ? '<a class="int-btn call" href="' + getPhoneHref(int.tel) + '" title="Appeler" onclick="event.stopPropagation();"><i class="fas fa-phone"></i></a>' : '') +
+                (int.adresse ? '<a class="int-btn route" href="' + getMapsHref(int.adresse) + '" target="_blank" rel="noopener" title="Itinéraire" onclick="event.stopPropagation();"><i class="fas fa-map-marked-alt"></i></a>' : '') +
                 '<button class="int-btn view" data-id="' + int.id + '" title="Facture"><i class="fas fa-file-invoice"></i></button>' +
+                '<button class="int-btn edit" data-id="' + int.id + '" title="Modifier"><i class="fas fa-edit"></i></button>' +
                 '<button class="int-btn sign" data-id="' + int.id + '" title="Signer"><i class="fas fa-signature"></i></button>' +
                 (int.paye ? '' : '<button class="int-btn pay" data-id="' + int.id + '" title="Payée"><i class="fas fa-check"></i></button>') +
                 '<button class="int-btn delete" data-id="' + int.id + '" title="Supprimer"><i class="fas fa-trash-alt"></i></button>' +
@@ -2285,12 +2517,15 @@
         container.appendChild(frag);
         container.querySelectorAll('.intervention-card').forEach(function(card) {
           card.addEventListener('click', function(e) {
-            if (e.target.closest('.int-btn')) return;
+            if (e.target.closest('.int-btn') || e.target.closest('a')) return;
             openFacture(card.dataset.id);
           });
         });
         container.querySelectorAll('.int-btn.view').forEach(function(btn) {
           btn.addEventListener('click', function(e) { e.stopPropagation(); openFacture(btn.dataset.id); });
+        });
+        container.querySelectorAll('.int-btn.edit').forEach(function(btn) {
+          btn.addEventListener('click', function(e) { e.stopPropagation(); editIntervention(btn.dataset.id); });
         });
         container.querySelectorAll('.int-btn.sign').forEach(function(btn) {
           btn.addEventListener('click', function(e) { e.stopPropagation(); openSignatureModal(btn.dataset.id, 'facture'); });
@@ -2328,8 +2563,10 @@
         var frag = document.createDocumentFragment();
         filtered.forEach(function(int) {
           var total = getTotalTTC(int);
+          var overdue = isOverdue(int);
+          var itemClass = int.paye ? 'paid' : (overdue ? 'overdue' : 'unpaid');
           var item = document.createElement('div');
-          item.className = 'facture-item ' + (int.paye ? 'paid' : 'unpaid');
+          item.className = 'facture-item ' + itemClass;
           item.dataset.id = int.id;
           item.innerHTML =
             '<div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap; flex:1;">' +
@@ -2340,10 +2577,15 @@
             '<div class="fact-info">' +
               '<span><i class="far fa-calendar-alt"></i> ' + formatDate(int.date) + '</span>' +
               '<span class="fact-total">' + formatEuro(total) + '</span>' +
-              (int.paye ? '<span style="color:#2e7d32; font-weight:600; font-size:0.7rem;"><i class="fas fa-check-circle"></i> Payée</span>' : '<span style="color:#c62828; font-weight:600; font-size:0.7rem;"><i class="fas fa-exclamation-circle"></i> Impayée</span>') +
+              (int.paye ? '<span style="color:#2e7d32; font-weight:600; font-size:0.7rem;"><i class="fas fa-check-circle"></i> Payée</span>' :
+                (overdue ? '<span style="color:#ed6c02; font-weight:600; font-size:0.7rem;"><i class="fas fa-clock"></i> En retard</span>' :
+                '<span style="color:#c62828; font-weight:600; font-size:0.7rem;"><i class="fas fa-exclamation-circle"></i> Impayée</span>')) +
             '</div>' +
             '<div class="fact-actions">' +
+              (int.tel ? '<a class="call" href="' + getPhoneHref(int.tel) + '" title="Appeler" onclick="event.stopPropagation();"><i class="fas fa-phone"></i></a>' : '') +
+              (int.adresse ? '<a class="route" href="' + getMapsHref(int.adresse) + '" target="_blank" rel="noopener" title="Itinéraire" onclick="event.stopPropagation();"><i class="fas fa-map-marked-alt"></i></a>' : '') +
               '<button class="view" data-id="' + int.id + '" title="Voir"><i class="fas fa-eye"></i></button>' +
+              '<button class="edit" data-id="' + int.id + '" title="Modifier"><i class="fas fa-edit"></i></button>' +
               '<button class="pdf" data-id="' + int.id + '" title="PDF"><i class="fas fa-file-pdf"></i></button>' +
               '<button class="mail" data-id="' + int.id + '" title="Mail"><i class="fas fa-envelope"></i></button>' +
               '<button class="sign" data-id="' + int.id + '" title="Signer"><i class="fas fa-signature"></i></button>' +
@@ -2355,12 +2597,15 @@
         container.appendChild(frag);
         container.querySelectorAll('.facture-item').forEach(function(item) {
           item.addEventListener('click', function(e) {
-            if (e.target.closest('.fact-actions button')) return;
+            if (e.target.closest('.fact-actions button') || e.target.closest('a')) return;
             openFacture(item.dataset.id);
           });
         });
         container.querySelectorAll('.fact-actions .view').forEach(function(btn) {
           btn.addEventListener('click', function(e) { e.stopPropagation(); openFacture(btn.dataset.id); });
+        });
+        container.querySelectorAll('.fact-actions .edit').forEach(function(btn) {
+          btn.addEventListener('click', function(e) { e.stopPropagation(); editIntervention(btn.dataset.id); });
         });
         container.querySelectorAll('.fact-actions .pdf').forEach(function(btn) {
           btn.addEventListener('click', function(e) { e.stopPropagation(); generateFacturePDF(btn.dataset.id); });
@@ -2385,7 +2630,7 @@
         });
       }
 
-      // ----- Rendu devis -----
+      // ----- Rendu devis (avec bordure par statut - amélioration 18) -----
       function renderDevis() {
         var container = document.getElementById('devisList');
         var term = searchDevisTerm.trim().toLowerCase();
@@ -2404,12 +2649,12 @@
         var frag = document.createDocumentFragment();
         filtered.forEach(function(d) {
           var total = getTotalTTC(d);
-          var statusLabel, statusClass;
-          if (d.statut === 'accepte') { statusLabel = 'Accepté'; statusClass = 'accepted'; }
-          else if (d.statut === 'refuse') { statusLabel = 'Refusé'; statusClass = 'refused'; }
-          else { statusLabel = 'En attente'; statusClass = 'pending'; }
+          var statusLabel, statusClass, borderClass;
+          if (d.statut === 'accepte') { statusLabel = 'Accepté'; statusClass = 'accepted'; borderClass = 'devis-accepted'; }
+          else if (d.statut === 'refuse') { statusLabel = 'Refusé'; statusClass = 'refused'; borderClass = 'devis-refused'; }
+          else { statusLabel = 'En attente'; statusClass = 'pending'; borderClass = 'devis-pending'; }
           var item = document.createElement('div');
-          item.className = 'facture-item ' + (d.statut === 'accepte' ? 'paid' : (d.statut === 'refuse' ? 'unpaid' : ''));
+          item.className = 'facture-item ' + borderClass;
           item.dataset.id = d.id;
           item.innerHTML =
             '<div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap; flex:1;">' +
@@ -2423,7 +2668,10 @@
               '<span class="fact-total">' + formatEuro(total) + '</span>' +
             '</div>' +
             '<div class="fact-actions">' +
+              (d.tel ? '<a class="call" href="' + getPhoneHref(d.tel) + '" title="Appeler" onclick="event.stopPropagation();"><i class="fas fa-phone"></i></a>' : '') +
+              (d.adresse ? '<a class="route" href="' + getMapsHref(d.adresse) + '" target="_blank" rel="noopener" title="Itinéraire" onclick="event.stopPropagation();"><i class="fas fa-map-marked-alt"></i></a>' : '') +
               '<button class="view" data-id="' + d.id + '" title="Voir"><i class="fas fa-eye"></i></button>' +
+              '<button class="edit" data-id="' + d.id + '" title="Modifier"><i class="fas fa-edit"></i></button>' +
               '<button class="pdf" data-id="' + d.id + '" title="PDF"><i class="fas fa-file-pdf"></i></button>' +
               '<button class="mail" data-id="' + d.id + '" title="Mail"><i class="fas fa-envelope"></i></button>' +
               '<button class="sign" data-id="' + d.id + '" title="Signer"><i class="fas fa-signature"></i></button>' +
@@ -2434,12 +2682,15 @@
         container.appendChild(frag);
         container.querySelectorAll('.facture-item').forEach(function(item) {
           item.addEventListener('click', function(e) {
-            if (e.target.closest('.fact-actions button')) return;
+            if (e.target.closest('.fact-actions button') || e.target.closest('a')) return;
             openDevisDetail(item.dataset.id);
           });
         });
         container.querySelectorAll('.fact-actions .view').forEach(function(btn) {
           btn.addEventListener('click', function(e) { e.stopPropagation(); openDevisDetail(btn.dataset.id); });
+        });
+        container.querySelectorAll('.fact-actions .edit').forEach(function(btn) {
+          btn.addEventListener('click', function(e) { e.stopPropagation(); editDevis(btn.dataset.id); });
         });
         container.querySelectorAll('.fact-actions .pdf').forEach(function(btn) {
           btn.addEventListener('click', function(e) { e.stopPropagation(); generateDevisPDF(btn.dataset.id); });
@@ -2458,7 +2709,7 @@
         });
       }
 
-      // ----- Planning (7h/jour) -----
+      // ----- Planning -----
       function getWeekDays(date) {
         var d = new Date(date);
         var day = d.getDay();
@@ -2529,19 +2780,24 @@
             var typeInfo = TYPES_TACHES[int.type] || TYPES_TACHES.autre;
             var el = document.createElement('div');
             el.className = 'planning-event ' + (int.paye ? 'paid' : 'unpaid');
+            var heureAffichage = int.heure || '--:--';
+            if (int.heure && int.heureFin) heureAffichage = int.heure + ' → ' + int.heureFin;
             el.innerHTML =
               '<div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; flex:1;">' +
-                '<span class="pe-time">' + (int.heure || '--:--') + '</span>' +
+                '<span class="pe-time">' + heureAffichage + '</span>' +
                 '<span class="pe-client">' + escapeHtml(int.client) + '</span>' +
                 '<span class="pe-type">' + typeInfo.label + '</span>' +
                 '<span style="font-size:0.65rem; color:#7a96b1;"><i class="fas fa-hourglass-half"></i> ' + formatDuree(int.duree) + '</span>' +
               '</div>' +
               '<div class="pe-actions">' +
-                '<button data-id="' + int.id + '" class="view-ev"><i class="fas fa-eye"></i></button>' +
-                '<button data-id="' + int.id + '" class="del-ev"><i class="fas fa-trash-alt"></i></button>' +
+                (int.tel ? '<a class="call-ev" href="' + getPhoneHref(int.tel) + '" title="Appeler" onclick="event.stopPropagation();"><i class="fas fa-phone"></i></a>' : '') +
+                (int.adresse ? '<a class="route-ev" href="' + getMapsHref(int.adresse) + '" target="_blank" rel="noopener" title="Itinéraire" onclick="event.stopPropagation();"><i class="fas fa-map-marked-alt"></i></a>' : '') +
+                '<button data-id="' + int.id + '" class="edit-ev" title="Modifier"><i class="fas fa-edit"></i></button>' +
+                '<button data-id="' + int.id + '" class="view-ev" title="Voir"><i class="fas fa-eye"></i></button>' +
+                '<button data-id="' + int.id + '" class="del-ev" title="Supprimer"><i class="fas fa-trash-alt"></i></button>' +
               '</div>';
             el.addEventListener('click', function(e) {
-              if (e.target.closest('button')) return;
+              if (e.target.closest('button') || e.target.closest('a')) return;
               openFacture(int.id);
             });
             frag.appendChild(el);
@@ -2549,6 +2805,9 @@
           eventsContainer.appendChild(frag);
           eventsContainer.querySelectorAll('.view-ev').forEach(function(btn) {
             btn.addEventListener('click', function(e) { e.stopPropagation(); openFacture(btn.dataset.id); });
+          });
+          eventsContainer.querySelectorAll('.edit-ev').forEach(function(btn) {
+            btn.addEventListener('click', function(e) { e.stopPropagation(); editIntervention(btn.dataset.id); });
           });
           eventsContainer.querySelectorAll('.del-ev').forEach(function(btn) {
             btn.addEventListener('click', function(e) {
@@ -2569,45 +2828,176 @@
       });
 
       // ----- Modale planning -----
-      function openPlanningModal() {
+      function updatePlanDureeCalc() {
+        var debut = document.getElementById('planHeureDebut').value;
+        var fin = document.getElementById('planHeureFin').value;
+        var el = document.getElementById('planDureeCalc');
+        if (debut && fin) {
+          var diff = diffHeures(debut, fin);
+          if (diff > 0) {
+            el.value = formatDuree(diff);
+          } else {
+            el.value = '—';
+          }
+        } else {
+          el.value = '—';
+        }
+      }
+
+      function setPlanningHeures(debut, minutes) {
+        document.getElementById('planHeureDebut').value = debut;
+        document.getElementById('planHeureFin').value = ajouterMinutes(debut, minutes);
+        updatePlanDureeCalc();
+      }
+
+      function openPlanningModal(editId) {
+        editingPlanningId = editId || null;
+        var int = null;
+        if (editId) {
+          int = interventions.find(function(i) { return i.id === editId; });
+        }
         var selStr = selectedPlanningDate.getFullYear() + '-' + String(selectedPlanningDate.getMonth() + 1).padStart(2, '0') + '-' + String(selectedPlanningDate.getDate()).padStart(2, '0');
-        document.getElementById('planDate').value = selStr;
-        document.getElementById('planHeure').value = '';
-        document.getElementById('planClient').value = '';
-        document.getElementById('planDescription').value = '';
+        document.getElementById('planDate').value = int ? int.date : selStr;
+        document.getElementById('planHeureDebut').value = int ? (int.heure || '') : '';
+        document.getElementById('planHeureFin').value = int ? (int.heureFin || '') : '';
+        document.getElementById('planClient').value = int ? (int.client || '') : '';
+        document.getElementById('planTel').value = int ? (int.tel || '') : '';
+        document.getElementById('planAdresse').value = int ? (int.adresse || '') : '';
+        document.getElementById('planDescription').value = int ? (int.description || '') : '';
+        document.getElementById('planTypeSelect').value = int ? (int.type || 'depannage') : 'depannage';
+        updatePlanDureeCalc();
+        if (editId) {
+          document.getElementById('planningModalTitle').innerHTML = '<i class="fas fa-edit" style="color:#1a5279;"></i> Modifier le RDV';
+          document.getElementById('confirmPlanning').innerHTML = '<i class="fas fa-save"></i> Mettre à jour';
+        } else {
+          document.getElementById('planningModalTitle').innerHTML = '<i class="fas fa-calendar-plus" style="color:#1a5279;"></i> Ajouter au planning';
+          document.getElementById('confirmPlanning').innerHTML = '<i class="fas fa-check"></i> Ajouter';
+        }
         document.getElementById('planningModal').classList.add('show');
         setTimeout(function() { document.getElementById('planClient').focus(); }, 100);
       }
 
-      document.getElementById('addFromPlanningBtn').addEventListener('click', openPlanningModal);
+      document.getElementById('addFromPlanningBtn').addEventListener('click', function() { openPlanningModal(); });
       document.getElementById('cancelPlanning').addEventListener('click', function() {
         document.getElementById('planningModal').classList.remove('show');
+        editingPlanningId = null;
+      });
+
+      document.getElementById('planHeureDebut').addEventListener('change', updatePlanDureeCalc);
+      document.getElementById('planHeureFin').addEventListener('change', updatePlanDureeCalc);
+      document.getElementById('planHeureDebut').addEventListener('input', updatePlanDureeCalc);
+      document.getElementById('planHeureFin').addEventListener('input', updatePlanDureeCalc);
+
+      document.getElementById('planPreset7h').addEventListener('click', function() {
+        setPlanningHeures('08:00', 7 * 60);
+      });
+      document.getElementById('planPresetDemi').addEventListener('click', function() {
+        setPlanningHeures('08:00', 3.5 * 60);
+      });
+      document.getElementById('planPreset1h').addEventListener('click', function() {
+        setPlanningHeures('08:00', 60);
+      });
+      document.getElementById('planPreset2h').addEventListener('click', function() {
+        setPlanningHeures('08:00', 120);
+      });
+      document.getElementById('planPresetClear').addEventListener('click', function() {
+        document.getElementById('planHeureDebut').value = '';
+        document.getElementById('planHeureFin').value = '';
+        updatePlanDureeCalc();
       });
 
       document.getElementById('confirmPlanning').addEventListener('click', function() {
         var type = document.getElementById('planTypeSelect').value;
         var date = document.getElementById('planDate').value;
-        var heure = document.getElementById('planHeure').value;
+        var heureDebut = document.getElementById('planHeureDebut').value;
+        var heureFin = document.getElementById('planHeureFin').value;
         var client = document.getElementById('planClient').value.trim();
+        var tel = document.getElementById('planTel').value.trim();
+        var adresse = document.getElementById('planAdresse').value.trim();
         var description = document.getElementById('planDescription').value.trim();
         if (!client) { toast('Client / Adresse requis'); return; }
         if (!description) { toast('Description requise'); return; }
         if (!date) { toast('Date requise'); return; }
-        var newInt = {
-          id: 'int_' + Date.now(),
-          numeroFacture: genererNumeroFacture(),
-          client: client, email: '', description: description, type: type,
-          date: date, heure: heure, duree: 0, taux: settings.tauxDefaut,
-          deplacement: settings.deplacementDefaut, pieces: [], notes: '',
-          paye: false, datePaiement: null, signatureClient: null, signatureTech: null,
-          createdAt: new Date().toISOString()
-        };
-        interventions.push(newInt);
+        if (!heureDebut) { toast('Heure de début requise'); return; }
+        var duree = 0;
+        if (heureFin) {
+          duree = diffHeures(heureDebut, heureFin);
+          if (duree <= 0) { toast('L\'heure de fin doit être après l\'heure de début'); return; }
+        }
+        if (editingPlanningId) {
+          var int = interventions.find(function(i) { return i.id === editingPlanningId; });
+          if (int) {
+            int.type = type;
+            int.date = date;
+            int.heure = heureDebut;
+            int.heureFin = heureFin;
+            int.client = client;
+            int.tel = tel;
+            int.adresse = adresse;
+            int.description = description;
+            if (duree > 0) int.duree = duree;
+          }
+          editingPlanningId = null;
+          showToastSave('RDV mis à jour', 'success');
+        } else {
+          var newInt = {
+            id: 'int_' + Date.now(),
+            numeroFacture: genererNumeroFacture(),
+            client: client, email: '', tel: tel, adresse: adresse,
+            description: description, type: type,
+            date: date, heure: heureDebut, heureFin: heureFin, duree: duree,
+            taux: settings.tauxDefaut, deplacement: settings.deplacementDefaut,
+            pieces: [], notes: '', paye: false, datePaiement: null,
+            signatureClient: null, signatureTech: null, createdAt: new Date().toISOString()
+          };
+          interventions.push(newInt);
+          showToastSave('Ajouté au planning', 'success');
+        }
         document.getElementById('planningModal').classList.remove('show');
         markAsDirty();
         renderAll();
-        showToastSave('Ajouté au planning', 'success');
       });
+
+      // ----- Édition intervention -----
+      function editIntervention(id) {
+        var int = interventions.find(function(i) { return i.id === id; });
+        if (!int) return;
+        openInterventionModal({
+          editId: int.id, client: int.client, email: int.email,
+          tel: int.tel, adresse: int.adresse,
+          description: int.description, type: int.type, date: int.date,
+          heure: int.heure, heureFin: int.heureFin, duree: int.duree, taux: int.taux,
+          deplacement: int.deplacement, notes: int.notes, paye: int.paye,
+          pieces: int.pieces
+        });
+      }
+
+      // ----- Édition devis -----
+      function editDevis(id) {
+        var d = devisList.find(function(x) { return x.id === id; });
+        if (!d) return;
+        editingDevisId = id;
+        tempDevisPieces = (d.pieces || []).map(function(p) { return { nom: p.nom, prix: p.prix }; });
+        renderDevisPieces();
+        document.getElementById('devisClient').value = d.client || '';
+        document.getElementById('devisEmail').value = d.email || '';
+        document.getElementById('devisTel').value = d.tel || '';
+        document.getElementById('devisAdresse').value = d.adresse || '';
+        document.getElementById('devisDescription').value = d.description || '';
+        document.getElementById('devisDate').value = d.date || new Date().toISOString().slice(0, 10);
+        document.getElementById('devisValidite').value = d.validite || 30;
+        var dureeObj = minutesVersDuree(d.duree || 0);
+        document.getElementById('devisDureeJours').value = dureeObj.jours;
+        document.getElementById('devisDureeHeures').value = dureeObj.heures;
+        document.getElementById('devisDureeMinutes').value = dureeObj.minutes;
+        updateDureeTotal('devis');
+        document.getElementById('devisTaux').value = d.taux || settings.tauxDefaut;
+        document.getElementById('devisDeplacement').value = d.deplacement || settings.deplacementDefaut;
+        document.getElementById('devisNotes').value = d.notes || '';
+        document.getElementById('devisModalTitle').innerHTML = '<i class="fas fa-edit" style="color:#4338ca;"></i> Modifier le devis';
+        document.getElementById('confirmDevis').innerHTML = '<i class="fas fa-save"></i> Mettre à jour';
+        document.getElementById('devisModal').classList.add('show');
+      }
 
       // ----- Signatures -----
       var clientCanvas, clientCtx, techCanvas, techCtx;
@@ -2828,14 +3218,31 @@
         var m = document.getElementById(prefix + 'DureeMinutes');
         var badge = document.getElementById(prefix + 'DureeTotalBadge');
         if (!j || !h || !m || !badge) return;
-        var total = dureeEnMinutes(j.value, h.value, m.value);
-        badge.textContent = 'Total : ' + formatDuree(total);
+        var total = dureeVersMinutes(j.value, h.value, m.value);
+        badge.textContent = 'Total : ' + formatDuree(total) + ' (' + (total / 60).toFixed(1) + 'h)';
+      }
+
+      function applyDureePreset(prefix, heures) {
+        var totalMinutes = Math.round(heures * 60);
+        var dureeObj = minutesVersDuree(totalMinutes);
+        document.getElementById(prefix + 'DureeJours').value = dureeObj.jours;
+        document.getElementById(prefix + 'DureeHeures').value = dureeObj.heures;
+        document.getElementById(prefix + 'DureeMinutes').value = dureeObj.minutes;
+        updateDureeTotal(prefix);
       }
 
       ['int', 'devis'].forEach(function(prefix) {
         ['DureeJours', 'DureeHeures', 'DureeMinutes'].forEach(function(field) {
           var el = document.getElementById(prefix + field);
           if (el) el.addEventListener('input', function() { updateDureeTotal(prefix); });
+        });
+      });
+
+      document.querySelectorAll('.duree-presets button[data-prefix]').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          var prefix = this.dataset.prefix;
+          var heures = parseFloat(this.dataset.hours);
+          applyDureePreset(prefix, heures);
         });
       });
 
@@ -2850,13 +3257,16 @@
         document.getElementById('intTypeSelect').value = prefill.type || 'depannage';
         document.getElementById('intClient').value = prefill.client || '';
         document.getElementById('intEmail').value = prefill.email || '';
+        document.getElementById('intTel').value = prefill.tel || '';
+        document.getElementById('intAdresse').value = prefill.adresse || '';
         document.getElementById('intDescription').value = prefill.description || '';
         document.getElementById('intDate').value = prefill.date || new Date().toISOString().slice(0, 10);
         document.getElementById('intHeure').value = prefill.heure || '';
         var dureeMin = prefill.duree || 0;
-        document.getElementById('intDureeJours').value = Math.floor(dureeMin / 1440);
-        document.getElementById('intDureeHeures').value = Math.floor((dureeMin % 1440) / 60);
-        document.getElementById('intDureeMinutes').value = dureeMin % 60;
+        var dureeObj = minutesVersDuree(dureeMin);
+        document.getElementById('intDureeJours').value = dureeObj.jours;
+        document.getElementById('intDureeHeures').value = dureeObj.heures;
+        document.getElementById('intDureeMinutes').value = dureeObj.minutes;
         updateDureeTotal('int');
         document.getElementById('intTaux').value = prefill.taux || settings.tauxDefaut;
         document.getElementById('intDeplacement').value = prefill.deplacement || settings.deplacementDefaut;
@@ -2888,11 +3298,13 @@
         var editId = interventionModal.dataset.editId;
         var client = document.getElementById('intClient').value.trim();
         var email = document.getElementById('intEmail').value.trim();
+        var tel = document.getElementById('intTel').value.trim();
+        var adresse = document.getElementById('intAdresse').value.trim();
         var description = document.getElementById('intDescription').value.trim();
         var type = document.getElementById('intTypeSelect').value;
         var date = document.getElementById('intDate').value;
         var heure = document.getElementById('intHeure').value;
-        var duree = dureeEnMinutes(
+        var duree = dureeVersMinutes(
           document.getElementById('intDureeJours').value,
           document.getElementById('intDureeHeures').value,
           document.getElementById('intDureeMinutes').value
@@ -2909,7 +3321,8 @@
         if (editId) {
           var int = interventions.find(function(i) { return i.id === editId; });
           if (int) {
-            int.client = client; int.email = email; int.description = description;
+            int.client = client; int.email = email; int.tel = tel; int.adresse = adresse;
+            int.description = description;
             int.type = type; int.date = date; int.heure = heure; int.duree = duree;
             int.taux = taux; int.deplacement = deplacement; int.notes = notes; int.pieces = pieces;
             if (paye && !int.paye) { int.paye = true; int.datePaiement = new Date().toISOString().slice(0, 10); }
@@ -2920,7 +3333,8 @@
           var newInt = {
             id: 'int_' + Date.now(),
             numeroFacture: genererNumeroFacture(),
-            client: client, email: email, description: description, type: type,
+            client: client, email: email, tel: tel, adresse: adresse,
+            description: description, type: type,
             date: date, heure: heure, duree: duree, taux: taux, deplacement: deplacement,
             pieces: pieces, notes: notes, paye: paye,
             datePaiement: paye ? new Date().toISOString().slice(0, 10) : null,
@@ -2940,10 +3354,13 @@
 
       // ----- Modale devis -----
       function openDevisModal() {
+        editingDevisId = null;
         tempDevisPieces = [];
         renderDevisPieces();
         document.getElementById('devisClient').value = '';
         document.getElementById('devisEmail').value = '';
+        document.getElementById('devisTel').value = '';
+        document.getElementById('devisAdresse').value = '';
         document.getElementById('devisDescription').value = '';
         document.getElementById('devisDate').value = new Date().toISOString().slice(0, 10);
         document.getElementById('devisValidite').value = '30';
@@ -2954,21 +3371,26 @@
         document.getElementById('devisTaux').value = settings.tauxDefaut;
         document.getElementById('devisDeplacement').value = settings.deplacementDefaut;
         document.getElementById('devisNotes').value = '';
+        document.getElementById('devisModalTitle').innerHTML = '<i class="fas fa-file-signature" style="color:#4338ca;"></i> Nouveau devis';
+        document.getElementById('confirmDevis').innerHTML = '<i class="fas fa-check"></i> Créer le devis';
         document.getElementById('devisModal').classList.add('show');
       }
 
       document.getElementById('addDevisBtn').addEventListener('click', openDevisModal);
       document.getElementById('cancelDevis').addEventListener('click', function() {
         document.getElementById('devisModal').classList.remove('show');
+        editingDevisId = null;
       });
 
       document.getElementById('confirmDevis').addEventListener('click', function() {
         var client = document.getElementById('devisClient').value.trim();
         var email = document.getElementById('devisEmail').value.trim();
+        var tel = document.getElementById('devisTel').value.trim();
+        var adresse = document.getElementById('devisAdresse').value.trim();
         var description = document.getElementById('devisDescription').value.trim();
         var date = document.getElementById('devisDate').value;
         var validite = parseInt(document.getElementById('devisValidite').value) || 30;
-        var duree = dureeEnMinutes(
+        var duree = dureeVersMinutes(
           document.getElementById('devisDureeJours').value,
           document.getElementById('devisDureeHeures').value,
           document.getElementById('devisDureeMinutes').value
@@ -2978,19 +3400,32 @@
         var notes = document.getElementById('devisNotes').value.trim();
         if (!client || !description || !date) { toast('Champs obligatoires manquants'); return; }
         var pieces = tempDevisPieces.filter(function(p) { return p.nom && p.nom.trim() && parseFloat(p.prix) > 0; });
-        var newDevis = {
-          id: 'dev_' + Date.now(),
-          numeroDevis: genererNumeroDevis(),
-          client: client, email: email, description: description, date: date,
-          validite: validite, duree: duree, taux: taux, deplacement: deplacement,
-          pieces: pieces, notes: notes, statut: 'en_attente',
-          signatureClient: null, signatureTech: null, createdAt: new Date().toISOString()
-        };
-        devisList.push(newDevis);
+        if (editingDevisId) {
+          var d = devisList.find(function(x) { return x.id === editingDevisId; });
+          if (d) {
+            d.client = client; d.email = email; d.tel = tel; d.adresse = adresse;
+            d.description = description;
+            d.date = date; d.validite = validite; d.duree = duree;
+            d.taux = taux; d.deplacement = deplacement; d.pieces = pieces; d.notes = notes;
+          }
+          editingDevisId = null;
+          showToastSave('Devis modifié', 'success');
+        } else {
+          var newDevis = {
+            id: 'dev_' + Date.now(),
+            numeroDevis: genererNumeroDevis(),
+            client: client, email: email, tel: tel, adresse: adresse,
+            description: description, date: date,
+            validite: validite, duree: duree, taux: taux, deplacement: deplacement,
+            pieces: pieces, notes: notes, statut: 'en_attente',
+            signatureClient: null, signatureTech: null, createdAt: new Date().toISOString()
+          };
+          devisList.push(newDevis);
+          showToastSave('Devis ' + newDevis.numeroDevis + ' créé', 'success');
+        }
         document.getElementById('devisModal').classList.remove('show');
         markAsDirty();
         renderAll();
-        showToastSave('Devis ' + newDevis.numeroDevis + ' créé', 'success');
       });
 
       // ----- Devis détail -----
@@ -3006,6 +3441,8 @@
         var html = '';
         html += '<div class="facture-line"><span>Client</span><strong>' + escapeHtml(d.client) + '</strong></div>';
         if (d.email) html += '<div class="facture-line"><span>Email</span><span>' + escapeHtml(d.email) + '</span></div>';
+        if (d.tel) html += '<div class="facture-line"><span>Téléphone</span><a href="' + getPhoneHref(d.tel) + '" style="color:#1a5279; font-weight:600;">' + escapeHtml(d.tel) + ' <i class="fas fa-phone"></i></a></div>';
+        if (d.adresse) html += '<div class="facture-line"><span>Adresse</span><a href="' + getMapsHref(d.adresse) + '" target="_blank" rel="noopener" style="color:#1a5279; font-weight:600;">' + escapeHtml(d.adresse) + ' <i class="fas fa-map-marked-alt"></i></a></div>';
         html += '<div class="facture-line"><span>Date</span><span>' + formatDate(d.date) + '</span></div>';
         html += '<div class="facture-line"><span>Validité</span><span>' + d.validite + ' jours</span></div>';
         html += '<div class="facture-line"><span>Description</span><span style="text-align:right; max-width:60%;">' + escapeHtml(d.description) + '</span></div>';
@@ -3052,6 +3489,12 @@
         if (d) { d.statut = 'refuse'; markAsDirty(); renderAll(); openDevisDetail(currentDevisId); showToastSave('Devis refusé', 'warning'); }
       });
 
+      document.getElementById('editDevisBtn').addEventListener('click', function() {
+        if (!currentDevisId) return;
+        document.getElementById('devisDetailModal').classList.remove('show');
+        editDevis(currentDevisId);
+      });
+
       document.getElementById('convertDevisBtn').addEventListener('click', function() {
         var d = devisList.find(function(x) { return x.id === currentDevisId; });
         if (!d) return;
@@ -3060,8 +3503,9 @@
           var newInt = {
             id: 'int_' + Date.now(),
             numeroFacture: genererNumeroFacture(),
-            client: d.client, email: d.email, description: d.description,
-            type: 'autre', date: new Date().toISOString().slice(0, 10), heure: '',
+            client: d.client, email: d.email, tel: d.tel, adresse: d.adresse,
+            description: d.description,
+            type: 'autre', date: new Date().toISOString().slice(0, 10), heure: '', heureFin: '',
             duree: d.duree, taux: d.taux, deplacement: d.deplacement,
             pieces: d.pieces || [], notes: d.notes, paye: false,
             datePaiement: null, signatureClient: d.signatureClient,
@@ -3109,8 +3553,13 @@
         var html = '';
         html += '<div class="facture-line"><span>Client</span><strong>' + escapeHtml(int.client || '—') + '</strong></div>';
         if (int.email) html += '<div class="facture-line"><span>Email</span><span>' + escapeHtml(int.email) + '</span></div>';
+        if (int.tel) html += '<div class="facture-line"><span>Téléphone</span><a href="' + getPhoneHref(int.tel) + '" style="color:#1a5279; font-weight:600;">' + escapeHtml(int.tel) + ' <i class="fas fa-phone"></i></a></div>';
+        if (int.adresse) html += '<div class="facture-line"><span>Adresse</span><a href="' + getMapsHref(int.adresse) + '" target="_blank" rel="noopener" style="color:#1a5279; font-weight:600;">' + escapeHtml(int.adresse) + ' <i class="fas fa-map-marked-alt"></i></a></div>';
         html += '<div class="facture-line"><span>Type</span><span>' + typeInfo.label + '</span></div>';
-        html += '<div class="facture-line"><span>Date</span><span>' + formatDate(int.date) + (int.heure ? ' à ' + int.heure : '') + '</span></div>';
+        var heureStr = formatDate(int.date);
+        if (int.heure) heureStr += ' de ' + int.heure;
+        if (int.heureFin) heureStr += ' à ' + int.heureFin;
+        html += '<div class="facture-line"><span>Date</span><span>' + heureStr + '</span></div>';
         html += '<div class="facture-line"><span>Description</span><span style="text-align:right; max-width:60%;">' + escapeHtml(int.description || '—') + '</span></div>';
         if (int.notes) html += '<div class="facture-line"><span>Notes</span><span style="text-align:right; max-width:60%; font-style:italic; color:#777;">' + escapeHtml(int.notes) + '</span></div>';
         html += '<div class="facture-line" style="margin-top:10px; padding-top:10px; border-top:1px solid #e3ebf3;"><span>Main d\'œuvre (' + formatDuree(int.duree) + ')</span><span>' + (int.taux || settings.tauxDefaut) + ' €/h = ' + mainOeuvre.toFixed(2) + ' €</span></div>';
@@ -3129,6 +3578,9 @@
         html += '<div class="facture-line" style="font-size:0.75rem; color:#2e7d32;"><span>CA Net (après impôts ' + settings.taxe + '%)</span><span>' + formatEuro(getTotalNet(int)) + '</span></div>';
         if (int.paye) {
           html += '<div style="margin-top:12px; padding:10px; background:#e8f5e9; border-radius:12px; text-align:center; color:#2e7d32; font-weight:600; font-size:0.85rem;"><i class="fas fa-check-circle"></i> Payée le ' + formatDate(int.datePaiement) + '</div>';
+        } else if (isOverdue(int)) {
+          var jrs = joursEntre(int.date, new Date().toISOString().slice(0, 10));
+          html += '<div style="margin-top:12px; padding:10px; background:#fff3e0; border-radius:12px; text-align:center; color:#ed6c02; font-weight:600; font-size:0.85rem;"><i class="fas fa-clock"></i> En retard de ' + jrs + ' jours</div>';
         } else {
           html += '<div style="margin-top:12px; padding:10px; background:#ffebee; border-radius:12px; text-align:center; color:#c62828; font-weight:600; font-size:0.85rem;"><i class="fas fa-exclamation-circle"></i> En attente de paiement</div>';
         }
@@ -3171,16 +3623,8 @@
 
       document.getElementById('editFactureBtn').addEventListener('click', function() {
         if (!currentFactureId) return;
-        var int = interventions.find(function(i) { return i.id === currentFactureId; });
-        if (!int) return;
         document.getElementById('factureModal').classList.remove('show');
-        openInterventionModal({
-          editId: int.id, client: int.client, email: int.email,
-          description: int.description, type: int.type, date: int.date,
-          heure: int.heure, duree: int.duree, taux: int.taux,
-          deplacement: int.deplacement, notes: int.notes, paye: int.paye,
-          pieces: int.pieces
-        });
+        editIntervention(currentFactureId);
       });
 
       function markAsPaid(id) {
@@ -3283,11 +3727,30 @@
             doc.setFont('helvetica', 'normal');
             doc.text(int.email, margin + 45, y);
           }
+          if (int.tel) {
+            y += 7;
+            doc.setFont('helvetica', 'bold');
+            doc.text('Téléphone :', margin + 10, y);
+            doc.setFont('helvetica', 'normal');
+            doc.text(int.tel, margin + 45, y);
+          }
+          if (int.adresse) {
+            y += 7;
+            doc.setFont('helvetica', 'bold');
+            doc.text('Adresse :', margin + 10, y);
+            doc.setFont('helvetica', 'normal');
+            var adrLines = doc.splitTextToSize(int.adresse, pageWidth - margin - 55);
+            doc.text(adrLines, margin + 45, y);
+            y += (adrLines.length - 1) * 5;
+          }
           y += 7;
           doc.setFont('helvetica', 'bold');
           doc.text('Date :', margin + 10, y);
           doc.setFont('helvetica', 'normal');
-          doc.text(formatDate(int.date) + (int.heure ? ' à ' + int.heure : ''), margin + 45, y);
+          var dateStr = formatDate(int.date);
+          if (int.heure) dateStr += ' de ' + int.heure;
+          if (int.heureFin) dateStr += ' à ' + int.heureFin;
+          doc.text(dateStr, margin + 45, y);
           var typeInfo = TYPES_TACHES[int.type] || TYPES_TACHES.autre;
           y += 7;
           doc.setFont('helvetica', 'bold');
@@ -3462,6 +3925,22 @@
             doc.setFont('helvetica', 'normal');
             doc.text(d.email, margin + 45, y);
           }
+          if (d.tel) {
+            y += 7;
+            doc.setFont('helvetica', 'bold');
+            doc.text('Téléphone :', margin + 10, y);
+            doc.setFont('helvetica', 'normal');
+            doc.text(d.tel, margin + 45, y);
+          }
+          if (d.adresse) {
+            y += 7;
+            doc.setFont('helvetica', 'bold');
+            doc.text('Adresse :', margin + 10, y);
+            doc.setFont('helvetica', 'normal');
+            var adrLines = doc.splitTextToSize(d.adresse, pageWidth - margin - 55);
+            doc.text(adrLines, margin + 45, y);
+            y += (adrLines.length - 1) * 5;
+          }
           y += 7;
           doc.setFont('helvetica', 'bold');
           doc.text('Date :', margin + 10, y);
@@ -3603,6 +4082,9 @@
             piecesHtml += '<tr><td style="padding:6px 8px; border-bottom:1px solid #eee;">' + escapeHtml(p.nom) + '</td><td style="text-align:right; padding:6px 8px; border-bottom:1px solid #eee;">' + parseFloat(p.prix).toFixed(2) + ' €</td></tr>';
           });
         }
+        var dateStr = formatDate(int.date);
+        if (int.heure) dateStr += ' de ' + int.heure;
+        if (int.heureFin) dateStr += ' à ' + int.heureFin;
         printSection.innerHTML =
           '<div style="font-family:Arial, sans-serif; max-width:800px; margin:0 auto; padding:20px;">' +
             '<div style="background:#1a5279; color:white; padding:20px; text-align:center;">' +
@@ -3617,7 +4099,9 @@
               '<table style="width:100%; border-collapse:collapse; margin-bottom:20px;">' +
                 '<tr><td style="padding:4px 0; font-weight:bold; width:120px;">Client :</td><td>' + escapeHtml(int.client) + '</td></tr>' +
                 (int.email ? '<tr><td style="padding:4px 0; font-weight:bold;">Email :</td><td>' + escapeHtml(int.email) + '</td></tr>' : '') +
-                '<tr><td style="padding:4px 0; font-weight:bold;">Date :</td><td>' + formatDate(int.date) + (int.heure ? ' à ' + int.heure : '') + '</td></tr>' +
+                (int.tel ? '<tr><td style="padding:4px 0; font-weight:bold;">Téléphone :</td><td>' + escapeHtml(int.tel) + '</td></tr>' : '') +
+                (int.adresse ? '<tr><td style="padding:4px 0; font-weight:bold;">Adresse :</td><td>' + escapeHtml(int.adresse) + '</td></tr>' : '') +
+                '<tr><td style="padding:4px 0; font-weight:bold;">Date :</td><td>' + dateStr + '</td></tr>' +
                 '<tr><td style="padding:4px 0; font-weight:bold;">Type :</td><td>' + typeInfo.label + '</td></tr>' +
                 '<tr><td style="padding:4px 0; font-weight:bold;">Durée :</td><td>' + formatDuree(int.duree) + '</td></tr>' +
                 '<tr><td style="padding:4px 0; font-weight:bold;">Description :</td><td>' + escapeHtml(int.description) + '</td></tr>' +
@@ -3658,7 +4142,7 @@
         setTimeout(function() { printSection.style.display = 'none'; }, 1000);
       });
 
-      // ----- Recherche (avec debounce) -----
+      // ----- Recherche -----
       var debounceSearch;
       function debounce(fn, delay) {
         return function() {
@@ -3695,10 +4179,10 @@
 
       // ----- Export CSV -----
       document.getElementById('exportFacturesBtn').addEventListener('click', function() {
-        var csv = 'Numéro;Client;Email;Date;Type;Description;Durée;Total TTC;Statut;Signée\n';
+        var csv = 'Numéro;Client;Email;Téléphone;Adresse;Date;Type;Description;Durée;Total TTC;Statut;Signée\n';
         interventions.forEach(function(int) {
           var typeInfo = TYPES_TACHES[int.type] || TYPES_TACHES.autre;
-          csv += '"' + (int.numeroFacture || '') + '";"' + (int.client || '') + '";"' + (int.email || '') + '";"' + (int.date || '') + '";"' + typeInfo.label + '";"' + (int.description || '').replace(/"/g, '""') + '";"' + formatDuree(int.duree) + '";"' + getTotalTTC(int).toFixed(2) + '";"' + (int.paye ? 'Payée' : 'Impayée') + '";"' + (int.signatureClient ? 'Oui' : 'Non') + '"\n';
+          csv += '"' + (int.numeroFacture || '') + '";"' + (int.client || '') + '";"' + (int.email || '') + '";"' + (int.tel || '') + '";"' + (int.adresse || '') + '";"' + (int.date || '') + '";"' + typeInfo.label + '";"' + (int.description || '').replace(/"/g, '""') + '";"' + formatDuree(int.duree) + '";"' + getTotalTTC(int).toFixed(2) + '";"' + (int.paye ? 'Payée' : (isOverdue(int) ? 'En retard' : 'Impayée')) + '";"' + (int.signatureClient ? 'Oui' : 'Non') + '"\n';
         });
         var blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
         var link = document.createElement('a');
@@ -3708,7 +4192,7 @@
         toast('Export CSV téléchargé');
       });
 
-      // ----- Export données complètes (sauvegarde JSON) -----
+      // ----- Export données complètes -----
       document.getElementById('exportDataBtn').addEventListener('click', function() {
         var data = {
           interventions: interventions,
@@ -3717,7 +4201,8 @@
           factureCounter: factureCounter,
           devisCounter: devisCounter,
           settings: settings,
-          exportedAt: new Date().toISOString()
+          exportedAt: new Date().toISOString(),
+          version: 'v7'
         };
         var blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
         var link = document.createElement('a');
@@ -3725,6 +4210,89 @@
         link.download = 'plomberie_pro_sauvegarde_' + new Date().toISOString().slice(0, 10) + '.json';
         link.click();
         toast('Sauvegarde complète téléchargée');
+      });
+
+      // ============================================================
+      // IMPORT DE SAUVEGARDE (amélioration 14)
+      // ============================================================
+      document.getElementById('importDataBtn').addEventListener('click', function() {
+        document.getElementById('importDataInput').click();
+      });
+
+      document.getElementById('importDataInput').addEventListener('change', function(e) {
+        var file = e.target.files && e.target.files[0];
+        if (!file) return;
+        var reader = new FileReader();
+        reader.onload = function(evt) {
+          try {
+            var data = JSON.parse(evt.target.result);
+            if (!data || typeof data !== 'object') throw new Error('Format invalide');
+            if (!data.interventions && !data.devisList) throw new Error('Aucune donnée trouvée dans le fichier');
+            var nbInt = (data.interventions || []).length;
+            var nbDevis = (data.devisList || []).length;
+            var exportDate = data.exportedAt ? new Date(data.exportedAt).toLocaleString('fr-FR') : 'inconnue';
+            var msg = '⚠️ ATTENTION : Cette opération va REMPLACER toutes vos données actuelles.\n\n' +
+                      'Contenu du fichier :\n' +
+                      '• ' + nbInt + ' intervention(s)\n' +
+                      '• ' + nbDevis + ' devis\n' +
+                      '• Exporté le : ' + exportDate + '\n\n' +
+                      'Vos données actuelles :\n' +
+                      '• ' + interventions.length + ' intervention(s)\n' +
+                      '• ' + devisList.length + ' devis\n\n' +
+                      'Voulez-vous continuer ?';
+            showConfirm(msg, function(confirm) {
+              if (!confirm) {
+                document.getElementById('importDataInput').value = '';
+                return;
+              }
+              try {
+                // Sauvegarde de secours automatique avant écrasement
+                var backup = {
+                  interventions: interventions,
+                  devisList: devisList,
+                  clients: clients,
+                  factureCounter: factureCounter,
+                  devisCounter: devisCounter,
+                  settings: settings,
+                  backupAt: new Date().toISOString(),
+                  type: 'auto-backup-before-import'
+                };
+                localStorage.setItem('plomberie_pro_backup_before_import', JSON.stringify(backup));
+
+                // Application des nouvelles données
+                interventions = data.interventions || [];
+                devisList = data.devisList || [];
+                clients = data.clients || [];
+                factureCounter = data.factureCounter || 1;
+                devisCounter = data.devisCounter || 1;
+                if (data.settings) {
+                  for (var key in data.settings) {
+                    if (settings.hasOwnProperty(key)) settings[key] = data.settings[key];
+                  }
+                }
+                saveToStorage();
+                renderAll();
+                showToastSave('Import réussi : ' + nbInt + ' interventions, ' + nbDevis + ' devis', 'success');
+              } catch (err) {
+                showToastSave('Erreur lors de l\'import : ' + err.message, 'error');
+              }
+              document.getElementById('importDataInput').value = '';
+            });
+          } catch (err) {
+            showToastSave('Fichier invalide : ' + err.message, 'error');
+            document.getElementById('importDataInput').value = '';
+          }
+        };
+        reader.onerror = function() {
+          showToastSave('Erreur lecture du fichier', 'error');
+          document.getElementById('importDataInput').value = '';
+        };
+        reader.readAsText(file);
+      });
+
+      // Clic sur le bandeau d'alerte → aller aux factures
+      document.getElementById('alertOverdue').addEventListener('click', function() {
+        switchTab('factures');
       });
 
       // ----- Récap -----
@@ -3817,6 +4385,7 @@
         document.getElementById('setTvaActive').checked = settings.tvaActive;
         document.getElementById('setTauxDefaut').value = settings.tauxDefaut;
         document.getElementById('setDeplacementDefaut').value = settings.deplacementDefaut;
+        document.getElementById('setSeuilAlerte').value = settings.seuilAlerte || 30;
         document.getElementById('settingsModal').classList.add('show');
       });
 
@@ -3835,6 +4404,7 @@
         settings.tvaActive = document.getElementById('setTvaActive').checked;
         settings.tauxDefaut = parseFloat(document.getElementById('setTauxDefaut').value) || 45;
         settings.deplacementDefaut = parseFloat(document.getElementById('setDeplacementDefaut').value) || 30;
+        settings.seuilAlerte = parseInt(document.getElementById('setSeuilAlerte').value) || 30;
         saveToStorage();
         document.getElementById('settingsModal').classList.remove('show');
         renderAll();
@@ -3852,6 +4422,8 @@
             if (m.id === 'signatureModal') saveSignatures();
             m.classList.remove('show');
           });
+          editingDevisId = null;
+          editingPlanningId = null;
         }
       });
 
@@ -3877,10 +4449,10 @@
       if (!loaded || (interventions.length === 0 && devisList.length === 0)) {
         var today = new Date();
         var demoInt = [
-          { id: 'int_demo_1', numeroFacture: 'FAC-2025-0001', client: 'M. Dupont', email: 'dupont@email.com', description: 'Réparation fuite sous évier cuisine', type: 'reparation', date: new Date(today.getTime() - 2 * 86400000).toISOString().slice(0, 10), heure: '09:00', duree: 45, taux: 45, deplacement: 30, pieces: [{ nom: 'Joint', prix: 12 }], notes: 'Joint remplacé', paye: true, datePaiement: new Date(today.getTime() - 86400000).toISOString().slice(0, 10), signatureClient: null, signatureTech: null, createdAt: new Date().toISOString() },
-          { id: 'int_demo_2', numeroFacture: 'FAC-2025-0002', client: 'Résidence Les Lilas', email: 'contact@leslilas.fr', description: 'Entretien annuel chaudière gaz', type: 'entretien', date: new Date(today.getTime() + 86400000).toISOString().slice(0, 10), heure: '14:00', duree: 90, taux: 50, deplacement: 35, pieces: [], notes: 'Attestation remise', paye: false, datePaiement: null, signatureClient: null, signatureTech: null, createdAt: new Date().toISOString() },
-          { id: 'int_demo_3', numeroFacture: 'FAC-2025-0003', client: 'Café des Arts', email: '', description: 'Remplacement chasse d\'eau WC', type: 'depannage', date: new Date(today.getTime() + 2 * 86400000).toISOString().slice(0, 10), heure: '10:30', duree: 60, taux: 45, deplacement: 30, pieces: [{ nom: 'Mécanisme chasse', prix: 28 }], notes: '', paye: false, datePaiement: null, signatureClient: null, signatureTech: null, createdAt: new Date().toISOString() },
-          { id: 'int_demo_4', numeroFacture: 'FAC-2025-0004', client: 'Mme Martin', email: 'martin@email.com', description: 'Rénovation salle de bain complète', type: 'installation', date: new Date(today.getTime() - 5 * 86400000).toISOString().slice(0, 10), heure: '08:00', duree: 2880, taux: 45, deplacement: 30, pieces: [{ nom: 'Receveur douche', prix: 350 }, { nom: 'Mitigeur', prix: 120 }], notes: 'Chantier 2 jours', paye: false, datePaiement: null, signatureClient: null, signatureTech: null, createdAt: new Date().toISOString() }
+          { id: 'int_demo_1', numeroFacture: 'FAC-2025-0001', client: 'M. Dupont', email: 'dupont@email.com', tel: '06 12 34 56 78', adresse: '12 rue de la Paix, 75000 Paris', description: 'Réparation fuite sous évier cuisine', type: 'reparation', date: new Date(today.getTime() - 2 * 86400000).toISOString().slice(0, 10), heure: '09:00', heureFin: '09:45', duree: 45, taux: 45, deplacement: 30, pieces: [{ nom: 'Joint', prix: 12 }], notes: 'Joint remplacé', paye: true, datePaiement: new Date(today.getTime() - 86400000).toISOString().slice(0, 10), signatureClient: null, signatureTech: null, createdAt: new Date().toISOString() },
+          { id: 'int_demo_2', numeroFacture: 'FAC-2025-0002', client: 'Résidence Les Lilas', email: 'contact@leslilas.fr', tel: '01 45 67 89 01', adresse: '25 avenue des Lilas, 75020 Paris', description: 'Entretien annuel chaudière gaz', type: 'entretien', date: new Date(today.getTime() + 86400000).toISOString().slice(0, 10), heure: '14:00', heureFin: '15:30', duree: 90, taux: 50, deplacement: 35, pieces: [], notes: 'Attestation remise', paye: false, datePaiement: null, signatureClient: null, signatureTech: null, createdAt: new Date().toISOString() },
+          { id: 'int_demo_3', numeroFacture: 'FAC-2025-0003', client: 'Café des Arts', email: '', tel: '', adresse: '5 place du Marché, 75004 Paris', description: 'Remplacement chasse d\'eau WC', type: 'depannage', date: new Date(today.getTime() + 2 * 86400000).toISOString().slice(0, 10), heure: '10:30', heureFin: '11:30', duree: 60, taux: 45, deplacement: 30, pieces: [{ nom: 'Mécanisme chasse', prix: 28 }], notes: '', paye: false, datePaiement: null, signatureClient: null, signatureTech: null, createdAt: new Date().toISOString() },
+          { id: 'int_demo_4', numeroFacture: 'FAC-2025-0004', client: 'Mme Martin', email: 'martin@email.com', tel: '06 98 76 54 32', adresse: '8 rue Victor Hugo, 92100 Boulogne', description: 'Rénovation salle de bain complète', type: 'installation', date: new Date(today.getTime() - 5 * 86400000).toISOString().slice(0, 10), heure: '08:00', heureFin: '15:00', duree: 420, taux: 45, deplacement: 30, pieces: [{ nom: 'Receveur douche', prix: 350 }, { nom: 'Mitigeur', prix: 120 }], notes: 'Chantier 1 journée', paye: false, datePaiement: null, signatureClient: null, signatureTech: null, createdAt: new Date().toISOString() }
         ];
         interventions = demoInt;
         factureCounter = 5;
