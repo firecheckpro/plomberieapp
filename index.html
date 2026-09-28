@@ -5,13 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Plomberie Pro">
+  <meta name="apple-mobile-web-app-title" content="PipePline">
   <meta name="theme-color" content="#1a5279">
   <meta name="description" content="Application de gestion pour plombier - 100% hors ligne et privée">
-  <title>Plomberie Pro - Gestion hors ligne</title>
+  <title>PipePline - Gestion hors ligne</title>
   <link rel="icon" type="image/png" href="logo.png">
   <link rel="apple-touch-icon" href="logo.png">
-  <link rel="manifest" href="data:application/manifest+json;base64,eyJuYW1lIjoiUGxvbWJyaWUgUHJvIiwic2hvcnRfbmFtZSI6IlBsb21iZXJpZSIsInN0YXJ0X3VybCI6Ii4iLCJkaXNwbGF5Ijoic3RhbmRhbG9uZSIsImJhY2tncm91bmRfY29sb3VyIjoiIzFhNTI3OSIsInRoZW1lX2NvbG9yIjoiIzFhNTI3OSIsImljb25zIjpbeyJzcmMiOiJsb2dvLnBuZyIsInNpemVzIjoiNTEyeDUxMiIsInR5cGUiOiJpbWFnZS9wbmciLCJwdXJwb3NlIjoiYW55IG1hc2thYmxlIn1dfQ==">
+  <link rel="manifest" href="data:application/manifest+json;base64,eyJuYW1lIjoiUGlwZVBsdGluZSIsInNob3J0X25hbWUiOiJQaXBlUGxpbmUiLCJzdGFydF91cmwiOiIuIiwiZGlzcGxheSI6InN0YW5kYWxvbmUiLCJiYWNrZ3JvdW5kX2NvbG91ciI6IiMxYTUyNzkiLCJ0aGVtZV9jb2xvciI6IiMxYTUyNzkiLCJpY29ucyI6W3sic3JjIjoibG9nby5wbmciLCJzaXplcyI6IjUxMng1MTIiLCJ0eXBlIjoiaW1hZ2UvcG5nIiwicHVycG9zZSI6ImFueSBtYXNrYWJsZSJ9XX0=">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
@@ -174,15 +174,6 @@
     .alert-backup.show { display: flex; }
     .alert-backup i.alert-icon { font-size: 1.1rem; color: #1976d2; }
     .alert-backup .alert-text { flex: 1; }
-    .alert-backup .alert-action {
-      background: #1976d2;
-      color: white;
-      padding: 4px 12px;
-      border-radius: 40px;
-      font-size: 0.7rem;
-      font-weight: 700;
-      white-space: nowrap;
-    }
     .alert-backup .alert-close {
       background: transparent;
       border: none;
@@ -195,6 +186,36 @@
       -webkit-appearance: none;
     }
     .alert-backup .alert-close:hover { opacity: 1; }
+
+    /* ==== Bandeau alerte stockage ==== */
+    .alert-storage {
+      display: none;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      margin-bottom: 10px;
+      background: linear-gradient(135deg, #fce4ec, #f8bbd0);
+      border: 1px solid #f06292;
+      border-left: 5px solid #c2185b;
+      border-radius: 14px;
+      font-size: 0.8rem;
+      color: #880e4f;
+      font-weight: 600;
+    }
+    .alert-storage.show { display: flex; }
+    .alert-storage i.alert-icon { font-size: 1.1rem; color: #c2185b; }
+    .alert-storage .alert-text { flex: 1; }
+    .alert-storage .alert-close {
+      background: transparent;
+      border: none;
+      color: #880e4f;
+      cursor: pointer;
+      padding: 4px 6px;
+      font-size: 0.9rem;
+      opacity: 0.6;
+      -webkit-appearance: none;
+    }
+    .alert-storage .alert-close:hover { opacity: 1; }
 
     /* ==== Stats compactes sur une seule ligne ==== */
     .stats-row {
@@ -256,7 +277,7 @@
       flex-shrink: 0;
     }
 
-    /* ==== Bandeau CA avec boutons sauvegarder/restaurer ==== */
+    /* ==== Bandeau CA avec boutons ==== */
     .ca-compact {
       display: flex;
       gap: 6px;
@@ -543,6 +564,27 @@
       background: #fffaf3;
     }
 
+    /* ==== Amélioration 12 : intervention AUJOURD'HUI ==== */
+    .intervention-card.today {
+      box-shadow: 0 4px 14px rgba(26, 82, 121, 0.15), 0 0 0 2px #1a5279 inset;
+      background: linear-gradient(135deg, #f0f7ff, #e3f2fd);
+    }
+
+    .intervention-card.today::before {
+      content: "AUJOURD'HUI";
+      position: absolute;
+      display: inline-block;
+      background: #1a5279;
+      color: white;
+      font-size: 0.55rem;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 20px;
+      letter-spacing: 0.5px;
+      margin-top: -22px;
+      margin-left: 0;
+    }
+
     .int-header {
       display: flex;
       justify-content: space-between;
@@ -664,6 +706,7 @@
     .int-btn.delete:hover { background: #ffebee; color: #c62828; }
     .int-btn.call:hover { background: #e8f5e9; color: #2e7d32; }
     .int-btn.route:hover { background: #e0e7ff; color: #4338ca; }
+    .int-btn.duplicate:hover { background: #fff8e1; color: #b16b1a; }
 
     .empty-state {
       color: #7a96b1;
@@ -787,6 +830,8 @@
     .fact-actions .edit:hover { background: #e0e7ff; color: #4338ca; }
     .fact-actions .call:hover { background: #e8f5e9; color: #2e7d32; }
     .fact-actions .route:hover { background: #e0e7ff; color: #4338ca; }
+    .fact-actions .share:hover { background: #f3e5f5; color: #7b1fa2; }
+    .fact-actions .duplicate:hover { background: #fff8e1; color: #b16b1a; }
 
     @media (max-width: 600px) {
       .facture-item {
@@ -1477,6 +1522,37 @@
       color: #1a5279;
     }
 
+    /* ==== Amélioration 4 : Total en gros dans la facture ==== */
+    .facture-total-highlight {
+      margin: 16px 0 8px;
+      padding: 14px 18px;
+      background: linear-gradient(135deg, #1a5279, #0f3f60);
+      border-radius: 14px;
+      color: white;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 6px 18px rgba(26, 82, 121, 0.3);
+    }
+    .facture-total-highlight .total-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      opacity: 0.85;
+    }
+    .facture-total-highlight .total-value {
+      font-size: 1.6rem;
+      font-weight: 800;
+      line-height: 1;
+    }
+    .facture-total-highlight .total-sub {
+      font-size: 0.65rem;
+      opacity: 0.75;
+      margin-top: 2px;
+      text-align: right;
+    }
+
     .modal-actions {
       display: flex;
       gap: 8px;
@@ -1506,6 +1582,8 @@
     .btn-danger:hover { background: #b71c1c; }
     .btn-pay { background: #2e7d32; color: white; }
     .btn-pay:hover { background: #1b5e20; }
+    .btn-share { background: #7b1fa2; color: white; }
+    .btn-share:hover { background: #6a1b9a; }
 
     .offline-badge {
       position: fixed;
@@ -1530,6 +1608,67 @@
     .offline-badge.offline { background: #ed6c02; }
     .offline-badge.online { background: #2e7d32; }
 
+    /* ==== Amélioration 21 : Case à cocher acompte ==== */
+    .acompte-block {
+      margin-bottom: 12px;
+      padding: 12px;
+      background: #f8fbfe;
+      border-radius: 14px;
+      border: 1px solid #e3ebf3;
+    }
+    .acompte-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      user-select: none;
+    }
+    .acompte-header input[type="checkbox"] {
+      width: 20px;
+      height: 20px;
+      accent-color: #4338ca;
+      flex-shrink: 0;
+      cursor: pointer;
+    }
+    .acompte-header label {
+      margin: 0;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #1b3b55;
+      text-transform: none;
+      letter-spacing: 0;
+      cursor: pointer;
+    }
+    .acompte-fields {
+      display: none;
+      gap: 10px;
+      margin-top: 10px;
+      align-items: flex-end;
+    }
+    .acompte-fields.show {
+      display: flex;
+    }
+    .acompte-fields .acompte-field {
+      flex: 1;
+      text-align: center;
+    }
+    .acompte-fields .acompte-field label {
+      font-size: 0.6rem;
+      text-align: center;
+      color: #7a96b1;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+      display: block;
+      font-weight: 600;
+    }
+    .acompte-fields .acompte-field input {
+      text-align: center;
+      padding: 8px 10px;
+      font-weight: 700;
+      color: #4338ca;
+      font-size: 0.95rem;
+    }
+
     @supports (padding: max(0px)) {
       .modal-box {
         padding-bottom: max(24px, calc(24px + var(--safe-bottom)));
@@ -1547,7 +1686,7 @@
     <div class="app-header">
       <div class="header-left">
         <img src="logo.png" alt="Logo" class="app-logo" onerror="this.style.display='none'" />
-        <h1>Plomberie Pro</h1>
+        <h1>PipePline</h1>
       </div>
       <div style="display:flex; flex-wrap:wrap; gap:6px; align-items:center;">
         <div class="save-indicator" id="saveIndicator">
@@ -1558,18 +1697,25 @@
       </div>
     </div>
 
-    <!-- Bandeau d'alerte impayées > seuil -->
+    <!-- Alerte impayées > seuil -->
     <div class="alert-overdue" id="alertOverdue">
       <i class="fas fa-exclamation-triangle alert-icon"></i>
       <span class="alert-text" id="alertOverdueText">—</span>
       <span class="alert-action">Voir</span>
     </div>
 
-    <!-- Bandeau de rappel de sauvegarde (apparaît si >15 jours) -->
+    <!-- Alerte rappel sauvegarde -->
     <div class="alert-backup" id="alertBackup">
       <i class="fas fa-cloud-download-alt alert-icon"></i>
       <span class="alert-text" id="alertBackupText">—</span>
       <button class="alert-close" id="alertBackupClose" title="Me rappeler plus tard"><i class="fas fa-times"></i></button>
+    </div>
+
+    <!-- Alerte stockage presque plein (amélioration 17) -->
+    <div class="alert-storage" id="alertStorage">
+      <i class="fas fa-database alert-icon"></i>
+      <span class="alert-text" id="alertStorageText">—</span>
+      <button class="alert-close" id="alertStorageClose" title="Fermer"><i class="fas fa-times"></i></button>
     </div>
 
     <!-- Stats compactes sur une seule ligne -->
@@ -1595,7 +1741,7 @@
       </div>
     </div>
 
-    <!-- Bandeau CA avec boutons Sauvegarder / Restaurer -->
+    <!-- Bandeau CA -->
     <div class="ca-compact">
       <div class="ca-chip">
         <span class="ca-chip-label">CA mois</span>
@@ -1973,6 +2119,48 @@
     </div>
   </div>
 
+  <!-- MODALE CONVERSION DEVIS → FACTURE AVEC ACOMPTE (amélioration 21) -->
+  <div class="modal-overlay" id="convertDevisModal">
+    <div class="modal-box" style="max-width:480px;">
+      <h2><i class="fas fa-exchange-alt" style="color:#4338ca;"></i> Convertir en facture</h2>
+      <div class="form-group">
+        <label>Client</label>
+        <input type="text" id="convertClientDisplay" readonly style="background:#f8fbfe; font-weight:600;" />
+      </div>
+      <div class="form-group">
+        <label>Total du devis</label>
+        <input type="text" id="convertTotalDisplay" readonly style="background:#f8fbfe; font-weight:700; color:#4338ca;" />
+      </div>
+      <div class="acompte-block">
+        <div class="acompte-header">
+          <input type="checkbox" id="convertAcompteActive" />
+          <label for="convertAcompteActive">Facturer un acompte maintenant</label>
+        </div>
+        <div class="acompte-fields" id="convertAcompteFields">
+          <div class="acompte-field">
+            <label>Acompte (%)</label>
+            <input type="number" id="convertAcomptePct" min="1" max="99" step="5" value="30" />
+          </div>
+          <div class="acompte-field">
+            <label>Montant acompte</label>
+            <input type="text" id="convertAcompteMontant" readonly style="background:#f8fbfe; color:#4338ca; font-weight:700;" />
+          </div>
+          <div class="acompte-field">
+            <label>Reste à payer</label>
+            <input type="text" id="convertResteMontant" readonly style="background:#f8fbfe; color:#c62828; font-weight:700;" />
+          </div>
+        </div>
+      </div>
+      <div style="font-size:0.7rem; color:#7a96b1; margin-top:10px; padding:8px; background:#f8fbfe; border-radius:8px;">
+        <i class="fas fa-info-circle"></i> <span id="convertInfo">Sans acompte, la facture sera créée au montant total du devis.</span>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-cancel" id="cancelConvertDevis"><i class="fas fa-times"></i> Annuler</button>
+        <button class="btn-confirm" id="confirmConvertDevis" style="background:#4338ca;"><i class="fas fa-check"></i> Créer la facture</button>
+      </div>
+    </div>
+  </div>
+
   <!-- MODALE SIGNATURE -->
   <div class="modal-overlay" id="signatureModal">
     <div class="modal-box" style="max-width:520px;">
@@ -2011,6 +2199,7 @@
       <div class="modal-actions" style="justify-content:space-between; flex-wrap:wrap;">
         <div style="display:flex; gap:6px; flex-wrap:wrap;">
           <button class="btn-pay" id="markPaidBtn"><i class="fas fa-check"></i> Marquer payée</button>
+          <button class="btn-share" id="shareFactureBtn" title="Partager via WhatsApp, Mail, AirDrop..."><i class="fas fa-share-alt"></i> Partager</button>
           <button class="btn-secondary" id="downloadPdfBtn"><i class="fas fa-download"></i> PDF</button>
           <button class="btn-secondary" id="printFactureBtn"><i class="fas fa-print"></i> Imprimer</button>
           <button class="btn-secondary" id="sendMailBtn"><i class="fas fa-envelope"></i> Mail</button>
@@ -2033,6 +2222,7 @@
           <button class="btn-secondary" id="refuseDevisBtn" style="background:#ffebee; color:#c62828; border-color:#ffcdd2;"><i class="fas fa-times"></i> Refuser</button>
           <button class="btn-secondary" id="editDevisBtn" style="background:#e0e7ff; color:#4338ca; border-color:#c7d2fe;"><i class="fas fa-edit"></i> Modifier</button>
           <button class="btn-secondary" id="downloadDevisPdfBtn"><i class="fas fa-download"></i> PDF</button>
+          <button class="btn-secondary" id="shareDevisBtn" style="background:#f3e5f5; color:#7b1fa2; border-color:#e1bee7;"><i class="fas fa-share-alt"></i> Partager</button>
           <button class="btn-secondary" id="sendDevisMailBtn"><i class="fas fa-envelope"></i> Mail</button>
           <button class="btn-secondary" id="convertDevisBtn" style="background:#e0e7ff; color:#4338ca; border-color:#c7d2fe;"><i class="fas fa-exchange-alt"></i> Convertir en facture</button>
         </div>
@@ -2084,7 +2274,7 @@
       <h2><i class="fas fa-cog" style="color:#1a5279;"></i> Paramètres</h2>
       <div class="form-group">
         <label>Nom de l'entreprise</label>
-        <input type="text" id="setNom" value="Plomberie Pro" />
+        <input type="text" id="setNom" value="PipePline" />
       </div>
       <div class="form-group">
         <label>Adresse</label>
@@ -2094,13 +2284,37 @@
         <label>SIRET</label>
         <input type="text" id="setSiret" value="123 456 789 00012" />
       </div>
+
+      <!-- Amélioration 19 : mentions légales -->
+      <div style="margin:12px 0 14px; padding:10px 12px; background:#f0f7ff; border-radius:12px; border-left:4px solid #1a5279;">
+        <div style="font-size:0.7rem; font-weight:700; color:#1a5279; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:10px;">
+          <i class="fas fa-balance-scale"></i> Mentions légales (factures)
+        </div>
+        <div class="form-group" style="margin-bottom:10px;">
+          <label>N° TVA intracommunautaire</label>
+          <input type="text" id="setTvaIntra" placeholder="FR 12 345678901" />
+        </div>
+        <div class="form-group" style="margin-bottom:10px;">
+          <label>Assurance décennale - Assureur</label>
+          <input type="text" id="setAssuranceNom" placeholder="AXA Assurances" />
+        </div>
+        <div class="form-group" style="margin-bottom:10px;">
+          <label>N° police d'assurance</label>
+          <input type="text" id="setAssuranceNum" placeholder="POL-123456789" />
+        </div>
+        <div class="form-group" style="margin-bottom:0;">
+          <label>Délai de paiement (jours)</label>
+          <input type="number" id="setDelaiPaiement" value="30" min="0" max="120" step="1" />
+        </div>
+      </div>
+
       <div class="form-group">
         <label>Téléphone</label>
         <input type="text" id="setTel" value="01 23 45 67 89" />
       </div>
       <div class="form-group">
         <label>Email</label>
-        <input type="email" id="setEmail" value="contact@plomberie-pro.fr" />
+        <input type="email" id="setEmail" value="contact@pipepline.fr" />
       </div>
       <div class="form-group">
         <label>Taux d'imposition auto-entreprise (%)</label>
@@ -2153,7 +2367,7 @@
     // ============================================================
     if ('serviceWorker' in navigator) {
       var swCode = `
-        const CACHE_NAME = 'plomberie-pro-v9';
+        const CACHE_NAME = 'pipepline-v1';
         const ASSETS = [
           'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css',
           'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',
@@ -2223,9 +2437,10 @@
     (function() {
       'use strict';
 
-      var STORAGE_KEY = 'plomberie_pro_v9';
-      var SETTINGS_KEY = 'plomberie_pro_settings_v9';
-      var BACKUP_META_KEY = 'plomberie_pro_backup_meta_v9';
+      var STORAGE_KEY = 'pipepline_v1';
+      var SETTINGS_KEY = 'pipepline_settings_v1';
+      var BACKUP_META_KEY = 'pipepline_backup_meta_v1';
+      var STORAGE_ALERT_KEY = 'pipepline_storage_alert_v1';
       var SAVE_DELAY = 1500;
       var WORK_HOURS_PER_DAY = 7;
 
@@ -2252,23 +2467,28 @@
       var currentSignatureTarget = null;
       var editingDevisId = null;
       var editingPlanningId = null;
+      var convertDevisSourceId = null;
       var settings = {
-        nom: 'Plomberie Pro',
+        nom: 'PipePline',
         adresse: '12 rue des Artisans, 75000 Paris',
         siret: '123 456 789 00012',
         tel: '01 23 45 67 89',
-        email: 'contact@plomberie-pro.fr',
+        email: 'contact@pipepline.fr',
         taxe: 21.2,
         tva: 10,
         tvaActive: false,
         tauxDefaut: 45,
         deplacementDefaut: 30,
         seuilAlerte: 30,
-        seuilSauvegarde: 15
+        seuilSauvegarde: 15,
+        tvaIntra: '',
+        assuranceNom: '',
+        assuranceNum: '',
+        delaiPaiement: 30
       };
       var backupMeta = {
-        lastExportAt: null,      // date ISO du dernier export
-        lastReminderAt: null     // date ISO du dernier rappel affiché
+        lastExportAt: null,
+        lastReminderAt: null
       };
       var planningDate = new Date();
       var selectedPlanningDate = new Date();
@@ -2364,6 +2584,11 @@
         var d = new Date(dateIso);
         var now = new Date();
         return Math.floor((now - d) / (24 * 3600 * 1000));
+      }
+
+      function isToday(dateStr) {
+        if (!dateStr) return false;
+        return dateStr === new Date().toISOString().slice(0, 10);
       }
 
       function genererNumeroFacture() {
@@ -2547,16 +2772,14 @@
       });
 
       // ============================================================
-      // RAPPEL DE SAUVEGARDE (bulle intelligente)
+      // RAPPEL DE SAUVEGARDE
       // ============================================================
       function checkBackupReminder() {
         var alertEl = document.getElementById('alertBackup');
         var alertText = document.getElementById('alertBackupText');
         var seuil = settings.seuilSauvegarde || 15;
 
-        // Cas 1 : jamais sauvegardé
         if (!backupMeta.lastExportAt) {
-          // On attend 3 jours après la première utilisation pour ne pas déranger tout de suite
           var rawData = localStorage.getItem(STORAGE_KEY);
           if (rawData) {
             try {
@@ -2571,7 +2794,6 @@
               }
             } catch(e) {}
           }
-          // Vérifie qu'on n'a pas déjà affiché le rappel récemment
           var derniereAlerte = backupMeta.lastReminderAt ? new Date(backupMeta.lastReminderAt) : null;
           if (derniereAlerte) {
             var joursDepuisAlerte = Math.floor((new Date() - derniereAlerte) / (24 * 3600 * 1000));
@@ -2585,14 +2807,12 @@
           return;
         }
 
-        // Cas 2 : déjà sauvegardé, on regarde le délai
         var jours = joursDepuis(backupMeta.lastExportAt);
         if (jours === null || jours < seuil) {
           alertEl.classList.remove('show');
           return;
         }
 
-        // Vérifie qu'on n'a pas affiché le rappel depuis moins de 7 jours
         if (backupMeta.lastReminderAt) {
           var joursDepuisRappel = joursDepuis(backupMeta.lastReminderAt);
           if (joursDepuisRappel !== null && joursDepuisRappel < 7) {
@@ -2611,18 +2831,71 @@
         document.getElementById('alertBackup').classList.remove('show');
       }
 
-      // Clic sur le bandeau : lance directement la sauvegarde
       document.getElementById('alertBackup').addEventListener('click', function(e) {
         if (e.target.closest('.alert-close')) return;
-        // Simule un clic sur le bouton Sauvegarder
         document.getElementById('exportDataBtn').click();
       });
 
-      // Bouton "X" pour ne pas être relancé avant 7 jours
       document.getElementById('alertBackupClose').addEventListener('click', function(e) {
         e.stopPropagation();
         dismissBackupReminder();
       });
+
+      // ============================================================
+      // ALERTE STOCKAGE (amélioration 17)
+      // ============================================================
+      function checkStorageUsage() {
+        if (!navigator.storage || !navigator.storage.estimate) return;
+        // Ne pas spammer : on n'affiche pas plus d'une fois toutes les 24h
+        var lastCheck = localStorage.getItem(STORAGE_ALERT_KEY);
+        if (lastCheck) {
+          var heuresDepuis = (new Date() - new Date(lastCheck)) / (3600 * 1000);
+          if (heuresDepuis < 24) return;
+        }
+        navigator.storage.estimate().then(function(est) {
+          localStorage.setItem(STORAGE_ALERT_KEY, new Date().toISOString());
+          var usage = est.usage || 0;
+          var quota = est.quota || 1;
+          var pct = Math.round((usage / quota) * 100);
+          if (pct >= 80) {
+            var alertEl = document.getElementById('alertStorage');
+            var alertText = document.getElementById('alertStorageText');
+            alertText.innerHTML = 'Stockage <strong>' + pct + '%</strong> utilisé (' + Math.round(usage / 1024) + ' Ko). Sauvegardez puis nettoyez si besoin.';
+            alertEl.classList.add('show');
+          }
+        }).catch(function() {});
+      }
+
+      document.getElementById('alertStorageClose').addEventListener('click', function() {
+        document.getElementById('alertStorage').classList.remove('show');
+        // Report de 24h
+        localStorage.setItem(STORAGE_ALERT_KEY, new Date().toISOString());
+      });
+
+      // ============================================================
+      // Amélioration 16 : compression des signatures en JPEG
+      // ============================================================
+      function compressSignature(canvas) {
+        // Réduit la résolution à max 500px de large et exporte en JPEG qualité 70%
+        try {
+          var tmp = document.createElement('canvas');
+          var maxW = 500;
+          var ratio = canvas.width / canvas.height;
+          var w = Math.min(maxW, canvas.width);
+          var h = Math.round(w / ratio);
+          tmp.width = w;
+          tmp.height = h;
+          var tctx = tmp.getContext('2d');
+          // Fond blanc (JPEG ne gère pas la transparence)
+          tctx.fillStyle = '#ffffff';
+          tctx.fillRect(0, 0, w, h);
+          tctx.drawImage(canvas, 0, 0, w, h);
+          return tmp.toDataURL('image/jpeg', 0.7);
+        } catch(e) {
+          // Fallback PNG si erreur
+          return canvas.toDataURL('image/png');
+        }
+      }
 
       // ----- Rendu stats -----
       function renderStats() {
@@ -2712,13 +2985,17 @@
           var typeInfo = TYPES_TACHES[int.type] || TYPES_TACHES.autre;
           var total = getTotalTTC(int);
           var overdue = isOverdue(int);
+          var today = isToday(int.date);
           var cardClass = int.paye ? 'paid' : (overdue ? 'overdue' : 'unpaid');
+          if (today) cardClass += ' today';
           var card = document.createElement('div');
           card.className = 'intervention-card ' + cardClass;
+          card.style.position = 'relative';
           card.dataset.id = int.id;
           var statusLabel = int.paye ? '✓ Payée' : (overdue ? '⏰ En retard' : '⚠ Impayée');
           var statusClass = int.paye ? 'paid' : (overdue ? 'overdue' : 'unpaid');
           card.innerHTML =
+            '<div style="padding-top:' + (today ? '10px' : '0') + ';">' +
             '<div class="int-header">' +
               '<div class="int-title">' +
                 '<span class="int-type-badge ' + typeInfo.color + '">' + typeInfo.label + '</span>' +
@@ -2739,12 +3016,14 @@
               '<div class="int-actions">' +
                 (int.tel ? '<a class="int-btn call" href="' + getPhoneHref(int.tel) + '" title="Appeler" onclick="event.stopPropagation();"><i class="fas fa-phone"></i></a>' : '') +
                 (int.adresse ? '<a class="int-btn route" href="' + getMapsHref(int.adresse) + '" target="_blank" rel="noopener" title="Itinéraire" onclick="event.stopPropagation();"><i class="fas fa-map-marked-alt"></i></a>' : '') +
+                '<button class="int-btn duplicate" data-id="' + int.id + '" title="Dupliquer"><i class="fas fa-copy"></i></button>' +
                 '<button class="int-btn view" data-id="' + int.id + '" title="Facture"><i class="fas fa-file-invoice"></i></button>' +
                 '<button class="int-btn edit" data-id="' + int.id + '" title="Modifier"><i class="fas fa-edit"></i></button>' +
                 '<button class="int-btn sign" data-id="' + int.id + '" title="Signer"><i class="fas fa-signature"></i></button>' +
                 (int.paye ? '' : '<button class="int-btn pay" data-id="' + int.id + '" title="Payée"><i class="fas fa-check"></i></button>') +
                 '<button class="int-btn delete" data-id="' + int.id + '" title="Supprimer"><i class="fas fa-trash-alt"></i></button>' +
               '</div>' +
+            '</div>' +
             '</div>';
           frag.appendChild(card);
         }
@@ -2760,6 +3039,9 @@
         });
         container.querySelectorAll('.int-btn.edit').forEach(function(btn) {
           btn.addEventListener('click', function(e) { e.stopPropagation(); editIntervention(btn.dataset.id); });
+        });
+        container.querySelectorAll('.int-btn.duplicate').forEach(function(btn) {
+          btn.addEventListener('click', function(e) { e.stopPropagation(); duplicateIntervention(btn.dataset.id); });
         });
         container.querySelectorAll('.int-btn.sign').forEach(function(btn) {
           btn.addEventListener('click', function(e) { e.stopPropagation(); openSignatureModal(btn.dataset.id, 'facture'); });
@@ -2818,6 +3100,8 @@
             '<div class="fact-actions">' +
               (int.tel ? '<a class="call" href="' + getPhoneHref(int.tel) + '" title="Appeler" onclick="event.stopPropagation();"><i class="fas fa-phone"></i></a>' : '') +
               (int.adresse ? '<a class="route" href="' + getMapsHref(int.adresse) + '" target="_blank" rel="noopener" title="Itinéraire" onclick="event.stopPropagation();"><i class="fas fa-map-marked-alt"></i></a>' : '') +
+              '<button class="share" data-id="' + int.id + '" title="Partager"><i class="fas fa-share-alt"></i></button>' +
+              '<button class="duplicate" data-id="' + int.id + '" title="Dupliquer"><i class="fas fa-copy"></i></button>' +
               '<button class="view" data-id="' + int.id + '" title="Voir"><i class="fas fa-eye"></i></button>' +
               '<button class="edit" data-id="' + int.id + '" title="Modifier"><i class="fas fa-edit"></i></button>' +
               '<button class="pdf" data-id="' + int.id + '" title="PDF"><i class="fas fa-file-pdf"></i></button>' +
@@ -2841,6 +3125,9 @@
         container.querySelectorAll('.fact-actions .edit').forEach(function(btn) {
           btn.addEventListener('click', function(e) { e.stopPropagation(); editIntervention(btn.dataset.id); });
         });
+        container.querySelectorAll('.fact-actions .duplicate').forEach(function(btn) {
+          btn.addEventListener('click', function(e) { e.stopPropagation(); duplicateIntervention(btn.dataset.id); });
+        });
         container.querySelectorAll('.fact-actions .pdf').forEach(function(btn) {
           btn.addEventListener('click', function(e) { e.stopPropagation(); generateFacturePDF(btn.dataset.id); });
         });
@@ -2855,6 +3142,9 @@
             e.stopPropagation();
             showConfirm('Marquer comme payée ?', function(c) { if (c) markAsPaid(btn.dataset.id); });
           });
+        });
+        container.querySelectorAll('.fact-actions .share').forEach(function(btn) {
+          btn.addEventListener('click', function(e) { e.stopPropagation(); shareFacture(btn.dataset.id); });
         });
         container.querySelectorAll('.fact-actions .del').forEach(function(btn) {
           btn.addEventListener('click', function(e) {
@@ -2941,6 +3231,25 @@
             showConfirm('Supprimer ce devis ?', function(c) { if (c) deleteDevis(btn.dataset.id); });
           });
         });
+      }
+
+      // ----- Dupliquer intervention -----
+      function duplicateIntervention(id) {
+        var int = interventions.find(function(i) { return i.id === id; });
+        if (!int) return;
+        var copy = JSON.parse(JSON.stringify(int));
+        copy.id = 'int_' + Date.now();
+        copy.numeroFacture = genererNumeroFacture();
+        copy.date = new Date().toISOString().slice(0, 10);
+        copy.paye = false;
+        copy.datePaiement = null;
+        copy.signatureClient = null;
+        copy.signatureTech = null;
+        copy.createdAt = new Date().toISOString();
+        interventions.push(copy);
+        markAsDirty();
+        renderAll();
+        showToastSave('Intervention dupliquée : ' + copy.numeroFacture, 'success');
       }
 
       // ----- Planning -----
@@ -3335,15 +3644,16 @@
       document.getElementById('clearClientSig').addEventListener('click', function() { clearCanvas('client'); });
       document.getElementById('clearTechSig').addEventListener('click', function() { clearCanvas('tech'); });
 
+      // Amélioration 16 : compression JPEG
       document.getElementById('saveClientSig').addEventListener('click', function() {
         if (isCanvasEmpty(clientCanvas)) { toast('Veuillez signer avant de valider'); return; }
-        clientSignatureData = clientCanvas.toDataURL('image/png');
+        clientSignatureData = compressSignature(clientCanvas);
         showToastSave('Signature client enregistrée', 'success');
       });
 
       document.getElementById('saveTechSig').addEventListener('click', function() {
         if (isCanvasEmpty(techCanvas)) { toast('Veuillez signer avant de valider'); return; }
-        techSignatureData = techCanvas.toDataURL('image/png');
+        techSignatureData = compressSignature(techCanvas);
         showToastSave('Signature technicien enregistrée', 'success');
       });
 
@@ -3692,7 +4002,13 @@
         if (settings.tvaActive) {
           html += '<div class="facture-line"><span>TVA (' + settings.tva + '%)</span><span>' + formatEuro(ht * settings.tva / 100) + '</span></div>';
         }
-        html += '<div class="facture-line total"><span>TOTAL TTC</span><span>' + formatEuro(ttc) + '</span></div>';
+        // Amélioration 4 : bandeau total en gros
+        html += '<div class="facture-total-highlight">' +
+          '<div><div class="total-label">Total TTC</div>' +
+          (settings.tvaActive ? '<div class="total-sub">dont TVA ' + formatEuro(ht * settings.tva / 100) + '</div>' : '<div class="total-sub">HT</div>') +
+          '</div>' +
+          '<div class="total-value">' + formatEuro(ttc) + '</div>' +
+        '</div>';
         var statutLabel = d.statut === 'accepte' ? 'Accepté' : (d.statut === 'refuse' ? 'Refusé' : 'En attente');
         var statutColor = d.statut === 'accepte' ? '#2e7d32' : (d.statut === 'refuse' ? '#c62828' : '#b16b1a');
         html += '<div style="margin-top:12px; padding:10px; border-radius:12px; text-align:center; font-weight:600; font-size:0.85rem; background:' + statutColor + '20; color:' + statutColor + ';">' + statutLabel + '</div>';
@@ -3729,17 +4045,109 @@
         editDevis(currentDevisId);
       });
 
+      // ============================================================
+      // Amélioration 21 : CONVERSION DEVIS → FACTURE avec acompte optionnel
+      // ============================================================
+      function updateConvertAcompte() {
+        var d = devisList.find(function(x) { return x.id === convertDevisSourceId; });
+        if (!d) return;
+        var ttc = getTotalTTC(d);
+        var actif = document.getElementById('convertAcompteActive').checked;
+        var fields = document.getElementById('convertAcompteFields');
+        if (actif) fields.classList.add('show');
+        else fields.classList.remove('show');
+        var pct = parseFloat(document.getElementById('convertAcomptePct').value) || 0;
+        var acompte = ttc * pct / 100;
+        var reste = ttc - acompte;
+        document.getElementById('convertAcompteMontant').value = formatEuro(acompte);
+        document.getElementById('convertResteMontant').value = formatEuro(reste);
+        var info = document.getElementById('convertInfo');
+        if (actif) {
+          info.innerHTML = 'Deux factures seront créées :<br>• <strong>Acompte ' + pct + '%</strong> = ' + formatEuro(acompte) + ' (impayée)<br>• <strong>Solde</strong> = ' + formatEuro(reste) + ' (sera facturé plus tard)';
+        } else {
+          info.innerHTML = 'Sans acompte, une seule facture sera créée au montant total du devis : ' + formatEuro(ttc);
+        }
+      }
+
+      document.getElementById('convertAcompteActive').addEventListener('change', updateConvertAcompte);
+      document.getElementById('convertAcomptePct').addEventListener('input', updateConvertAcompte);
+
       document.getElementById('convertDevisBtn').addEventListener('click', function() {
         var d = devisList.find(function(x) { return x.id === currentDevisId; });
         if (!d) return;
-        showConfirm('Convertir ce devis en facture ?', function(c) {
-          if (!c) return;
+        convertDevisSourceId = currentDevisId;
+        document.getElementById('convertClientDisplay').value = d.client || '—';
+        document.getElementById('convertTotalDisplay').value = formatEuro(getTotalTTC(d));
+        document.getElementById('convertAcompteActive').checked = false;
+        document.getElementById('convertAcomptePct').value = 30;
+        updateConvertAcompte();
+        document.getElementById('convertDevisModal').classList.add('show');
+      });
+
+      document.getElementById('cancelConvertDevis').addEventListener('click', function() {
+        document.getElementById('convertDevisModal').classList.remove('show');
+        convertDevisSourceId = null;
+      });
+
+      document.getElementById('confirmConvertDevis').addEventListener('click', function() {
+        var d = devisList.find(function(x) { return x.id === convertDevisSourceId; });
+        if (!d) return;
+        var ttc = getTotalTTC(d);
+        var actif = document.getElementById('convertAcompteActive').checked;
+        var pct = parseFloat(document.getElementById('convertAcomptePct').value) || 0;
+        var today = new Date().toISOString().slice(0, 10);
+
+        if (actif && pct > 0 && pct < 100) {
+          // Facture 1 : ACCOMPTE
+          var acompteMontant = ttc * pct / 100;
+          var factureAcompte = {
+            id: 'int_' + Date.now() + '_a',
+            numeroFacture: genererNumeroFacture(),
+            client: d.client, email: d.email, tel: d.tel, adresse: d.adresse,
+            description: 'Acompte ' + pct + '% — ' + (d.description || ''),
+            type: 'autre', date: today, heure: '', heureFin: '',
+            duree: d.duree, taux: d.taux, deplacement: 0,
+            pieces: [], notes: 'Acompte sur devis ' + d.numeroDevis,
+            paye: false, datePaiement: null,
+            signatureClient: d.signatureClient, signatureTech: d.signatureTech,
+            fromDevis: d.numeroDevis, factureType: 'acompte',
+            montantForceHT: settings.tvaActive ? acompteMontant / (1 + settings.tva / 100) : acompteMontant,
+            createdAt: new Date().toISOString()
+          };
+          // Facture 2 : SOLDE
+          var resteMontant = ttc - acompteMontant;
+          var factureSolde = {
+            id: 'int_' + Date.now() + '_s',
+            numeroFacture: genererNumeroFacture(),
+            client: d.client, email: d.email, tel: d.tel, adresse: d.adresse,
+            description: 'Solde — ' + (d.description || ''),
+            type: 'autre', date: today, heure: '', heureFin: '',
+            duree: d.duree, taux: d.taux, deplacement: 0,
+            pieces: [], notes: 'Solde devis ' + d.numeroDevis + ' (acompte ' + pct + '% déduit)',
+            paye: false, datePaiement: null,
+            signatureClient: d.signatureClient, signatureTech: d.signatureTech,
+            fromDevis: d.numeroDevis, factureType: 'solde',
+            montantForceHT: settings.tvaActive ? resteMontant / (1 + settings.tva / 100) : resteMontant,
+            createdAt: new Date().toISOString()
+          };
+          interventions.push(factureAcompte);
+          interventions.push(factureSolde);
+          d.statut = 'accepte';
+          d.converti = true;
+          markAsDirty();
+          renderAll();
+          document.getElementById('convertDevisModal').classList.remove('show');
+          document.getElementById('devisDetailModal').classList.remove('show');
+          switchTab('interventions');
+          showToastSave('2 factures créées : acompte ' + formatEuro(acompteMontant) + ' + solde ' + formatEuro(resteMontant), 'success');
+        } else {
+          // Conversion classique sans acompte
           var newInt = {
             id: 'int_' + Date.now(),
             numeroFacture: genererNumeroFacture(),
             client: d.client, email: d.email, tel: d.tel, adresse: d.adresse,
             description: d.description,
-            type: 'autre', date: new Date().toISOString().slice(0, 10), heure: '', heureFin: '',
+            type: 'autre', date: today, heure: '', heureFin: '',
             duree: d.duree, taux: d.taux, deplacement: d.deplacement,
             pieces: d.pieces || [], notes: d.notes, paye: false,
             datePaiement: null, signatureClient: d.signatureClient,
@@ -3751,11 +4159,13 @@
           d.converti = true;
           markAsDirty();
           renderAll();
+          document.getElementById('convertDevisModal').classList.remove('show');
           document.getElementById('devisDetailModal').classList.remove('show');
           switchTab('interventions');
           openFacture(newInt.id);
           showToastSave('Devis converti en facture ' + newInt.numeroFacture, 'success');
-        });
+        }
+        convertDevisSourceId = null;
       });
 
       document.getElementById('downloadDevisPdfBtn').addEventListener('click', function() {
@@ -3766,11 +4176,74 @@
         if (currentDevisId) openMailModal(currentDevisId, 'devis');
       });
 
+      document.getElementById('shareDevisBtn').addEventListener('click', function() {
+        if (currentDevisId) shareDevis(currentDevisId);
+      });
+
       function deleteDevis(id) {
         devisList = devisList.filter(function(d) { return d.id !== id; });
         markAsDirty();
         renderAll();
         toast('Devis supprimé');
+      }
+
+      // ============================================================
+      // Amélioration 13 : Partage natif (Web Share API)
+      // ============================================================
+      function shareFacture(id) {
+        var int = interventions.find(function(i) { return i.id === id; });
+        if (!int) return;
+        // Génère le PDF puis propose le partage
+        var blob = generateFacturePDFBlob(int);
+        if (!blob) { toast('Impossible de générer le PDF'); return; }
+        var file = new File([blob], 'Facture_' + (int.numeroFacture || 'Client').replace(/[^a-zA-Z0-9\-]/g, '_') + '.pdf', { type: 'application/pdf' });
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          navigator.share({
+            files: [file],
+            title: 'Facture ' + int.numeroFacture,
+            text: 'Facture ' + int.numeroFacture + ' - ' + formatEuro(getTotalTTC(int))
+          }).catch(function(err) {
+            if (err.name !== 'AbortError') {
+              // Fallback : téléchargement
+              downloadBlob(blob, file.name);
+            }
+          });
+        } else {
+          // Fallback : téléchargement classique
+          downloadBlob(blob, file.name);
+          toast('Partage non supporté → PDF téléchargé');
+        }
+      }
+
+      function shareDevis(id) {
+        var d = devisList.find(function(x) { return x.id === id; });
+        if (!d) return;
+        var blob = generateDevisPDFBlob(d);
+        if (!blob) { toast('Impossible de générer le PDF'); return; }
+        var file = new File([blob], 'Devis_' + (d.numeroDevis || 'Client').replace(/[^a-zA-Z0-9\-]/g, '_') + '.pdf', { type: 'application/pdf' });
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          navigator.share({
+            files: [file],
+            title: 'Devis ' + d.numeroDevis,
+            text: 'Devis ' + d.numeroDevis + ' - ' + formatEuro(getTotalTTC(d))
+          }).catch(function(err) {
+            if (err.name !== 'AbortError') {
+              downloadBlob(blob, file.name);
+            }
+          });
+        } else {
+          downloadBlob(blob, file.name);
+          toast('Partage non supporté → PDF téléchargé');
+        }
+      }
+
+      function downloadBlob(blob, filename) {
+        var url = URL.createObjectURL(blob);
+        var link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        link.click();
+        setTimeout(function() { URL.revokeObjectURL(url); }, 1000);
       }
 
       // ----- Facture détail -----
@@ -3789,7 +4262,7 @@
         if (int.email) html += '<div class="facture-line"><span>Email</span><span>' + escapeHtml(int.email) + '</span></div>';
         if (int.tel) html += '<div class="facture-line"><span>Téléphone</span><a href="' + getPhoneHref(int.tel) + '" style="color:#1a5279; font-weight:600;">' + escapeHtml(int.tel) + ' <i class="fas fa-phone"></i></a></div>';
         if (int.adresse) html += '<div class="facture-line"><span>Adresse</span><a href="' + getMapsHref(int.adresse) + '" target="_blank" rel="noopener" style="color:#1a5279; font-weight:600;">' + escapeHtml(int.adresse) + ' <i class="fas fa-map-marked-alt"></i></a></div>';
-        html += '<div class="facture-line"><span>Type</span><span>' + typeInfo.label + '</span></div>';
+        html += '<div class="facture-line"><span>Type</span><span>' + typeInfo.label + (int.factureType ? ' — ' + int.factureType : '') + '</span></div>';
         var heureStr = formatDate(int.date);
         if (int.heure) heureStr += ' de ' + int.heure;
         if (int.heureFin) heureStr += ' à ' + int.heureFin;
@@ -3797,7 +4270,7 @@
         html += '<div class="facture-line"><span>Description</span><span style="text-align:right; max-width:60%;">' + escapeHtml(int.description || '—') + '</span></div>';
         if (int.notes) html += '<div class="facture-line"><span>Notes</span><span style="text-align:right; max-width:60%; font-style:italic; color:#777;">' + escapeHtml(int.notes) + '</span></div>';
         html += '<div class="facture-line" style="margin-top:10px; padding-top:10px; border-top:1px solid #e3ebf3;"><span>Main d\'œuvre (' + formatDuree(int.duree) + ')</span><span>' + (int.taux || settings.tauxDefaut) + ' €/h = ' + mainOeuvre.toFixed(2) + ' €</span></div>';
-        html += '<div class="facture-line"><span>Déplacement</span><span>' + (int.deplacement || 0).toFixed(2) + ' €</span></div>';
+        if ((int.deplacement || 0) > 0) html += '<div class="facture-line"><span>Déplacement</span><span>' + (int.deplacement || 0).toFixed(2) + ' €</span></div>';
         if (int.pieces && int.pieces.length > 0) {
           html += '<div class="facture-line" style="margin-top:6px; font-weight:600; color:#1a5279;"><span>Pièces & Matériels</span><span></span></div>';
           int.pieces.forEach(function(p) {
@@ -3808,7 +4281,13 @@
         if (settings.tvaActive) {
           html += '<div class="facture-line"><span>TVA (' + settings.tva + '%)</span><span>' + formatEuro(ht * settings.tva / 100) + '</span></div>';
         }
-        html += '<div class="facture-line total"><span>TOTAL TTC</span><span>' + formatEuro(ttc) + '</span></div>';
+        // Amélioration 4 : bandeau total en gros
+        html += '<div class="facture-total-highlight">' +
+          '<div><div class="total-label">Total TTC</div>' +
+          (settings.tvaActive ? '<div class="total-sub">dont TVA ' + formatEuro(ht * settings.tva / 100) + '</div>' : '<div class="total-sub">HT</div>') +
+          '</div>' +
+          '<div class="total-value">' + formatEuro(ttc) + '</div>' +
+        '</div>';
         html += '<div class="facture-line" style="font-size:0.75rem; color:#2e7d32;"><span>CA Net (après impôts ' + settings.taxe + '%)</span><span>' + formatEuro(getTotalNet(int)) + '</span></div>';
         if (int.paye) {
           html += '<div style="margin-top:12px; padding:10px; background:#e8f5e9; border-radius:12px; text-align:center; color:#2e7d32; font-weight:600; font-size:0.85rem;"><i class="fas fa-check-circle"></i> Payée le ' + formatDate(int.datePaiement) + '</div>';
@@ -3817,6 +4296,14 @@
           html += '<div style="margin-top:12px; padding:10px; background:#fff3e0; border-radius:12px; text-align:center; color:#ed6c02; font-weight:600; font-size:0.85rem;"><i class="fas fa-clock"></i> En retard de ' + jrs + ' jours</div>';
         } else {
           html += '<div style="margin-top:12px; padding:10px; background:#ffebee; border-radius:12px; text-align:center; color:#c62828; font-weight:600; font-size:0.85rem;"><i class="fas fa-exclamation-circle"></i> En attente de paiement</div>';
+        }
+        // Amélioration 19 : mentions légales sur facture
+        if (settings.tvaIntra || settings.assuranceNom || settings.assuranceNum || settings.delaiPaiement) {
+          html += '<div style="margin-top:12px; padding:8px 12px; background:#f8fbfe; border-radius:10px; font-size:0.68rem; color:#4f718d; line-height:1.5;">';
+          if (settings.tvaIntra) html += '<div><strong>TVA intracom. :</strong> ' + escapeHtml(settings.tvaIntra) + '</div>';
+          if (settings.assuranceNom) html += '<div><strong>Assurance décennale :</strong> ' + escapeHtml(settings.assuranceNom) + (settings.assuranceNum ? ' — Police ' + escapeHtml(settings.assuranceNum) : '') + '</div>';
+          if (settings.delaiPaiement) html += '<div><strong>Paiement à ' + settings.delaiPaiement + ' jours</strong></div>';
+          html += '</div>';
         }
         if (int.signatureClient || int.signatureTech) {
           html += '<div style="margin-top:12px; display:flex; gap:10px; justify-content:center;">';
@@ -3842,6 +4329,10 @@
 
       document.getElementById('downloadPdfBtn').addEventListener('click', function() {
         if (currentFactureId) generateFacturePDF(currentFactureId);
+      });
+
+      document.getElementById('shareFactureBtn').addEventListener('click', function() {
+        if (currentFactureId) shareFacture(currentFactureId);
       });
 
       document.getElementById('sendMailBtn').addEventListener('click', function() {
@@ -3916,195 +4407,235 @@
         showToastSave('Client mail ouvert. Joignez le PDF.', 'success');
       });
 
+      // ============================================================
+      // Blob PDF facture (pour partage)
+      // ============================================================
+      function generateFacturePDFBlob(int) {
+        try {
+          var jsPDF = window.jspdf.jsPDF;
+          var doc = createFactureDoc(int);
+          return doc.output('blob');
+        } catch (e) {
+          console.error(e);
+          return null;
+        }
+      }
+
+      function generateDevisPDFBlob(d) {
+        try {
+          var jsPDF = window.jspdf.jsPDF;
+          var doc = createDevisDoc(d);
+          return doc.output('blob');
+        } catch (e) {
+          console.error(e);
+          return null;
+        }
+      }
+
       // ----- PDF Facture -----
+      function createFactureDoc(int) {
+        var jsPDF = window.jspdf.jsPDF;
+        var doc = new jsPDF('p', 'mm', 'a4');
+        var pageWidth = doc.internal.pageSize.getWidth();
+        var pageHeight = doc.internal.pageSize.getHeight();
+        var margin = 15;
+        var y = margin;
+        doc.setFillColor('#1a5279');
+        doc.rect(0, 0, pageWidth, 40, 'F');
+        doc.setTextColor('#ffffff');
+        doc.setFontSize(20);
+        doc.setFont('helvetica', 'bold');
+        doc.text(settings.nom.toUpperCase(), pageWidth / 2, 22, { align: 'center' });
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'normal');
+        doc.text('Artisan Plombier - Dépannage & Entretien', pageWidth / 2, 31, { align: 'center' });
+        y = 50;
+        doc.setTextColor('#1a5279');
+        doc.setFontSize(16);
+        doc.setFont('helvetica', 'bold');
+        doc.text('FACTURE', margin + 10, y);
+        doc.setFontSize(11);
+        doc.setFont('helvetica', 'normal');
+        doc.text(int.numeroFacture || '', pageWidth - margin - 10, y, { align: 'right' });
+        y += 10;
+        doc.setDrawColor('#1a5279');
+        doc.line(margin + 10, y, pageWidth - margin - 10, y);
+        y += 10;
+        doc.setTextColor('#333333');
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Client :', margin + 10, y);
+        doc.setFont('helvetica', 'normal');
+        doc.text(int.client || '—', margin + 45, y);
+        if (int.email) {
+          y += 7;
+          doc.setFont('helvetica', 'bold');
+          doc.text('Email :', margin + 10, y);
+          doc.setFont('helvetica', 'normal');
+          doc.text(int.email, margin + 45, y);
+        }
+        if (int.tel) {
+          y += 7;
+          doc.setFont('helvetica', 'bold');
+          doc.text('Téléphone :', margin + 10, y);
+          doc.setFont('helvetica', 'normal');
+          doc.text(int.tel, margin + 45, y);
+        }
+        if (int.adresse) {
+          y += 7;
+          doc.setFont('helvetica', 'bold');
+          doc.text('Adresse :', margin + 10, y);
+          doc.setFont('helvetica', 'normal');
+          var adrLines = doc.splitTextToSize(int.adresse, pageWidth - margin - 55);
+          doc.text(adrLines, margin + 45, y);
+          y += (adrLines.length - 1) * 5;
+        }
+        y += 7;
+        doc.setFont('helvetica', 'bold');
+        doc.text('Date :', margin + 10, y);
+        doc.setFont('helvetica', 'normal');
+        var dateStr = formatDate(int.date);
+        if (int.heure) dateStr += ' de ' + int.heure;
+        if (int.heureFin) dateStr += ' à ' + int.heureFin;
+        doc.text(dateStr, margin + 45, y);
+        var typeInfo = TYPES_TACHES[int.type] || TYPES_TACHES.autre;
+        y += 7;
+        doc.setFont('helvetica', 'bold');
+        doc.text('Type :', margin + 10, y);
+        doc.setFont('helvetica', 'normal');
+        doc.text(typeInfo.label, margin + 45, y);
+        y += 7;
+        doc.setFont('helvetica', 'bold');
+        doc.text('Durée :', margin + 10, y);
+        doc.setFont('helvetica', 'normal');
+        doc.text(formatDuree(int.duree), margin + 45, y);
+        y += 7;
+        doc.setFont('helvetica', 'bold');
+        doc.text('Description :', margin + 10, y);
+        doc.setFont('helvetica', 'normal');
+        var descLines = doc.splitTextToSize(int.description || '—', pageWidth - margin - 55);
+        doc.text(descLines, margin + 45, y);
+        y += descLines.length * 5;
+        y += 12;
+        doc.setFillColor('#f0f7ff');
+        doc.rect(margin + 10, y, pageWidth - 2 * margin - 20, 9, 'F');
+        doc.setTextColor('#1a5279');
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'bold');
+        doc.text('DÉSIGNATION', margin + 15, y + 6.5);
+        doc.text('MONTANT', pageWidth - margin - 15, y + 6.5, { align: 'right' });
+        y += 10;
+        doc.setTextColor('#333333');
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'normal');
+        var heures = (int.duree || 0) / 60;
+        var mainOeuvre = heures * (int.taux || settings.tauxDefaut);
+        doc.text('Main d\'œuvre (' + formatDuree(int.duree) + ')', margin + 15, y + 5);
+        doc.text(mainOeuvre.toFixed(2) + ' €', pageWidth - margin - 15, y + 5, { align: 'right' });
+        y += 7;
+        if ((int.deplacement || 0) > 0) {
+          doc.text('Frais de déplacement', margin + 15, y + 5);
+          doc.text((int.deplacement || 0).toFixed(2) + ' €', pageWidth - margin - 15, y + 5, { align: 'right' });
+          y += 7;
+        }
+        if (int.pieces && int.pieces.length > 0) {
+          int.pieces.forEach(function(p) {
+            doc.text('• ' + p.nom, margin + 15, y + 5);
+            doc.text(parseFloat(p.prix).toFixed(2) + ' €', pageWidth - margin - 15, y + 5, { align: 'right' });
+            y += 7;
+          });
+        }
+        var ht = getTotalHT(int);
+        var ttc = getTotalTTC(int);
+        doc.setDrawColor('#cccccc');
+        doc.line(margin + 10, y, pageWidth - margin - 10, y);
+        y += 6;
+        doc.text('Total HT', margin + 15, y + 4);
+        doc.text(ht.toFixed(2) + ' €', pageWidth - margin - 15, y + 4, { align: 'right' });
+        y += 6;
+        if (settings.tvaActive) {
+          doc.text('TVA (' + settings.tva + '%)', margin + 15, y + 4);
+          doc.text((ht * settings.tva / 100).toFixed(2) + ' €', pageWidth - margin - 15, y + 4, { align: 'right' });
+          y += 6;
+        }
+        doc.setDrawColor('#1a5279');
+        doc.line(margin + 10, y, pageWidth - margin - 10, y);
+        y += 8;
+        doc.setTextColor('#1a5279');
+        doc.setFontSize(13);
+        doc.setFont('helvetica', 'bold');
+        doc.text('TOTAL TTC', margin + 15, y + 5);
+        doc.text(ttc.toFixed(2) + ' €', pageWidth - margin - 15, y + 5, { align: 'right' });
+        y += 12;
+        // Mentions légales
+        if (settings.tvaIntra || settings.assuranceNom || settings.delaiPaiement) {
+          doc.setFontSize(7);
+          doc.setTextColor('#666666');
+          doc.setFont('helvetica', 'normal');
+          if (settings.tvaIntra) { doc.text('TVA intracom. : ' + settings.tvaIntra, margin + 10, y); y += 4; }
+          if (settings.assuranceNom) { doc.text('Assurance décennale : ' + settings.assuranceNom + (settings.assuranceNum ? ' (Police ' + settings.assuranceNum + ')' : ''), margin + 10, y); y += 4; }
+          if (settings.delaiPaiement) { doc.text('Paiement à ' + settings.delaiPaiement + ' jours', margin + 10, y); y += 4; }
+          y += 4;
+        }
+        if (int.paye) {
+          doc.setFillColor('#2e7d32');
+          doc.rect(margin + 10, y, pageWidth - 2 * margin - 20, 10, 'F');
+          doc.setTextColor('#ffffff');
+          doc.setFontSize(10);
+          doc.setFont('helvetica', 'bold');
+          doc.text('PAYÉE le ' + formatDate(int.datePaiement), pageWidth / 2, y + 6.5, { align: 'center' });
+        } else {
+          doc.setFillColor('#c62828');
+          doc.rect(margin + 10, y, pageWidth - 2 * margin - 20, 10, 'F');
+          doc.setTextColor('#ffffff');
+          doc.setFontSize(10);
+          doc.setFont('helvetica', 'bold');
+          doc.text('EN ATTENTE DE PAIEMENT', pageWidth / 2, y + 6.5, { align: 'center' });
+        }
+        if (int.signatureClient || int.signatureTech) {
+          y += 18;
+          doc.setTextColor('#1a5279');
+          doc.setFontSize(9);
+          doc.setFont('helvetica', 'bold');
+          doc.text('Signatures :', margin + 10, y);
+          y += 4;
+          var sigY = y;
+          if (int.signatureTech) {
+            try {
+              doc.addImage(int.signatureTech, 'JPEG', margin + 10, sigY, 50, 20);
+              doc.setFontSize(7);
+              doc.setTextColor('#666666');
+              doc.text('Technicien', margin + 35, sigY + 25, { align: 'center' });
+            } catch(e) {}
+          }
+          if (int.signatureClient) {
+            try {
+              doc.addImage(int.signatureClient, 'JPEG', pageWidth - margin - 60, sigY, 50, 20);
+              doc.setFontSize(7);
+              doc.setTextColor('#666666');
+              doc.text('Client', pageWidth - margin - 35, sigY + 25, { align: 'center' });
+            } catch(e) {}
+          }
+          y += 30;
+        }
+        y = pageHeight - 25;
+        doc.setDrawColor('#cccccc');
+        doc.line(margin + 10, y, pageWidth - margin - 10, y);
+        y += 5;
+        doc.setTextColor('#666666');
+        doc.setFontSize(7);
+        doc.setFont('helvetica', 'normal');
+        doc.text(settings.nom + ' - ' + settings.adresse + ' - SIRET : ' + settings.siret, pageWidth / 2, y, { align: 'center' });
+        y += 4;
+        doc.text('Tel : ' + settings.tel + ' - ' + settings.email, pageWidth / 2, y, { align: 'center' });
+        return doc;
+      }
+
       function generateFacturePDF(id, silent) {
         var int = interventions.find(function(i) { return i.id === id; });
         if (!int) return;
         try {
-          var jsPDF = window.jspdf.jsPDF;
-          var doc = new jsPDF('p', 'mm', 'a4');
-          var pageWidth = doc.internal.pageSize.getWidth();
-          var pageHeight = doc.internal.pageSize.getHeight();
-          var margin = 15;
-          var y = margin;
-          doc.setFillColor('#1a5279');
-          doc.rect(0, 0, pageWidth, 40, 'F');
-          doc.setTextColor('#ffffff');
-          doc.setFontSize(20);
-          doc.setFont('helvetica', 'bold');
-          doc.text(settings.nom.toUpperCase(), pageWidth / 2, 22, { align: 'center' });
-          doc.setFontSize(9);
-          doc.setFont('helvetica', 'normal');
-          doc.text('Artisan Plombier - Dépannage & Entretien', pageWidth / 2, 31, { align: 'center' });
-          y = 50;
-          doc.setTextColor('#1a5279');
-          doc.setFontSize(16);
-          doc.setFont('helvetica', 'bold');
-          doc.text('FACTURE', margin + 10, y);
-          doc.setFontSize(11);
-          doc.setFont('helvetica', 'normal');
-          doc.text(int.numeroFacture || '', pageWidth - margin - 10, y, { align: 'right' });
-          y += 10;
-          doc.setDrawColor('#1a5279');
-          doc.line(margin + 10, y, pageWidth - margin - 10, y);
-          y += 10;
-          doc.setTextColor('#333333');
-          doc.setFontSize(10);
-          doc.setFont('helvetica', 'bold');
-          doc.text('Client :', margin + 10, y);
-          doc.setFont('helvetica', 'normal');
-          doc.text(int.client || '—', margin + 45, y);
-          if (int.email) {
-            y += 7;
-            doc.setFont('helvetica', 'bold');
-            doc.text('Email :', margin + 10, y);
-            doc.setFont('helvetica', 'normal');
-            doc.text(int.email, margin + 45, y);
-          }
-          if (int.tel) {
-            y += 7;
-            doc.setFont('helvetica', 'bold');
-            doc.text('Téléphone :', margin + 10, y);
-            doc.setFont('helvetica', 'normal');
-            doc.text(int.tel, margin + 45, y);
-          }
-          if (int.adresse) {
-            y += 7;
-            doc.setFont('helvetica', 'bold');
-            doc.text('Adresse :', margin + 10, y);
-            doc.setFont('helvetica', 'normal');
-            var adrLines = doc.splitTextToSize(int.adresse, pageWidth - margin - 55);
-            doc.text(adrLines, margin + 45, y);
-            y += (adrLines.length - 1) * 5;
-          }
-          y += 7;
-          doc.setFont('helvetica', 'bold');
-          doc.text('Date :', margin + 10, y);
-          doc.setFont('helvetica', 'normal');
-          var dateStr = formatDate(int.date);
-          if (int.heure) dateStr += ' de ' + int.heure;
-          if (int.heureFin) dateStr += ' à ' + int.heureFin;
-          doc.text(dateStr, margin + 45, y);
-          var typeInfo = TYPES_TACHES[int.type] || TYPES_TACHES.autre;
-          y += 7;
-          doc.setFont('helvetica', 'bold');
-          doc.text('Type :', margin + 10, y);
-          doc.setFont('helvetica', 'normal');
-          doc.text(typeInfo.label, margin + 45, y);
-          y += 7;
-          doc.setFont('helvetica', 'bold');
-          doc.text('Durée :', margin + 10, y);
-          doc.setFont('helvetica', 'normal');
-          doc.text(formatDuree(int.duree), margin + 45, y);
-          y += 7;
-          doc.setFont('helvetica', 'bold');
-          doc.text('Description :', margin + 10, y);
-          doc.setFont('helvetica', 'normal');
-          var descLines = doc.splitTextToSize(int.description || '—', pageWidth - margin - 55);
-          doc.text(descLines, margin + 45, y);
-          y += descLines.length * 5;
-          y += 12;
-          doc.setFillColor('#f0f7ff');
-          doc.rect(margin + 10, y, pageWidth - 2 * margin - 20, 9, 'F');
-          doc.setTextColor('#1a5279');
-          doc.setFontSize(9);
-          doc.setFont('helvetica', 'bold');
-          doc.text('DÉSIGNATION', margin + 15, y + 6.5);
-          doc.text('MONTANT', pageWidth - margin - 15, y + 6.5, { align: 'right' });
-          y += 10;
-          doc.setTextColor('#333333');
-          doc.setFontSize(9);
-          doc.setFont('helvetica', 'normal');
-          var heures = (int.duree || 0) / 60;
-          var mainOeuvre = heures * (int.taux || settings.tauxDefaut);
-          doc.text('Main d\'œuvre (' + formatDuree(int.duree) + ')', margin + 15, y + 5);
-          doc.text(mainOeuvre.toFixed(2) + ' €', pageWidth - margin - 15, y + 5, { align: 'right' });
-          y += 7;
-          if ((int.deplacement || 0) > 0) {
-            doc.text('Frais de déplacement', margin + 15, y + 5);
-            doc.text((int.deplacement || 0).toFixed(2) + ' €', pageWidth - margin - 15, y + 5, { align: 'right' });
-            y += 7;
-          }
-          if (int.pieces && int.pieces.length > 0) {
-            int.pieces.forEach(function(p) {
-              doc.text('• ' + p.nom, margin + 15, y + 5);
-              doc.text(parseFloat(p.prix).toFixed(2) + ' €', pageWidth - margin - 15, y + 5, { align: 'right' });
-              y += 7;
-            });
-          }
-          var ht = getTotalHT(int);
-          var ttc = getTotalTTC(int);
-          doc.setDrawColor('#cccccc');
-          doc.line(margin + 10, y, pageWidth - margin - 10, y);
-          y += 6;
-          doc.text('Total HT', margin + 15, y + 4);
-          doc.text(ht.toFixed(2) + ' €', pageWidth - margin - 15, y + 4, { align: 'right' });
-          y += 6;
-          if (settings.tvaActive) {
-            doc.text('TVA (' + settings.tva + '%)', margin + 15, y + 4);
-            doc.text((ht * settings.tva / 100).toFixed(2) + ' €', pageWidth - margin - 15, y + 4, { align: 'right' });
-            y += 6;
-          }
-          doc.setDrawColor('#1a5279');
-          doc.line(margin + 10, y, pageWidth - margin - 10, y);
-          y += 8;
-          doc.setTextColor('#1a5279');
-          doc.setFontSize(13);
-          doc.setFont('helvetica', 'bold');
-          doc.text('TOTAL TTC', margin + 15, y + 5);
-          doc.text(ttc.toFixed(2) + ' €', pageWidth - margin - 15, y + 5, { align: 'right' });
-          y += 20;
-          if (int.paye) {
-            doc.setFillColor('#2e7d32');
-            doc.rect(margin + 10, y, pageWidth - 2 * margin - 20, 10, 'F');
-            doc.setTextColor('#ffffff');
-            doc.setFontSize(10);
-            doc.setFont('helvetica', 'bold');
-            doc.text('PAYÉE le ' + formatDate(int.datePaiement), pageWidth / 2, y + 6.5, { align: 'center' });
-          } else {
-            doc.setFillColor('#c62828');
-            doc.rect(margin + 10, y, pageWidth - 2 * margin - 20, 10, 'F');
-            doc.setTextColor('#ffffff');
-            doc.setFontSize(10);
-            doc.setFont('helvetica', 'bold');
-            doc.text('EN ATTENTE DE PAIEMENT', pageWidth / 2, y + 6.5, { align: 'center' });
-          }
-          if (int.signatureClient || int.signatureTech) {
-            y += 18;
-            doc.setTextColor('#1a5279');
-            doc.setFontSize(9);
-            doc.setFont('helvetica', 'bold');
-            doc.text('Signatures :', margin + 10, y);
-            y += 4;
-            var sigY = y;
-            if (int.signatureTech) {
-              try {
-                doc.addImage(int.signatureTech, 'PNG', margin + 10, sigY, 50, 20);
-                doc.setFontSize(7);
-                doc.setTextColor('#666666');
-                doc.text('Technicien', margin + 35, sigY + 25, { align: 'center' });
-              } catch(e) {}
-            }
-            if (int.signatureClient) {
-              try {
-                doc.addImage(int.signatureClient, 'PNG', pageWidth - margin - 60, sigY, 50, 20);
-                doc.setFontSize(7);
-                doc.setTextColor('#666666');
-                doc.text('Client', pageWidth - margin - 35, sigY + 25, { align: 'center' });
-              } catch(e) {}
-            }
-            y += 30;
-          }
-          y = pageHeight - 25;
-          doc.setDrawColor('#cccccc');
-          doc.line(margin + 10, y, pageWidth - margin - 10, y);
-          y += 5;
-          doc.setTextColor('#666666');
-          doc.setFontSize(7);
-          doc.setFont('helvetica', 'normal');
-          doc.text(settings.nom + ' - ' + settings.adresse + ' - SIRET : ' + settings.siret, pageWidth / 2, y, { align: 'center' });
-          y += 4;
-          doc.text('Tel : ' + settings.tel + ' - ' + settings.email, pageWidth / 2, y, { align: 'center' });
+          var doc = createFactureDoc(int);
           var fileName = 'Facture_' + (int.numeroFacture || 'Client').replace(/[^a-zA-Z0-9\-]/g, '_') + '.pdf';
           doc.save(fileName);
           if (!silent) toast('Facture PDF téléchargée');
@@ -4115,181 +4646,186 @@
       }
 
       // ----- PDF Devis -----
+      function createDevisDoc(d) {
+        var jsPDF = window.jspdf.jsPDF;
+        var doc = new jsPDF('p', 'mm', 'a4');
+        var pageWidth = doc.internal.pageSize.getWidth();
+        var pageHeight = doc.internal.pageSize.getHeight();
+        var margin = 15;
+        var y = margin;
+        doc.setFillColor('#4338ca');
+        doc.rect(0, 0, pageWidth, 40, 'F');
+        doc.setTextColor('#ffffff');
+        doc.setFontSize(20);
+        doc.setFont('helvetica', 'bold');
+        doc.text(settings.nom.toUpperCase(), pageWidth / 2, 22, { align: 'center' });
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'normal');
+        doc.text('Artisan Plombier - Devis', pageWidth / 2, 31, { align: 'center' });
+        y = 50;
+        doc.setTextColor('#4338ca');
+        doc.setFontSize(16);
+        doc.setFont('helvetica', 'bold');
+        doc.text('DEVIS', margin + 10, y);
+        doc.setFontSize(11);
+        doc.setFont('helvetica', 'normal');
+        doc.text(d.numeroDevis || '', pageWidth - margin - 10, y, { align: 'right' });
+        y += 10;
+        doc.setDrawColor('#4338ca');
+        doc.line(margin + 10, y, pageWidth - margin - 10, y);
+        y += 10;
+        doc.setTextColor('#333333');
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Client :', margin + 10, y);
+        doc.setFont('helvetica', 'normal');
+        doc.text(d.client || '—', margin + 45, y);
+        if (d.email) {
+          y += 7;
+          doc.setFont('helvetica', 'bold');
+          doc.text('Email :', margin + 10, y);
+          doc.setFont('helvetica', 'normal');
+          doc.text(d.email, margin + 45, y);
+        }
+        if (d.tel) {
+          y += 7;
+          doc.setFont('helvetica', 'bold');
+          doc.text('Téléphone :', margin + 10, y);
+          doc.setFont('helvetica', 'normal');
+          doc.text(d.tel, margin + 45, y);
+        }
+        if (d.adresse) {
+          y += 7;
+          doc.setFont('helvetica', 'bold');
+          doc.text('Adresse :', margin + 10, y);
+          doc.setFont('helvetica', 'normal');
+          var adrLines = doc.splitTextToSize(d.adresse, pageWidth - margin - 55);
+          doc.text(adrLines, margin + 45, y);
+          y += (adrLines.length - 1) * 5;
+        }
+        y += 7;
+        doc.setFont('helvetica', 'bold');
+        doc.text('Date :', margin + 10, y);
+        doc.setFont('helvetica', 'normal');
+        doc.text(formatDate(d.date), margin + 45, y);
+        y += 7;
+        doc.setFont('helvetica', 'bold');
+        doc.text('Validité :', margin + 10, y);
+        doc.setFont('helvetica', 'normal');
+        doc.text(d.validite + ' jours', margin + 45, y);
+        y += 7;
+        doc.setFont('helvetica', 'bold');
+        doc.text('Durée :', margin + 10, y);
+        doc.setFont('helvetica', 'normal');
+        doc.text(formatDuree(d.duree), margin + 45, y);
+        y += 7;
+        doc.setFont('helvetica', 'bold');
+        doc.text('Description :', margin + 10, y);
+        doc.setFont('helvetica', 'normal');
+        var descLines = doc.splitTextToSize(d.description || '—', pageWidth - margin - 55);
+        doc.text(descLines, margin + 45, y);
+        y += descLines.length * 5;
+        y += 12;
+        doc.setFillColor('#eef2ff');
+        doc.rect(margin + 10, y, pageWidth - 2 * margin - 20, 9, 'F');
+        doc.setTextColor('#4338ca');
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'bold');
+        doc.text('DÉSIGNATION', margin + 15, y + 6.5);
+        doc.text('MONTANT', pageWidth - margin - 15, y + 6.5, { align: 'right' });
+        y += 10;
+        doc.setTextColor('#333333');
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'normal');
+        var heures = (d.duree || 0) / 60;
+        var mainOeuvre = heures * (d.taux || settings.tauxDefaut);
+        doc.text('Main d\'œuvre (' + formatDuree(d.duree) + ')', margin + 15, y + 5);
+        doc.text(mainOeuvre.toFixed(2) + ' €', pageWidth - margin - 15, y + 5, { align: 'right' });
+        y += 7;
+        if ((d.deplacement || 0) > 0) {
+          doc.text('Frais de déplacement', margin + 15, y + 5);
+          doc.text((d.deplacement || 0).toFixed(2) + ' €', pageWidth - margin - 15, y + 5, { align: 'right' });
+          y += 7;
+        }
+        if (d.pieces && d.pieces.length > 0) {
+          d.pieces.forEach(function(p) {
+            doc.text('• ' + p.nom, margin + 15, y + 5);
+            doc.text(parseFloat(p.prix).toFixed(2) + ' €', pageWidth - margin - 15, y + 5, { align: 'right' });
+            y += 7;
+          });
+        }
+        var ht = getTotalHT(d);
+        var ttc = getTotalTTC(d);
+        doc.setDrawColor('#cccccc');
+        doc.line(margin + 10, y, pageWidth - margin - 10, y);
+        y += 6;
+        doc.text('Total HT', margin + 15, y + 4);
+        doc.text(ht.toFixed(2) + ' €', pageWidth - margin - 15, y + 4, { align: 'right' });
+        y += 6;
+        if (settings.tvaActive) {
+          doc.text('TVA (' + settings.tva + '%)', margin + 15, y + 4);
+          doc.text((ht * settings.tva / 100).toFixed(2) + ' €', pageWidth - margin - 15, y + 4, { align: 'right' });
+          y += 6;
+        }
+        doc.setDrawColor('#4338ca');
+        doc.line(margin + 10, y, pageWidth - margin - 10, y);
+        y += 8;
+        doc.setTextColor('#4338ca');
+        doc.setFontSize(13);
+        doc.setFont('helvetica', 'bold');
+        doc.text('TOTAL TTC', margin + 15, y + 5);
+        doc.text(ttc.toFixed(2) + ' €', pageWidth - margin - 15, y + 5, { align: 'right' });
+        y += 16;
+        var statutLabel = d.statut === 'accepte' ? 'DEVIS ACCEPTÉ' : (d.statut === 'refuse' ? 'DEVIS REFUSÉ' : 'DEVIS EN ATTENTE');
+        var statutColor = d.statut === 'accepte' ? '#2e7d32' : (d.statut === 'refuse' ? '#c62828' : '#b16b1a');
+        doc.setFillColor(statutColor);
+        doc.rect(margin + 10, y, pageWidth - 2 * margin - 20, 10, 'F');
+        doc.setTextColor('#ffffff');
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'bold');
+        doc.text(statutLabel, pageWidth / 2, y + 6.5, { align: 'center' });
+        if (d.signatureClient || d.signatureTech) {
+          y += 18;
+          doc.setTextColor('#4338ca');
+          doc.setFontSize(9);
+          doc.setFont('helvetica', 'bold');
+          doc.text('Signatures :', margin + 10, y);
+          y += 4;
+          if (d.signatureTech) {
+            try {
+              doc.addImage(d.signatureTech, 'JPEG', margin + 10, y, 50, 20);
+              doc.setFontSize(7);
+              doc.setTextColor('#666666');
+              doc.text('Technicien', margin + 35, y + 25, { align: 'center' });
+            } catch(e) {}
+          }
+          if (d.signatureClient) {
+            try {
+              doc.addImage(d.signatureClient, 'JPEG', pageWidth - margin - 60, y, 50, 20);
+              doc.setFontSize(7);
+              doc.setTextColor('#666666');
+              doc.text('Client', pageWidth - margin - 35, y + 25, { align: 'center' });
+            } catch(e) {}
+          }
+        }
+        y = pageHeight - 25;
+        doc.setDrawColor('#cccccc');
+        doc.line(margin + 10, y, pageWidth - margin - 10, y);
+        y += 5;
+        doc.setTextColor('#666666');
+        doc.setFontSize(7);
+        doc.setFont('helvetica', 'normal');
+        doc.text(settings.nom + ' - ' + settings.adresse + ' - SIRET : ' + settings.siret, pageWidth / 2, y, { align: 'center' });
+        y += 4;
+        doc.text('Tel : ' + settings.tel + ' - ' + settings.email, pageWidth / 2, y, { align: 'center' });
+        return doc;
+      }
+
       function generateDevisPDF(id, silent) {
         var d = devisList.find(function(x) { return x.id === id; });
         if (!d) return;
         try {
-          var jsPDF = window.jspdf.jsPDF;
-          var doc = new jsPDF('p', 'mm', 'a4');
-          var pageWidth = doc.internal.pageSize.getWidth();
-          var pageHeight = doc.internal.pageSize.getHeight();
-          var margin = 15;
-          var y = margin;
-          doc.setFillColor('#4338ca');
-          doc.rect(0, 0, pageWidth, 40, 'F');
-          doc.setTextColor('#ffffff');
-          doc.setFontSize(20);
-          doc.setFont('helvetica', 'bold');
-          doc.text(settings.nom.toUpperCase(), pageWidth / 2, 22, { align: 'center' });
-          doc.setFontSize(9);
-          doc.setFont('helvetica', 'normal');
-          doc.text('Artisan Plombier - Devis', pageWidth / 2, 31, { align: 'center' });
-          y = 50;
-          doc.setTextColor('#4338ca');
-          doc.setFontSize(16);
-          doc.setFont('helvetica', 'bold');
-          doc.text('DEVIS', margin + 10, y);
-          doc.setFontSize(11);
-          doc.setFont('helvetica', 'normal');
-          doc.text(d.numeroDevis || '', pageWidth - margin - 10, y, { align: 'right' });
-          y += 10;
-          doc.setDrawColor('#4338ca');
-          doc.line(margin + 10, y, pageWidth - margin - 10, y);
-          y += 10;
-          doc.setTextColor('#333333');
-          doc.setFontSize(10);
-          doc.setFont('helvetica', 'bold');
-          doc.text('Client :', margin + 10, y);
-          doc.setFont('helvetica', 'normal');
-          doc.text(d.client || '—', margin + 45, y);
-          if (d.email) {
-            y += 7;
-            doc.setFont('helvetica', 'bold');
-            doc.text('Email :', margin + 10, y);
-            doc.setFont('helvetica', 'normal');
-            doc.text(d.email, margin + 45, y);
-          }
-          if (d.tel) {
-            y += 7;
-            doc.setFont('helvetica', 'bold');
-            doc.text('Téléphone :', margin + 10, y);
-            doc.setFont('helvetica', 'normal');
-            doc.text(d.tel, margin + 45, y);
-          }
-          if (d.adresse) {
-            y += 7;
-            doc.setFont('helvetica', 'bold');
-            doc.text('Adresse :', margin + 10, y);
-            doc.setFont('helvetica', 'normal');
-            var adrLines = doc.splitTextToSize(d.adresse, pageWidth - margin - 55);
-            doc.text(adrLines, margin + 45, y);
-            y += (adrLines.length - 1) * 5;
-          }
-          y += 7;
-          doc.setFont('helvetica', 'bold');
-          doc.text('Date :', margin + 10, y);
-          doc.setFont('helvetica', 'normal');
-          doc.text(formatDate(d.date), margin + 45, y);
-          y += 7;
-          doc.setFont('helvetica', 'bold');
-          doc.text('Validité :', margin + 10, y);
-          doc.setFont('helvetica', 'normal');
-          doc.text(d.validite + ' jours', margin + 45, y);
-          y += 7;
-          doc.setFont('helvetica', 'bold');
-          doc.text('Durée :', margin + 10, y);
-          doc.setFont('helvetica', 'normal');
-          doc.text(formatDuree(d.duree), margin + 45, y);
-          y += 7;
-          doc.setFont('helvetica', 'bold');
-          doc.text('Description :', margin + 10, y);
-          doc.setFont('helvetica', 'normal');
-          var descLines = doc.splitTextToSize(d.description || '—', pageWidth - margin - 55);
-          doc.text(descLines, margin + 45, y);
-          y += descLines.length * 5;
-          y += 12;
-          doc.setFillColor('#eef2ff');
-          doc.rect(margin + 10, y, pageWidth - 2 * margin - 20, 9, 'F');
-          doc.setTextColor('#4338ca');
-          doc.setFontSize(9);
-          doc.setFont('helvetica', 'bold');
-          doc.text('DÉSIGNATION', margin + 15, y + 6.5);
-          doc.text('MONTANT', pageWidth - margin - 15, y + 6.5, { align: 'right' });
-          y += 10;
-          doc.setTextColor('#333333');
-          doc.setFontSize(9);
-          doc.setFont('helvetica', 'normal');
-          var heures = (d.duree || 0) / 60;
-          var mainOeuvre = heures * (d.taux || settings.tauxDefaut);
-          doc.text('Main d\'œuvre (' + formatDuree(d.duree) + ')', margin + 15, y + 5);
-          doc.text(mainOeuvre.toFixed(2) + ' €', pageWidth - margin - 15, y + 5, { align: 'right' });
-          y += 7;
-          if ((d.deplacement || 0) > 0) {
-            doc.text('Frais de déplacement', margin + 15, y + 5);
-            doc.text((d.deplacement || 0).toFixed(2) + ' €', pageWidth - margin - 15, y + 5, { align: 'right' });
-            y += 7;
-          }
-          if (d.pieces && d.pieces.length > 0) {
-            d.pieces.forEach(function(p) {
-              doc.text('• ' + p.nom, margin + 15, y + 5);
-              doc.text(parseFloat(p.prix).toFixed(2) + ' €', pageWidth - margin - 15, y + 5, { align: 'right' });
-              y += 7;
-            });
-          }
-          var ht = getTotalHT(d);
-          var ttc = getTotalTTC(d);
-          doc.setDrawColor('#cccccc');
-          doc.line(margin + 10, y, pageWidth - margin - 10, y);
-          y += 6;
-          doc.text('Total HT', margin + 15, y + 4);
-          doc.text(ht.toFixed(2) + ' €', pageWidth - margin - 15, y + 4, { align: 'right' });
-          y += 6;
-          if (settings.tvaActive) {
-            doc.text('TVA (' + settings.tva + '%)', margin + 15, y + 4);
-            doc.text((ht * settings.tva / 100).toFixed(2) + ' €', pageWidth - margin - 15, y + 4, { align: 'right' });
-            y += 6;
-          }
-          doc.setDrawColor('#4338ca');
-          doc.line(margin + 10, y, pageWidth - margin - 10, y);
-          y += 8;
-          doc.setTextColor('#4338ca');
-          doc.setFontSize(13);
-          doc.setFont('helvetica', 'bold');
-          doc.text('TOTAL TTC', margin + 15, y + 5);
-          doc.text(ttc.toFixed(2) + ' €', pageWidth - margin - 15, y + 5, { align: 'right' });
-          y += 16;
-          var statutLabel = d.statut === 'accepte' ? 'DEVIS ACCEPTÉ' : (d.statut === 'refuse' ? 'DEVIS REFUSÉ' : 'DEVIS EN ATTENTE');
-          var statutColor = d.statut === 'accepte' ? '#2e7d32' : (d.statut === 'refuse' ? '#c62828' : '#b16b1a');
-          doc.setFillColor(statutColor);
-          doc.rect(margin + 10, y, pageWidth - 2 * margin - 20, 10, 'F');
-          doc.setTextColor('#ffffff');
-          doc.setFontSize(10);
-          doc.setFont('helvetica', 'bold');
-          doc.text(statutLabel, pageWidth / 2, y + 6.5, { align: 'center' });
-          if (d.signatureClient || d.signatureTech) {
-            y += 18;
-            doc.setTextColor('#4338ca');
-            doc.setFontSize(9);
-            doc.setFont('helvetica', 'bold');
-            doc.text('Signatures :', margin + 10, y);
-            y += 4;
-            if (d.signatureTech) {
-              try {
-                doc.addImage(d.signatureTech, 'PNG', margin + 10, y, 50, 20);
-                doc.setFontSize(7);
-                doc.setTextColor('#666666');
-                doc.text('Technicien', margin + 35, y + 25, { align: 'center' });
-              } catch(e) {}
-            }
-            if (d.signatureClient) {
-              try {
-                doc.addImage(d.signatureClient, 'PNG', pageWidth - margin - 60, y, 50, 20);
-                doc.setFontSize(7);
-                doc.setTextColor('#666666');
-                doc.text('Client', pageWidth - margin - 35, y + 25, { align: 'center' });
-              } catch(e) {}
-            }
-          }
-          y = pageHeight - 25;
-          doc.setDrawColor('#cccccc');
-          doc.line(margin + 10, y, pageWidth - margin - 10, y);
-          y += 5;
-          doc.setTextColor('#666666');
-          doc.setFontSize(7);
-          doc.setFont('helvetica', 'normal');
-          doc.text(settings.nom + ' - ' + settings.adresse + ' - SIRET : ' + settings.siret, pageWidth / 2, y, { align: 'center' });
-          y += 4;
-          doc.text('Tel : ' + settings.tel + ' - ' + settings.email, pageWidth / 2, y, { align: 'center' });
+          var doc = createDevisDoc(d);
           var fileName = 'Devis_' + (d.numeroDevis || 'Client').replace(/[^a-zA-Z0-9\-]/g, '_') + '.pdf';
           doc.save(fileName);
           if (!silent) toast('Devis PDF téléchargé');
@@ -4319,6 +4855,10 @@
         var dateStr = formatDate(int.date);
         if (int.heure) dateStr += ' de ' + int.heure;
         if (int.heureFin) dateStr += ' à ' + int.heureFin;
+        var mentionsHtml = '';
+        if (settings.tvaIntra) mentionsHtml += '<div>TVA intracom. : ' + escapeHtml(settings.tvaIntra) + '</div>';
+        if (settings.assuranceNom) mentionsHtml += '<div>Assurance décennale : ' + escapeHtml(settings.assuranceNom) + (settings.assuranceNum ? ' (Police ' + escapeHtml(settings.assuranceNum) + ')' : '') + '</div>';
+        if (settings.delaiPaiement) mentionsHtml += '<div>Paiement à ' + settings.delaiPaiement + ' jours</div>';
         printSection.innerHTML =
           '<div style="font-family:Arial, sans-serif; max-width:800px; margin:0 auto; padding:20px;">' +
             '<div style="background:#1a5279; color:white; padding:20px; text-align:center;">' +
@@ -4357,6 +4897,7 @@
                   '<td style="text-align:right; padding:10px 8px; font-weight:bold; font-size:1.1rem; color:#1a5279;">' + ttc.toFixed(2) + ' €</td>' +
                 '</tr></tfoot>' +
               '</table>' +
+              (mentionsHtml ? '<div style="padding:10px; background:#f8fbfe; border-radius:8px; font-size:0.75rem; color:#666; line-height:1.6; margin-bottom:15px;">' + mentionsHtml + '</div>' : '') +
               '<div style="text-align:center; padding:10px; font-weight:bold; ' + (int.paye ? 'background:#e8f5e9; color:#2e7d32;' : 'background:#ffebee; color:#c62828;') + '">' +
                 (int.paye ? '✓ PAYÉE le ' + formatDate(int.datePaiement) : '⚠ EN ATTENTE DE PAIEMENT') +
               '</div>' +
@@ -4412,7 +4953,7 @@
       });
 
       // ============================================================
-      // SAUVEGARDE COMPLÈTE
+      // SAUVEGARDE
       // ============================================================
       document.getElementById('exportDataBtn').addEventListener('click', function() {
         var data = {
@@ -4423,16 +4964,15 @@
           devisCounter: devisCounter,
           settings: settings,
           exportedAt: new Date().toISOString(),
-          version: 'v9'
+          version: 'PipePline-v1'
         };
         var blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
         var link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
-        link.download = 'plomberie_pro_sauvegarde_' + new Date().toISOString().slice(0, 10) + '.json';
+        link.download = 'pipepline_sauvegarde_' + new Date().toISOString().slice(0, 10) + '.json';
         link.click();
-        // Enregistre la date du dernier export
         backupMeta.lastExportAt = new Date().toISOString();
-        backupMeta.lastReminderAt = null; // reset du rappel
+        backupMeta.lastReminderAt = null;
         saveToStorage(true);
         checkBackupReminder();
         showToastSave('Sauvegarde téléchargée', 'success');
@@ -4482,7 +5022,7 @@
                   backupAt: new Date().toISOString(),
                   type: 'auto-backup-before-import'
                 };
-                localStorage.setItem('plomberie_pro_backup_before_import', JSON.stringify(backup));
+                localStorage.setItem('pipepline_backup_before_import', JSON.stringify(backup));
 
                 interventions = data.interventions || [];
                 devisList = data.devisList || [];
@@ -4514,7 +5054,6 @@
         reader.readAsText(file);
       });
 
-      // Clic sur le bandeau d'alerte impayés → aller aux factures
       document.getElementById('alertOverdue').addEventListener('click', function() {
         switchTab('factures');
       });
@@ -4601,6 +5140,10 @@
         document.getElementById('setDeplacementDefaut').value = settings.deplacementDefaut;
         document.getElementById('setSeuilAlerte').value = settings.seuilAlerte || 30;
         document.getElementById('setSeuilSauvegarde').value = settings.seuilSauvegarde || 15;
+        document.getElementById('setTvaIntra').value = settings.tvaIntra || '';
+        document.getElementById('setAssuranceNom').value = settings.assuranceNom || '';
+        document.getElementById('setAssuranceNum').value = settings.assuranceNum || '';
+        document.getElementById('setDelaiPaiement').value = settings.delaiPaiement || 30;
         document.getElementById('settingsModal').classList.add('show');
       });
 
@@ -4609,7 +5152,7 @@
       });
 
       document.getElementById('saveSettings').addEventListener('click', function() {
-        settings.nom = document.getElementById('setNom').value.trim() || 'Plomberie Pro';
+        settings.nom = document.getElementById('setNom').value.trim() || 'PipePline';
         settings.adresse = document.getElementById('setAdresse').value.trim();
         settings.siret = document.getElementById('setSiret').value.trim();
         settings.tel = document.getElementById('setTel').value.trim();
@@ -4621,6 +5164,10 @@
         settings.deplacementDefaut = parseFloat(document.getElementById('setDeplacementDefaut').value) || 30;
         settings.seuilAlerte = parseInt(document.getElementById('setSeuilAlerte').value) || 30;
         settings.seuilSauvegarde = parseInt(document.getElementById('setSeuilSauvegarde').value) || 15;
+        settings.tvaIntra = document.getElementById('setTvaIntra').value.trim();
+        settings.assuranceNom = document.getElementById('setAssuranceNom').value.trim();
+        settings.assuranceNum = document.getElementById('setAssuranceNum').value.trim();
+        settings.delaiPaiement = parseInt(document.getElementById('setDelaiPaiement').value) || 30;
         saveToStorage();
         document.getElementById('settingsModal').classList.remove('show');
         renderAll();
@@ -4641,6 +5188,7 @@
           });
           editingDevisId = null;
           editingPlanningId = null;
+          convertDevisSourceId = null;
         }
       });
 
@@ -4680,8 +5228,8 @@
       updateSaveIndicator(true);
       if (loaded) setTimeout(function() { showToastSave('Données locales chargées', 'success'); }, 500);
 
-      // Vérifie le rappel de sauvegarde au démarrage (délai pour ne pas bloquer)
       setTimeout(checkBackupReminder, 1500);
+      setTimeout(checkStorageUsage, 3000);
 
     })();
   </script>
