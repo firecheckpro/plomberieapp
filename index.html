@@ -70,7 +70,6 @@
       overscroll-behavior-y: none;
       color: var(--text-primary);
       transition: background 0.2s, color 0.2s;
-      /* Empêche le scroll horizontal de la page entière */
       overflow-x: hidden;
     }
     .app-container {
@@ -80,7 +79,6 @@
       box-shadow: var(--shadow-lg);
       padding: var(--sp-4) 14px 28px;
       transition: all 0.2s;
-      /* Empêche le débordement des enfants */
       overflow: hidden;
     }
     .app-header {
@@ -147,6 +145,9 @@
       }
     }
 
+    /* ============================================================
+       DASHBOARD STRIP simplifié : Interv / Impayées / CA mois + flèche
+       ============================================================ */
     .dashboard-strip {
       display: flex; align-items: center; gap: 6px;
       padding: 8px 12px; margin-bottom: 12px;
@@ -404,12 +405,126 @@
     .skeleton-line.medium { width: 65%; }
     .skeleton-line.long { width: 90%; }
 
-    .virtual-list {
-      position: relative; overflow-y: auto;
-      max-height: 70vh; -webkit-overflow-scrolling: touch;
+    /* ============================================================
+       LISTE INTERVENTIONS GROUPÉE (accordéon mois > jours > cartes)
+       ============================================================ */
+    .interventions-groups {
+      display: flex; flex-direction: column; gap: 12px;
     }
-    .virtual-spacer { position: relative; }
-    .virtual-window { position: absolute; top: 0; left: 0; right: 0; }
+    .group-month {
+      background: var(--bg-card);
+      border: 1px solid var(--border-1);
+      border-radius: var(--r-md);
+      overflow: hidden;
+    }
+    .group-month-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 16px;
+      background: linear-gradient(135deg, var(--accent-light), var(--bg-surface));
+      cursor: pointer;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      transition: 0.15s;
+      gap: 10px;
+    }
+    .group-month-header:active { background: var(--accent-light); }
+    .group-month-header .gm-left {
+      display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0;
+    }
+    .group-month-header .gm-chevron {
+      width: 24px; height: 24px; flex-shrink: 0;
+      display: inline-flex; align-items: center; justify-content: center;
+      color: var(--accent);
+      font-size: 0.7rem;
+      transition: transform 0.2s ease;
+    }
+    .group-month.open .gm-chevron { transform: rotate(90deg); }
+    .group-month-header .gm-title {
+      font-weight: 700; font-size: 0.9rem; color: var(--accent);
+      text-transform: capitalize;
+    }
+    .group-month-header .gm-stats {
+      display: flex; gap: 8px; align-items: center;
+      font-size: 0.7rem; color: var(--text-muted); font-weight: 600;
+      flex-wrap: wrap; justify-content: flex-end;
+    }
+    .gm-stat {
+      display: inline-flex; align-items: center; gap: 3px;
+      background: var(--bg-card); padding: 2px 8px;
+      border-radius: var(--r-full);
+      border: 1px solid var(--border-1);
+      white-space: nowrap;
+    }
+    .gm-stat.danger { color: var(--danger); border-color: #ffcdd2; background: #ffebee; }
+    .gm-stat.success { color: var(--success); border-color: #c8e6c9; background: #e8f5e9; }
+    .group-month-content {
+      display: none;
+      padding: 8px 8px 12px;
+      border-top: 1px solid var(--border-1);
+      background: var(--bg-surface);
+    }
+    .group-month.open .group-month-content { display: block; }
+
+    .group-day {
+      background: var(--bg-card);
+      border: 1px solid var(--border-1);
+      border-radius: var(--r-sm);
+      margin-bottom: 8px;
+      overflow: hidden;
+    }
+    .group-day:last-child { margin-bottom: 0; }
+    .group-day-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 14px;
+      cursor: pointer;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      transition: 0.15s;
+      gap: 10px;
+    }
+    .group-day-header:active { background: var(--accent-light); }
+    .group-day-header .gd-left {
+      display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0;
+    }
+    .group-day-header .gd-chevron {
+      width: 20px; height: 20px; flex-shrink: 0;
+      display: inline-flex; align-items: center; justify-content: center;
+      color: var(--text-muted);
+      font-size: 0.6rem;
+      transition: transform 0.2s ease;
+    }
+    .group-day.open .gd-chevron { transform: rotate(90deg); }
+    .group-day-header .gd-date {
+      font-weight: 700; font-size: 0.82rem; color: var(--text-primary);
+    }
+    .group-day-header .gd-date.today {
+      color: var(--accent);
+    }
+    .group-day-header .gd-date.today::after {
+      content: ' •';
+      color: var(--success);
+      font-weight: 900;
+    }
+    .group-day-header .gd-count {
+      font-size: 0.65rem; color: var(--text-muted);
+      background: var(--bg-surface); padding: 2px 8px;
+      border-radius: var(--r-full); font-weight: 600;
+      border: 1px solid var(--border-1);
+      white-space: nowrap;
+    }
+    .group-day-header .gd-total {
+      font-size: 0.7rem; font-weight: 700; color: var(--accent);
+      white-space: nowrap;
+    }
+    .group-day-content {
+      display: none;
+      padding: 4px 8px 10px;
+      border-top: 1px dashed var(--border-1);
+    }
+    .group-day.open .group-day-content { display: block; }
+    .group-day-content .intervention-card { margin-bottom: 8px; }
+    .group-day-content .intervention-card:last-child { margin-bottom: 0; }
+
     .interventions-list { display: flex; flex-direction: column; gap: 10px; }
     .intervention-card {
       background: var(--bg-card);
@@ -686,9 +801,7 @@
       .fact-actions { width: 100%; justify-content: flex-end; }
     }
 
-    /* ============================================================
-       MODALES — CORRECTION DU DÉBORDEMENT
-       ============================================================ */
+    /* MODALES */
     .modal-overlay {
       display: none; position: fixed;
       top: 0; left: 0; right: 0; bottom: 0;
@@ -698,7 +811,6 @@
       justify-content: center; align-items: center;
       z-index: 1000;
       padding: calc(16px + var(--safe-top)) calc(16px + var(--safe-right)) calc(16px + var(--safe-bottom)) calc(16px + var(--safe-left));
-      /* Empêche le body de scroller quand la modale est ouverte */
       overflow: hidden;
     }
     .modal-overlay.show { display: flex; }
@@ -708,14 +820,12 @@
       border-radius: var(--r-lg);
       padding: var(--sp-5) 20px;
       box-shadow: 0 30px 60px rgba(0, 0, 0, 0.2);
-      /* Contraint la hauteur pour ne jamais déborder */
       max-height: 90vh;
       display: flex;
       flex-direction: column;
-      overflow: hidden; /* le scroll est géré par les enfants */
+      overflow: hidden;
       color: var(--text-primary);
     }
-    /* Le contenu de la modale scrolle à l'intérieur */
     .modal-box > *:not(.modal-actions):not(h2):not(.wizard-steps) {
       min-height: 0;
     }
@@ -727,7 +837,6 @@
       border-bottom: 2px solid var(--border-1);
       flex-shrink: 0;
     }
-    /* Zone scrollable centrale des modales à étapes */
     .modal-scroll-area {
       flex: 1;
       overflow-y: auto;
@@ -849,15 +958,11 @@
       -webkit-appearance: none;
     }
 
-    /* ============================================================
-       PIÈCES & MATÉRIELS — CORRECTION DU DÉBORDEMENT
-       ============================================================ */
     .pieces-section {
       margin-bottom: 14px; padding: var(--sp-3);
       background: var(--bg-surface);
       border-radius: var(--r-md);
       border: 1px solid var(--border-1);
-      /* Empêche le débordement horizontal */
       overflow: hidden;
       box-sizing: border-box;
     }
@@ -866,7 +971,6 @@
       margin-bottom: var(--sp-2);
       display: flex; align-items: center; justify-content: space-between;
     }
-    /* Container scrollable pour les pièces (limite la hauteur) */
     .pieces-container-scroll {
       max-height: 260px;
       overflow-y: auto;
@@ -932,7 +1036,6 @@
       border-top: 1px dashed var(--border-2);
     }
 
-    /* Frais — même correction */
     .frais-container-scroll {
       max-height: 200px;
       overflow-y: auto;
@@ -1343,7 +1446,6 @@
     .facture-total-highlight .total-value { font-size: 1.6rem; font-weight: 800; line-height: 1; }
     .facture-total-highlight .total-sub { font-size: 0.65rem; opacity: 0.75; margin-top: 2px; text-align: right; }
 
-    /* Modal actions fixes en bas */
     .modal-actions {
       display: flex; gap: var(--sp-2);
       justify-content: flex-end; margin-top: 18px; flex-wrap: wrap;
@@ -1494,44 +1596,247 @@
       .modal-box { padding-bottom: max(24px, calc(24px + var(--safe-bottom))); }
     }
 
-    .stock-list { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
-    .stock-row {
-      display: flex; align-items: center; gap: 8px;
-      padding: 8px 12px; background: var(--bg-surface);
-      border-radius: var(--r-sm); border: 1px solid var(--border-1);
+    /* STOCK PRO */
+    .stock-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-bottom: 14px;
     }
-    .stock-row .stock-name { flex: 2; font-weight: 600; font-size: 0.85rem; word-break: break-word; }
-    .stock-row .stock-qte {
-      flex: 0 0 70px; text-align: center; font-weight: 700;
-      font-size: 0.9rem; color: var(--accent);
+    .stock-stat {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-1);
+      border-radius: var(--r-sm);
+      padding: 10px 8px;
+      text-align: center;
     }
-    .stock-row .stock-qte.low { color: var(--danger); }
-    .stock-row .stock-seuil {
-      flex: 0 0 70px; text-align: center;
-      font-size: 0.75rem; color: var(--text-faint);
+    .stock-stat .ss-num {
+      font-size: 1.1rem; font-weight: 800;
+      color: var(--accent); line-height: 1.1;
     }
-    .stock-row .stock-del {
-      background: #ffebee; border: none; color: var(--danger);
-      width: 30px; height: 30px; border-radius: 50%;
-      cursor: pointer; font-size: 0.75rem;
-      -webkit-appearance: none;
+    .stock-stat .ss-num.danger { color: var(--danger); }
+    .stock-stat .ss-num.warning { color: var(--warning); }
+    .stock-stat .ss-lbl {
+      font-size: 0.55rem; font-weight: 600;
+      color: var(--text-faint); text-transform: uppercase;
+      letter-spacing: 0.3px; margin-top: 2px;
     }
 
-    .remote-sign-info {
-      padding: 12px; background: var(--accent-light);
-      border-radius: var(--r-sm); border-left: 4px solid var(--accent);
-      font-size: 0.8rem; color: var(--text-secondary);
-      margin-bottom: 12px; line-height: 1.5;
+    .stock-toolbar {
+      display: flex; gap: 6px; margin-bottom: 12px;
+      align-items: center; flex-wrap: wrap;
     }
-    .remote-sign-link {
-      display: flex; gap: 6px; margin-top: 8px;
+    .stock-toolbar input.stock-search {
+      flex: 1; min-width: 140px;
+      padding: 8px 14px;
+      border-radius: var(--r-full);
+      border: 1px solid var(--border-2);
+      background: var(--bg-input);
+      font-size: 16px;
+      color: var(--text-primary);
+      outline: none;
     }
-    .remote-sign-link input {
-      flex: 1; font-size: 0.75rem !important;
-      font-family: var(--mono-stack);
-      padding: 8px 10px !important;
-      min-width: 0;
+    .stock-toolbar input.stock-search:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(26, 82, 121, 0.1);
     }
+    .stock-toolbar select.stock-sort {
+      padding: 8px 12px;
+      border-radius: var(--r-full);
+      border: 1px solid var(--border-2);
+      background: var(--bg-input);
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      -webkit-appearance: none;
+      appearance: none;
+      cursor: pointer;
+    }
+
+    .stock-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 400px;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
+      padding: 2px;
+    }
+    .stock-item {
+      display: flex; align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-1);
+      border-radius: var(--r-sm);
+      transition: 0.15s;
+    }
+    .stock-item.low {
+      border-left: 4px solid var(--warning);
+      background: #fff8e1;
+    }
+    .stock-item.out {
+      border-left: 4px solid var(--danger);
+      background: #ffebee;
+    }
+    @media (prefers-color-scheme: dark) {
+      .stock-item.low { background: #3a3320; }
+      .stock-item.out { background: #4a1e1a; }
+    }
+    .stock-item .si-info {
+      flex: 1; min-width: 0;
+    }
+    .stock-item .si-name {
+      font-weight: 700; font-size: 0.85rem;
+      color: var(--text-primary);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .stock-item .si-cat {
+      font-size: 0.6rem; font-weight: 600;
+      color: var(--text-faint); text-transform: uppercase;
+      letter-spacing: 0.3px;
+      margin-top: 1px;
+    }
+    .stock-item .si-badge {
+      display: inline-block;
+      font-size: 0.55rem; font-weight: 700;
+      padding: 1px 6px; border-radius: var(--r-full);
+      margin-left: 4px;
+      text-transform: uppercase;
+    }
+    .stock-item .si-badge.low { background: var(--warning); color: white; }
+    .stock-item .si-badge.out { background: var(--danger); color: white; }
+
+    .stock-qty-control {
+      display: flex; align-items: center;
+      gap: 4px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-1);
+      border-radius: var(--r-full);
+      padding: 3px;
+      flex-shrink: 0;
+    }
+    .stock-qty-control button {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      border: none;
+      background: var(--bg-card);
+      color: var(--accent);
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      -webkit-appearance: none;
+      transition: 0.15s;
+      line-height: 1;
+    }
+    .stock-qty-control button:hover {
+      background: var(--accent);
+      color: white;
+    }
+    .stock-qty-control button:active { transform: scale(0.9); }
+    .stock-qty-control .sq-value {
+      min-width: 32px;
+      text-align: center;
+      font-weight: 800;
+      font-size: 0.9rem;
+      color: var(--accent);
+      padding: 0 4px;
+    }
+    .stock-qty-control .sq-value.low { color: var(--warning); }
+    .stock-qty-control .sq-value.out { color: var(--danger); }
+
+    .stock-item .si-actions {
+      display: flex; gap: 2px; flex-shrink: 0;
+    }
+    .stock-item .si-btn {
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      -webkit-appearance: none;
+      transition: 0.15s;
+      font-size: 0.85rem;
+    }
+    .stock-item .si-btn:hover { background: var(--bg-surface); color: var(--accent); }
+    .stock-item .si-btn.del:hover { background: #ffebee; color: var(--danger); }
+
+    .stock-empty {
+      padding: 30px 16px;
+      text-align: center;
+      color: var(--text-faint);
+      font-style: italic;
+      font-size: 0.85rem;
+    }
+
+    .stock-add-form {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-1);
+      border-radius: var(--r-md);
+      padding: 12px;
+      margin-top: 14px;
+    }
+    .stock-add-form h4 {
+      font-size: 0.75rem;
+      color: var(--accent);
+      margin-bottom: 10px;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .stock-add-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+    @media (max-width: 480px) {
+      .stock-add-grid { grid-template-columns: 1fr; }
+    }
+    .stock-add-grid input {
+      padding: 8px 12px;
+      border-radius: var(--r-full);
+      border: 1px solid var(--border-2);
+      background: var(--bg-input);
+      font-size: 16px;
+      color: var(--text-primary);
+      outline: none;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    .stock-add-grid input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(26, 82, 121, 0.1);
+    }
+
+    .autocomplete-stock-list {
+      position: absolute; top: 100%; left: 0; right: 0;
+      background: var(--bg-card); border: 1px solid var(--border-2);
+      border-radius: var(--r-sm); max-height: 200px;
+      overflow-y: auto; z-index: 20;
+      box-shadow: var(--shadow-md); margin-top: 4px;
+      display: none;
+    }
+    .autocomplete-stock-list.show { display: block; }
+    .autocomplete-stock-item {
+      padding: 8px 12px; cursor: pointer;
+      border-bottom: 1px solid var(--border-1);
+      font-size: 0.8rem;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .autocomplete-stock-item:last-child { border-bottom: none; }
+    .autocomplete-stock-item:hover, .autocomplete-stock-item:focus {
+      background: var(--accent-light);
+    }
+    .autocomplete-stock-item .asi-name { font-weight: 600; }
+    .autocomplete-stock-item .asi-info { font-size: 0.65rem; color: var(--text-faint); }
+    .piece-nom-wrapper { position: relative; }
   </style>
 </head>
 <body>
@@ -1559,6 +1864,7 @@
       <button class="alert-close" id="alertTvaClose" title="Fermer" aria-label="Fermer">✕</button>
     </div>
 
+    <!-- Bandeau KPI : Interv / Impayées / CA mois + flèche -->
     <div class="dashboard-strip">
       <div class="dash-item">
         <span class="dash-num" id="totalInterventions">0</span>
@@ -1572,10 +1878,6 @@
       <div class="dash-item">
         <span class="dash-num" id="caMoisMini">0.00 CHF</span>
         <span class="dash-lbl">CA mois</span>
-      </div>
-      <div class="dash-item danger">
-        <span class="dash-num" id="resteMini">0.00 CHF</span>
-        <span class="dash-lbl">À encaisser</span>
       </div>
       <button class="dash-toggle" id="dashToggle" title="Voir le détail du CA" aria-label="Détail CA">⌄</button>
     </div>
@@ -1672,7 +1974,7 @@
           <button class="search-icon" id="searchBtn" aria-label="Rechercher">🔍</button>
         </div>
       </div>
-      <div class="interventions-list" id="interventionsList"></div>
+      <div class="interventions-groups" id="interventionsGroups"></div>
     </div>
 
     <div class="tab-content" id="tab-factures">
@@ -1765,7 +2067,7 @@
     </div>
   </nav>
 
-  <!-- MODALE INTERVENTION (avec zone scrollable corrigée) -->
+  <!-- MODALES (idem que précédemment) -->
   <div class="modal-overlay" id="interventionModal">
     <div class="modal-box">
       <h2 id="interventionModalTitle">Nouvelle intervention</h2>
@@ -1774,8 +2076,6 @@
         <div class="wizard-step" data-step="2"><span class="ws-num">2</span>Prestation</div>
         <div class="wizard-step" data-step="3"><span class="ws-num">3</span>Détails</div>
       </div>
-
-      <!-- Zone scrollable centrale -->
       <div class="modal-scroll-area">
         <div class="wizard-pane active" data-pane="1">
           <div class="form-group autocomplete-wrapper">
@@ -1783,14 +2083,8 @@
             <input type="text" id="intClient" placeholder="Nom du client ou adresse" autocomplete="off" />
             <div class="autocomplete-list" id="intClientAutocomplete"></div>
           </div>
-          <div class="form-group">
-            <label>Email du client</label>
-            <input type="email" id="intEmail" placeholder="client@email.ch" />
-          </div>
-          <div class="form-group">
-            <label>Téléphone du client</label>
-            <input type="tel" id="intTel" placeholder="+41 79 123 45 67" />
-          </div>
+          <div class="form-group"><label>Email du client</label><input type="email" id="intEmail" placeholder="client@email.ch" /></div>
+          <div class="form-group"><label>Téléphone du client</label><input type="tel" id="intTel" placeholder="+41 79 123 45 67" /></div>
           <div class="form-group">
             <label>Adresse (pour itinéraire)</label>
             <input type="text" id="intAdresse" placeholder="Rue du Rhône 12, 1204 Genève" />
@@ -1815,7 +2109,6 @@
             <input type="text" id="intNoTvaClient" placeholder="FR 12 345678901" />
           </div>
         </div>
-
         <div class="wizard-pane" data-pane="2">
           <div class="form-group">
             <label>Type de prestation</label>
@@ -1828,28 +2121,14 @@
               <option value="autre">📌 Autre</option>
             </select>
           </div>
-          <div class="form-group">
-            <label>Description de la tâche</label>
-            <textarea id="intDescription" placeholder="Ex: Réparation fuite sous évier, entretien chaudière gaz..."></textarea>
-          </div>
+          <div class="form-group"><label>Description de la tâche</label><textarea id="intDescription" placeholder="Ex: Réparation fuite sous évier..."></textarea></div>
           <div class="form-row">
-            <div class="form-group">
-              <label>Date</label>
-              <input type="date" id="intDate" />
-            </div>
-            <div class="form-group">
-              <label>Heure début</label>
-              <input type="time" id="intHeure" />
-            </div>
+            <div class="form-group"><label>Date</label><input type="date" id="intDate" /></div>
+            <div class="form-group"><label>Heure début</label><input type="time" id="intHeure" /></div>
           </div>
-          <div class="conflict-warning" id="conflictWarning">
-            <span id="conflictWarningText"></span>
-          </div>
+          <div class="conflict-warning" id="conflictWarning"><span id="conflictWarningText"></span></div>
           <div class="form-row">
-            <div class="form-group">
-              <label>Heure fin</label>
-              <input type="time" id="intHeureFin" />
-            </div>
+            <div class="form-group"><label>Heure fin</label><input type="time" id="intHeureFin" /></div>
             <div class="form-group">
               <label>Statut</label>
               <select id="intStatutSelect">
@@ -1875,42 +2154,24 @@
             <div class="duree-total-badge" id="intDureeTotalBadge">Total : 0 min</div>
           </div>
         </div>
-
         <div class="wizard-pane" data-pane="3">
           <div class="form-row">
-            <div class="form-group">
-              <label>Taux horaire (CHF/h)</label>
-              <input type="number" id="intTaux" min="0" step="5" value="90" />
-            </div>
-            <div class="form-group">
-              <label>Déplacement (CHF)</label>
-              <input type="number" id="intDeplacement" min="0" step="5" value="50" />
-            </div>
+            <div class="form-group"><label>Taux horaire (CHF/h)</label><input type="number" id="intTaux" min="0" step="5" value="90" /></div>
+            <div class="form-group"><label>Déplacement (CHF)</label><input type="number" id="intDeplacement" min="0" step="5" value="50" /></div>
           </div>
-          <div class="form-group">
-            <label>Notes (optionnel)</label>
-            <input type="text" id="intNotes" placeholder="Ex: Client absent..." />
-          </div>
+          <div class="form-group"><label>Notes (optionnel)</label><input type="text" id="intNotes" placeholder="Ex: Client absent..." /></div>
           <div class="pieces-section">
             <h4>Pièces & Matériels</h4>
             <div class="pieces-container-scroll" id="piecesContainer"></div>
             <button class="btn-add-piece" id="addPieceBtn">+ Ajouter une pièce</button>
-            <div class="piece-total">
-              <span>Total pièces :</span>
-              <span id="piecesTotal">0.00 CHF</span>
-            </div>
+            <div class="piece-total"><span>Total pièces :</span><span id="piecesTotal">0.00 CHF</span></div>
           </div>
-
           <div class="pieces-section">
             <h4>Notes de frais (carburant, péage...)</h4>
             <div class="frais-container-scroll" id="fraisContainer"></div>
             <button class="btn-add-piece" id="addFraisBtn">+ Ajouter un frais</button>
-            <div class="piece-total">
-              <span>Total frais :</span>
-              <span id="fraisTotal">0.00 CHF</span>
-            </div>
+            <div class="piece-total"><span>Total frais :</span><span id="fraisTotal">0.00 CHF</span></div>
           </div>
-
           <div class="photos-section">
             <h4>Photos avant / après</h4>
             <div class="photos-preview" id="photosPreview"></div>
@@ -1923,7 +2184,6 @@
           </div>
         </div>
       </div>
-
       <div class="modal-actions" style="justify-content:space-between;">
         <button class="btn-cancel" id="wizardPrev" style="display:none;">◀ Précédent</button>
         <div style="display:flex; gap:8px; margin-left:auto;">
@@ -1958,9 +2218,7 @@
           <div class="form-group"><label>Heure fin</label><input type="time" id="planHeureFin" /></div>
           <div class="form-group"><label>Durée calculée</label><input type="text" id="planDureeCalc" readonly style="background:var(--accent-light); font-weight:700; color:var(--accent); text-align:center;" value="—" /></div>
         </div>
-        <div class="conflict-warning" id="planConflictWarning">
-          <span id="planConflictWarningText"></span>
-        </div>
+        <div class="conflict-warning" id="planConflictWarning"><span id="planConflictWarningText"></span></div>
         <div class="duree-presets" style="margin-bottom:14px;">
           <button type="button" id="planPreset7h">Journée (8h24)</button>
           <button type="button" id="planPresetDemi">Demi-journée (4h12)</button>
@@ -2013,10 +2271,7 @@
           <h4>Pièces & Matériels</h4>
           <div class="pieces-container-scroll" id="devisPiecesContainer"></div>
           <button class="btn-add-piece" id="addDevisPieceBtn">+ Ajouter une pièce</button>
-          <div class="piece-total">
-            <span>Total pièces :</span>
-            <span id="devisPiecesTotal">0.00 CHF</span>
-          </div>
+          <div class="piece-total"><span>Total pièces :</span><span id="devisPiecesTotal">0.00 CHF</span></div>
         </div>
       </div>
       <div class="modal-actions">
@@ -2081,9 +2336,7 @@
           </div>
         </div>
       </div>
-      <div class="modal-actions">
-        <button class="btn-cancel" id="closeSignatureModal">Fermer</button>
-      </div>
+      <div class="modal-actions"><button class="btn-cancel" id="closeSignatureModal">Fermer</button></div>
     </div>
   </div>
 
@@ -2125,30 +2378,50 @@
           </div>
         </div>
       </div>
-      <div class="modal-actions">
-        <button class="btn-cancel" id="closeRemoteSign">Fermer</button>
-      </div>
+      <div class="modal-actions"><button class="btn-cancel" id="closeRemoteSign">Fermer</button></div>
     </div>
   </div>
 
   <div class="modal-overlay" id="stockModal">
-    <div class="modal-box" style="max-width:520px;">
-      <h2>Gestion du stock</h2>
+    <div class="modal-box" style="max-width:600px;">
+      <h2>📦 Gestion du stock</h2>
       <div class="modal-scroll-area">
-        <div id="stockList" class="stock-list"></div>
-        <div class="pieces-section" style="margin-top:14px;">
-          <h4>Ajouter / Modifier un article</h4>
-          <div class="form-row">
-            <div class="form-group"><label>Nom</label><input type="text" id="stockName" placeholder="Ex: Joint" /></div>
-            <div class="form-group"><label>Quantité</label><input type="number" id="stockQte" min="0" value="0" /></div>
+        <div class="stock-stats">
+          <div class="stock-stat">
+            <div class="ss-num" id="stockStatTotal">0</div>
+            <div class="ss-lbl">Articles</div>
           </div>
-          <div class="form-group"><label>Seuil d'alerte</label><input type="number" id="stockSeuil" min="0" value="1" /></div>
-          <button class="btn-primary" id="addStockBtn" style="width:100%; justify-content:center;">+ Ajouter / Mettre à jour</button>
+          <div class="stock-stat">
+            <div class="ss-num warning" id="stockStatLow">0</div>
+            <div class="ss-lbl">Stock bas</div>
+          </div>
+          <div class="stock-stat">
+            <div class="ss-num danger" id="stockStatOut">0</div>
+            <div class="ss-lbl">Rupture</div>
+          </div>
+        </div>
+        <div class="stock-toolbar">
+          <input type="text" class="stock-search" id="stockSearchInput" placeholder="Rechercher un article..." autocomplete="off" />
+          <select class="stock-sort" id="stockSortSelect">
+            <option value="name_asc">A → Z</option>
+            <option value="name_desc">Z → A</option>
+            <option value="qty_asc">Qté croissante</option>
+            <option value="qty_desc">Qté décroissante</option>
+            <option value="low_first">Stock bas d'abord</option>
+          </select>
+        </div>
+        <div class="stock-list" id="stockList"></div>
+        <div class="stock-add-form">
+          <h4>+ Ajouter / Mettre à jour un article</h4>
+          <div class="stock-add-grid">
+            <input type="text" id="stockName" placeholder="Nom de l'article (ex: Joint)" autocomplete="off" />
+            <input type="number" id="stockQte" placeholder="Qté" min="0" value="0" />
+            <input type="number" id="stockSeuil" placeholder="Seuil d'alerte" min="0" value="1" />
+          </div>
+          <button class="btn-primary" id="addStockBtn" style="width:100%; justify-content:center;">+ Enregistrer</button>
         </div>
       </div>
-      <div class="modal-actions">
-        <button class="btn-cancel" id="closeStock">Fermer</button>
-      </div>
+      <div class="modal-actions"><button class="btn-cancel" id="closeStock">Fermer</button></div>
     </div>
   </div>
 
@@ -2176,9 +2449,7 @@
   <div class="modal-overlay" id="devisDetailModal">
     <div class="modal-box">
       <h2>Devis <span id="devisNumeroDisplay" style="font-family:var(--mono-stack); font-size:0.9rem; color:var(--info);"></span></h2>
-      <div class="modal-scroll-area">
-        <div id="devisDetailContent"></div>
-      </div>
+      <div class="modal-scroll-area"><div id="devisDetailContent"></div></div>
       <div class="modal-actions" style="justify-content:space-between; flex-wrap:wrap;">
         <div style="display:flex; gap:6px; flex-wrap:wrap;">
           <button class="btn-secondary" id="acceptDevisBtn" style="background:#e8f5e9; color:var(--success); border-color:#c8e6c9;">✓ Accepter</button>
@@ -2201,9 +2472,6 @@
         <div class="form-group"><label>Destinataire</label><input type="email" id="mailTo" placeholder="client@email.ch" /></div>
         <div class="form-group"><label>Objet</label><input type="text" id="mailSubject" readonly /></div>
         <div class="form-group"><label>Message</label><textarea id="mailBody" readonly style="border-radius:var(--r-sm); min-height:140px;"></textarea></div>
-        <div style="font-size:0.7rem; color:var(--text-faint); margin-top:6px; padding:8px; background:var(--bg-surface); border-radius:var(--r-xs);">
-          Cette action ouvre votre client mail. Joignez le PDF téléchargé.
-        </div>
       </div>
       <div class="modal-actions">
         <button class="btn-cancel" id="cancelMail">Annuler</button>
@@ -2222,7 +2490,6 @@
     </div>
   </div>
 
-  <!-- MODALE PARAMÈTRES (checkbox setTvaMulti présent) -->
   <div class="modal-overlay" id="settingsModal">
     <div class="modal-box" style="max-width:460px;">
       <h2>Paramètres</h2>
@@ -2256,9 +2523,7 @@
           </div>
         </div>
         <div style="margin:12px 0 14px; padding:10px 12px; background:var(--accent-light); border-radius:var(--r-sm); border-left:4px solid var(--accent);">
-          <div style="font-size:0.7rem; font-weight:700; color:var(--accent); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:10px;">
-            Mentions légales (factures suisses)
-          </div>
+          <div style="font-size:0.7rem; font-weight:700; color:var(--accent); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:10px;">Mentions légales (factures suisses)</div>
           <div class="form-group" style="margin-bottom:10px;"><label>Assurance RC professionnelle - Assureur</label><input type="text" id="setAssuranceNom" placeholder="AXA Assurances" /></div>
           <div class="form-group" style="margin-bottom:10px;"><label>N° police d'assurance</label><input type="text" id="setAssuranceNum" placeholder="POL-123456789" /></div>
           <div class="form-group" style="margin-bottom:0;"><label>Délai de paiement (jours)</label><input type="number" id="setDelaiPaiement" value="30" min="0" max="120" step="1" /></div>
@@ -2270,9 +2535,6 @@
         <div class="form-group"><label>Frais de déplacement par défaut (CHF)</label><input type="number" id="setDeplacementDefaut" value="50" step="5" min="0" /></div>
         <div class="form-group"><label>Seuil d'alerte impayés (jours)</label><input type="number" id="setSeuilAlerte" value="30" step="1" min="1" /></div>
         <div class="form-group"><label>Rappel de sauvegarde (jours)</label><input type="number" id="setSeuilSauvegarde" value="15" step="1" min="1" /></div>
-        <div style="margin-top:12px; padding:10px; background:var(--bg-surface); border-radius:var(--r-sm); font-size:0.7rem; color:var(--text-muted);">
-          <strong>Confidentialité :</strong> Toutes vos données sont stockées uniquement sur votre appareil.
-        </div>
       </div>
       <div class="modal-actions">
         <button class="btn-cancel" id="cancelSettings">Annuler</button>
@@ -2302,7 +2564,6 @@
       }
     }
 
-    // IndexedDB
     var IDB_NAME = 'pipepline_ch_db';
     var IDB_VERSION = 1;
     var IDB_STORE = 'kv';
@@ -2370,7 +2631,6 @@
       });
     }
 
-    // Jours fériés suisses
     function getSwissHolidays(year) {
       var h = {};
       h[year + '-01-01'] = 'Nouvel An';
@@ -2440,8 +2700,6 @@
       var STOCK_KEY = 'pipepline_ch_stock_v1';
       var SAVE_DELAY = 1500;
       var WORK_HOURS_PER_DAY = 7;
-      var VIRTUAL_THRESHOLD = 50;
-      var VIRTUAL_ITEM_HEIGHT = 200;
       var TVA_SEUIL_CHF = 100000;
       var TVA_BANNER_DURATION = 5000;
 
@@ -2484,6 +2742,10 @@
       var currentWizardStep = 1;
       var totalCache = new Map();
       var tvaBannerTimeout = null;
+      var openMonths = {};
+      var openDays = {};
+      var stockSearchTerm = '';
+      var stockSortMode = 'name_asc';
 
       var settings = {
         nom: 'PipePline',
@@ -2614,6 +2876,29 @@
       }
       function toDateStr(d) {
         return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+      }
+      function getMonthKey(dateStr) {
+        return dateStr ? dateStr.slice(0, 7) : '';
+      }
+      function formatMonthHeader(monthKey) {
+        if (!monthKey) return '—';
+        try {
+          var d = new Date(monthKey + '-01T00:00:00');
+          var s = d.toLocaleDateString('fr-CH', { month: 'long', year: 'numeric' });
+          return s.charAt(0).toUpperCase() + s.slice(1);
+        } catch(e) { return monthKey; }
+      }
+      function formatDayHeader(dateStr) {
+        if (!dateStr) return '—';
+        try {
+          var d = new Date(dateStr + 'T00:00:00');
+          var dayName = d.toLocaleDateString('fr-CH', { weekday: 'long' });
+          var dayNum = d.getDate();
+          var monthName = d.toLocaleDateString('fr-CH', { month: 'long' });
+          var year = d.getFullYear();
+          var label = dayName.charAt(0).toUpperCase() + dayName.slice(1) + ' ' + dayNum + ' ' + monthName + ' ' + year;
+          return label;
+        } catch(e) { return dateStr; }
       }
 
       function invalidateTotals(id) {
@@ -2917,9 +3202,6 @@
         input.addEventListener('blur', function() { setTimeout(function() { list.classList.remove('show'); }, 200); });
       }
 
-      // ============================================================
-      // BANDEAU TVA (apparaît 5 secondes au démarrage)
-      // ============================================================
       function showTvaBanner() {
         var banner = document.getElementById('alertTva');
         var text = document.getElementById('alertTvaText');
@@ -2984,7 +3266,6 @@
         document.getElementById('totalInterventions').textContent = total;
         document.getElementById('totalImpayees').textContent = impayees;
         document.getElementById('caMoisMini').textContent = formatCHF(caMois);
-        document.getElementById('resteMini').textContent = formatCHF(resteEncaisser);
         document.getElementById('tabInterventionsCount').textContent = total;
         document.getElementById('tabFacturesCount').textContent = total;
         document.getElementById('tabDevisCount').textContent = devisList.length;
@@ -3055,8 +3336,12 @@
         return list;
       }
 
+      // ============================================================
+      // RENDU DES INTERVENTIONS GROUPÉES
+      // Le jour d'aujourd'hui est OUVERT par défaut
+      // ============================================================
       function renderInterventions() {
-        var container = document.getElementById('interventionsList');
+        var container = document.getElementById('interventionsGroups');
         var term = searchTerm.trim().toLowerCase();
         var filtered = interventions.slice();
         if (term) {
@@ -3069,9 +3354,9 @@
         }
         filtered = filterInterventions(filtered, currentQuickFilter);
         filtered.sort(function(a, b) {
-          if (a.paye !== b.paye) return a.paye ? 1 : -1;
           return (b.date || '').localeCompare(a.date || '');
         });
+
         if (filtered.length === 0) {
           container.innerHTML = '<div class="empty-state">' +
             (term || currentQuickFilter !== 'all' ? 'Aucun résultat' : 'Aucune intervention pour le moment') +
@@ -3079,11 +3364,122 @@
           '</div>';
           return;
         }
-        container.innerHTML = '';
-        var frag = document.createDocumentFragment();
-        filtered.forEach(function(int) { frag.appendChild(buildInterventionCard(int)); });
-        container.appendChild(frag);
+
+        var todayStr = new Date().toISOString().slice(0, 10);
+        var groupedByMonth = {};
+        filtered.forEach(function(int) {
+          var mKey = getMonthKey(int.date);
+          if (!mKey) mKey = 'inconnu';
+          if (!groupedByMonth[mKey]) groupedByMonth[mKey] = {};
+          var dKey = int.date || 'inconnu';
+          if (!groupedByMonth[mKey][dKey]) groupedByMonth[mKey][dKey] = [];
+          groupedByMonth[mKey][dKey].push(int);
+        });
+
+        var months = Object.keys(groupedByMonth).sort(function(a, b) { return b.localeCompare(a); });
+
+        // Auto-déplier le mois du jour et le jour du jour (si non défini manuellement)
+        var todayMonthKey = todayStr.slice(0, 7);
+        if (typeof openMonths[todayMonthKey] === 'undefined') {
+          openMonths[todayMonthKey] = true;
+        }
+        var todayDayKey = todayMonthKey + '_' + todayStr;
+        if (typeof openDays[todayDayKey] === 'undefined') {
+          openDays[todayDayKey] = true;
+        }
+
+        var html = '';
+        months.forEach(function(mKey) {
+          var days = groupedByMonth[mKey];
+          var dayKeys = Object.keys(days).sort(function(a, b) { return b.localeCompare(a); });
+          var monthCount = 0;
+          var monthTotal = 0;
+          var monthImpayees = 0;
+          dayKeys.forEach(function(dk) {
+            days[dk].forEach(function(it) {
+              monthCount++;
+              monthTotal += getTotalTTC(it);
+              if (!it.paye) monthImpayees++;
+            });
+          });
+          var isMonthOpen = openMonths[mKey] === true;
+          html += '<div class="group-month' + (isMonthOpen ? ' open' : '') + '" data-month="' + escapeHtml(mKey) + '">';
+          html += '<div class="group-month-header" data-month-toggle="' + escapeHtml(mKey) + '">';
+          html += '<div class="gm-left">';
+          html += '<span class="gm-chevron">▶</span>';
+          html += '<span class="gm-title">' + formatMonthHeader(mKey) + '</span>';
+          html += '</div>';
+          html += '<div class="gm-stats">';
+          html += '<span class="gm-stat">' + monthCount + ' interv.</span>';
+          html += '<span class="gm-stat">' + formatCHF(monthTotal) + '</span>';
+          if (monthImpayees > 0) {
+            html += '<span class="gm-stat danger">⚠ ' + monthImpayees + '</span>';
+          }
+          html += '</div>';
+          html += '</div>';
+          html += '<div class="group-month-content">';
+          dayKeys.forEach(function(dKey) {
+            var dayItems = days[dKey];
+            var dayTotal = 0;
+            dayItems.forEach(function(it) { dayTotal += getTotalTTC(it); });
+            var dayKeyFull = mKey + '_' + dKey;
+            var isDayOpen = openDays[dayKeyFull] === true;
+            var isToday = dKey === todayStr;
+            html += '<div class="group-day' + (isDayOpen ? ' open' : '') + '" data-day="' + escapeHtml(dayKeyFull) + '">';
+            html += '<div class="group-day-header" data-day-toggle="' + escapeHtml(dayKeyFull) + '">';
+            html += '<div class="gd-left">';
+            html += '<span class="gd-chevron">▶</span>';
+            html += '<span class="gd-date' + (isToday ? ' today' : '') + '">' + formatDayHeader(dKey) + '</span>';
+            html += '</div>';
+            html += '<span class="gd-count">' + dayItems.length + '</span>';
+            html += '<span class="gd-total">' + formatCHF(dayTotal) + '</span>';
+            html += '</div>';
+            html += '<div class="group-day-content" data-day-content="' + escapeHtml(dayKeyFull) + '"></div>';
+            html += '</div>';
+          });
+          html += '</div>';
+          html += '</div>';
+        });
+        container.innerHTML = html;
+
+        months.forEach(function(mKey) {
+          var days = groupedByMonth[mKey];
+          Object.keys(days).forEach(function(dKey) {
+            var dayKeyFull = mKey + '_' + dKey;
+            var content = container.querySelector('[data-day-content="' + CSS.escape(dayKeyFull) + '"]');
+            if (content) {
+              var frag = document.createDocumentFragment();
+              days[dKey].forEach(function(int) { frag.appendChild(buildInterventionCard(int)); });
+              content.appendChild(frag);
+            }
+          });
+        });
+
         attachInterventionHandlers(container);
+        attachAccordionHandlers(container);
+      }
+
+      function attachAccordionHandlers(container) {
+        container.querySelectorAll('[data-month-toggle]').forEach(function(header) {
+          header.addEventListener('click', function(e) {
+            e.stopPropagation();
+            var mKey = this.dataset.monthToggle;
+            openMonths[mKey] = !openMonths[mKey];
+            haptic(8);
+            var parent = this.closest('.group-month');
+            if (parent) parent.classList.toggle('open', openMonths[mKey]);
+          });
+        });
+        container.querySelectorAll('[data-day-toggle]').forEach(function(header) {
+          header.addEventListener('click', function(e) {
+            e.stopPropagation();
+            var dKey = this.dataset.dayToggle;
+            openDays[dKey] = !openDays[dKey];
+            haptic(8);
+            var parent = this.closest('.group-day');
+            if (parent) parent.classList.toggle('open', openDays[dKey]);
+          });
+        });
       }
 
       function buildInterventionCard(int) {
@@ -3140,8 +3536,7 @@
           photosHtml +
           '<div class="int-footer">' +
             '<div class="int-meta">' +
-              '<span class="int-meta-item">📅 ' + formatDate(int.date) + '</span>' +
-              (int.heure ? '<span class="int-meta-item">🕐 ' + int.heure + (int.heureFin ? ' → ' + int.heureFin : '') + '</span>' : '') +
+              (int.heure ? '<span class="int-meta-item">🕐 ' + int.heure + (int.heureFin ? ' → ' + int.heureFin : '') + '</span>' : '<span class="int-meta-item">📅 ' + formatDate(int.date) + '</span>') +
               '<span class="int-meta-item">⏱ ' + formatDuree(int.duree) + '</span>' +
               '<span class="int-meta-item total">' + formatCHF(total) + '</span>' +
             '</div>' +
@@ -4315,7 +4710,6 @@
         document.getElementById('mailBody').value =
           'Bonjour ' + item.client + ',\n\n' +
           'Veuillez trouver ci-joint ' + (type === 'facture' ? 'la facture ' : 'le devis ') + (num || '') + ' d\'un montant de ' + formatCHF(total) + '.\n\n' +
-          'Détail :\n' + '- Date : ' + formatDate(item.date) + '\n- Description : ' + (item.description || '') + '\n\n' +
           'Cordialement,\n' + settings.nom + '\n' + settings.tel + '\n' + settings.email;
         document.getElementById('mailModal').classList.add('show');
       }
@@ -4366,9 +4760,8 @@
         return Promise.all([loadJsPDF(), loadSwissQRBill().catch(function() { return null; })]).then(function(results) {
           var swissQRBill = results[1];
           return createFactureDoc(int, swissQRBill);
-        }).then(function(doc) {
-          return doc.output('blob');
-        }).catch(function(e) { console.error(e); return null; });
+        }).then(function(doc) { return doc.output('blob'); })
+          .catch(function(e) { console.error(e); return null; });
       }
       function generateDevisPDFBlob(d) {
         return loadJsPDF().then(function() {
@@ -4382,225 +4775,75 @@
         var ttc = getTotalTTC(item);
         var ibanClean = settings.iban.replace(/\s/g, '').toUpperCase();
         var currency = 'CHF';
-
-        var creditorStreet = settings.adresse || '';
-        var creditorPostal = '';
-        var creditorCity = '';
-        var addrMatch = (settings.adresse || '').match(/(.+?)[,\s]+(\d{4})\s+(.+)$/);
-        if (addrMatch) {
-          creditorStreet = addrMatch[1].trim();
-          creditorPostal = addrMatch[2];
-          creditorCity = addrMatch[3].trim();
-        } else {
-          creditorPostal = '0000';
-          creditorCity = settings.adresse || '—';
-        }
-
-        var debtorStreet = item.adresse || '';
-        var debtorPostal = '';
-        var debtorCity = '';
-        var debtorMatch = (item.adresse || '').match(/(.+?)[,\s]+(\d{4})\s+(.+)$/);
-        if (debtorMatch) {
-          debtorStreet = debtorMatch[1].trim();
-          debtorPostal = debtorMatch[2];
-          debtorCity = debtorMatch[3].trim();
-        } else {
-          debtorStreet = item.adresse || '';
-          debtorPostal = '';
-          debtorCity = '';
-        }
-
         if (!swissQRBill || !swissQRBill.QRBill) {
           addPaymentSlipFallback(doc, item, pageWidth, pageHeight, margin);
           return;
         }
-
         try {
           var QRBill = swissQRBill.QRBill;
           var qrData = {
-            currency: currency,
-            amount: parseFloat(ttc.toFixed(2)),
-            creditor: {
-              name: settings.nom || '—',
-              address: creditorStreet,
-              zip: creditorPostal,
-              city: creditorCity,
-              account: ibanClean,
-              country: 'CH'
-            },
-            debtor: item.client ? {
-              name: item.client,
-              address: debtorStreet,
-              zip: debtorPostal,
-              city: debtorCity,
-              country: item.paysClient === 'CH' ? 'CH' : (item.paysClient || 'CH')
-            } : undefined,
+            currency: currency, amount: parseFloat(ttc.toFixed(2)),
+            creditor: { name: settings.nom || '—', address: settings.adresse || '', zip: '0000', city: settings.adresse || '—', account: ibanClean, country: 'CH' },
+            debtor: item.client ? { name: item.client, address: item.adresse || '', zip: '', city: '', country: item.paysClient === 'CH' ? 'CH' : (item.paysClient || 'CH') } : undefined,
             reference: item.numeroFacture || ''
           };
           var qrBill = new QRBill(qrData);
-          var qrWidth = 210;
-          var qrHeight = 105;
+          var qrWidth = 210, qrHeight = 105;
           var qrX = (pageWidth - qrWidth) / 2;
           var qrY = pageHeight - qrHeight - 5;
           drawSwissQRBillManual(doc, item, qrData, qrX, qrY, qrWidth, qrHeight);
-        } catch(e) {
-          console.error('Erreur QR-facture:', e);
-          addPaymentSlipFallback(doc, item, pageWidth, pageHeight, margin);
-        }
+        } catch(e) { console.error('Erreur QR-facture:', e); addPaymentSlipFallback(doc, item, pageWidth, pageHeight, margin); }
       }
 
       function drawSwissQRBillManual(doc, item, qrData, x, y, w, h) {
         var ttc = getTotalTTC(item);
         var ibanClean = settings.iban.replace(/\s/g, '').toUpperCase();
         var ibanFormatted = ibanClean.replace(/(.{4})/g, '$1 ').trim();
-
-        doc.setDrawColor('#000000');
-        doc.setLineWidth(0.2);
-        doc.setLineDashPattern([1, 1], 0);
-        doc.line(x, y, x + w, y);
-        doc.setLineDashPattern([], 0);
-
-        var colWidth = w / 2;
-        var padX = 5;
-        var curY = y + 5;
-
-        doc.setFontSize(11);
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor('#000000');
+        doc.setDrawColor('#000000'); doc.setLineWidth(0.2);
+        doc.setLineDashPattern([1, 1], 0); doc.line(x, y, x + w, y); doc.setLineDashPattern([], 0);
+        var colWidth = w / 2, padX = 5, curY = y + 5;
+        doc.setFontSize(11); doc.setFont('helvetica', 'bold'); doc.setTextColor('#000000');
         doc.text('Récépissé', x + padX, curY);
-
-        curY += 4;
-        doc.setFontSize(7);
-        doc.setFont('helvetica', 'normal');
-
-        var leftLines = [
-          'Compte / Payable à :',
-          ibanFormatted,
-          '',
-          'Payable par :',
-          (item.client || '—').substring(0, 40),
-          '',
-          'Monnaie : CHF',
-          'Montant : ' + ttc.toFixed(2)
-        ];
-        leftLines.forEach(function(line) {
+        curY += 4; doc.setFontSize(7); doc.setFont('helvetica', 'normal');
+        ['Compte / Payable à :', ibanFormatted, '', 'Payable par :', (item.client || '—').substring(0, 40), '', 'Monnaie : CHF', 'Montant : ' + ttc.toFixed(2)].forEach(function(line) {
           if (line) doc.text(line, x + padX, curY);
           curY += 3.2;
         });
-
         var rightX = x + colWidth + padX;
-        curY = y + 5;
-        doc.setFontSize(11);
-        doc.setFont('helvetica', 'bold');
+        curY = y + 5; doc.setFontSize(11); doc.setFont('helvetica', 'bold');
         doc.text('Section paiement', rightX, curY);
-
-        curY += 4;
-        doc.setFontSize(7);
-        doc.setFont('helvetica', 'normal');
-
-        var rightLines = [
-          'Compte / Payable à :',
-          ibanFormatted,
-          '',
-          'Payable par :',
-          (item.client || '—').substring(0, 40),
-          '',
-          'Monnaie : CHF',
-          'Montant : ' + ttc.toFixed(2),
-          '',
-          'Point de dépôt :',
-          '',
-          ''
-        ];
-        rightLines.forEach(function(line) {
+        curY += 4; doc.setFontSize(7); doc.setFont('helvetica', 'normal');
+        ['Compte / Payable à :', ibanFormatted, '', 'Payable par :', (item.client || '—').substring(0, 40), '', 'Monnaie : CHF', 'Montant : ' + ttc.toFixed(2)].forEach(function(line) {
           if (line) doc.text(line, rightX, curY);
           curY += 3.2;
         });
-
         var qrSize = 46;
         var qrX = rightX;
         var qrY = y + h - qrSize - 8;
-
-        doc.setFillColor('#ffffff');
-        doc.rect(qrX, qrY, qrSize, qrSize, 'F');
-
-        doc.setDrawColor('#000000');
-        doc.setLineWidth(0.3);
-        doc.rect(qrX, qrY, qrSize, qrSize, 'S');
-
-        doc.setFontSize(6);
-        doc.setTextColor('#666666');
-        doc.setFont('helvetica', 'italic');
+        doc.setFillColor('#ffffff'); doc.rect(qrX, qrY, qrSize, qrSize, 'F');
+        doc.setDrawColor('#000000'); doc.setLineWidth(0.3); doc.rect(qrX, qrY, qrSize, qrSize, 'S');
+        doc.setFontSize(6); doc.setTextColor('#666666'); doc.setFont('helvetica', 'italic');
         doc.text('QR-code', qrX + qrSize / 2, qrY + qrSize / 2 - 2, { align: 'center' });
         doc.text('(Swiss QR)', qrX + qrSize / 2, qrY + qrSize / 2 + 2, { align: 'center' });
-
-        doc.setDrawColor('#d52b1e');
-        doc.setLineWidth(1.5);
-        var cx = qrX + qrSize / 2;
-        var cy = qrY + qrSize / 2;
-        doc.line(cx - 4, cy, cx + 4, cy);
-        doc.line(cx, cy - 4, cx, cy + 4);
-
-        var infoY = qrY + qrSize + 3;
-        doc.setFontSize(6);
-        doc.setTextColor('#000000');
-        doc.setFont('helvetica', 'normal');
-        doc.text('Référence : ' + (item.numeroFacture || '—'), rightX, infoY);
-        infoY += 3;
-        doc.text('Sans frais pour le payeur', rightX, infoY);
-
-        if (!settings.tvaActive) {
-          doc.setFontSize(6);
-          doc.setTextColor('#666666');
-          doc.setFont('helvetica', 'italic');
-          doc.text('TVA non applicable — Art. 10 al. 2 LTVA', x + padX, y + h - 4);
-        } else if (isAutoliquidation(item)) {
-          doc.setFontSize(6);
-          doc.setTextColor('#666666');
-          doc.setFont('helvetica', 'italic');
-          doc.text('Autoliquidation — TVA due par le client', x + padX, y + h - 4);
-        }
+        doc.setDrawColor('#d52b1e'); doc.setLineWidth(1.5);
+        var cx = qrX + qrSize / 2; var cy = qrY + qrSize / 2;
+        doc.line(cx - 4, cy, cx + 4, cy); doc.line(cx, cy - 4, cx, cy + 4);
       }
 
       function addPaymentSlipFallback(doc, item, pageWidth, pageHeight, margin) {
         if (!settings.iban) return;
         var ttc = getTotalTTC(item);
         var y = pageHeight - 80;
-        doc.setDrawColor('#000000');
-        doc.setLineWidth(0.3);
-        doc.line(margin + 10, y, pageWidth - margin - 10, y);
-        y += 5;
-        doc.setFontSize(7);
-        doc.setTextColor('#000000');
-        doc.setFont('helvetica', 'bold');
+        doc.setDrawColor('#000000'); doc.setLineWidth(0.3);
+        doc.line(margin + 10, y, pageWidth - margin - 10, y); y += 5;
+        doc.setFontSize(7); doc.setTextColor('#000000'); doc.setFont('helvetica', 'bold');
         doc.text('Récépissé', margin + 10, y);
         doc.text('Section paiement', pageWidth / 2 + 5, y);
-        y += 5;
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(6.5);
+        y += 5; doc.setFont('helvetica', 'normal'); doc.setFontSize(6.5);
         var ibanFormatted = settings.iban.replace(/\s/g, '').replace(/(.{4})/g, '$1 ').trim();
-        var lines = [
-          'Compte / Payable à : ' + ibanFormatted,
-          'Compte / Payable par : ' + (item.client || '—'),
-          'Monnaie : CHF',
-          'Montant : ' + ttc.toFixed(2)
-        ];
+        var lines = ['Compte / Payable à : ' + ibanFormatted, 'Compte / Payable par : ' + (item.client || '—'), 'Monnaie : CHF', 'Montant : ' + ttc.toFixed(2)];
         for (var i = 0; i < lines.length; i++) doc.text(lines[i], margin + 10, y + i * 3.5);
         for (var j = 0; j < lines.length; j++) doc.text(lines[j], pageWidth / 2 + 5, y + j * 3.5);
-        var qrY = pageHeight - 40;
-        var qrSize = 30;
-        doc.setDrawColor('#000000');
-        doc.setLineWidth(0.5);
-        doc.rect(pageWidth / 2 + 5, qrY - qrSize, qrSize, qrSize);
-        doc.setFontSize(5);
-        doc.text('Emplacement QR-code', pageWidth / 2 + 5 + qrSize/2, qrY - qrSize/2, { align: 'center' });
-        var mention = '';
-        if (!settings.tvaActive) mention = 'TVA non applicable — Art. 10 al. 2 LTVA';
-        else if (isAutoliquidation(item)) mention = 'Autoliquidation — TVA due par le client (art. 45 LTVA)';
-        if (mention) {
-          doc.setTextColor('#666666');
-          doc.text(mention, margin + 10, pageHeight - 18);
-        }
       }
 
       function createFactureDoc(int, swissQRBill) {
@@ -4610,38 +4853,23 @@
         var pageHeight = doc.internal.pageSize.getHeight();
         var margin = 15;
         var y = margin;
-        doc.setFillColor('#1a5279');
-        doc.rect(0, 0, pageWidth, 40, 'F');
-        doc.setTextColor('#ffffff');
-        doc.setFontSize(20);
-        doc.setFont('helvetica', 'bold');
+        doc.setFillColor('#1a5279'); doc.rect(0, 0, pageWidth, 40, 'F');
+        doc.setTextColor('#ffffff'); doc.setFontSize(20); doc.setFont('helvetica', 'bold');
         doc.text(settings.nom.toUpperCase(), pageWidth / 2, 22, { align: 'center' });
-        doc.setFontSize(9);
-        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(9); doc.setFont('helvetica', 'normal');
         doc.text('Artisan Plombier - Dépannage & Entretien', pageWidth / 2, 31, { align: 'center' });
         y = 50;
-        doc.setTextColor('#1a5279');
-        doc.setFontSize(16);
-        doc.setFont('helvetica', 'bold');
+        doc.setTextColor('#1a5279'); doc.setFontSize(16); doc.setFont('helvetica', 'bold');
         doc.text('FACTURE', margin + 10, y);
-        doc.setFontSize(11);
-        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(11); doc.setFont('helvetica', 'normal');
         doc.text(int.numeroFacture || '', pageWidth - margin - 10, y, { align: 'right' });
-        y += 10;
-        doc.setDrawColor('#1a5279');
-        doc.line(margin + 10, y, pageWidth - margin - 10, y);
-        y += 10;
-        doc.setTextColor('#333333');
-        doc.setFontSize(10);
-        doc.setFont('helvetica', 'bold');
-        doc.text('Client :', margin + 10, y);
-        doc.setFont('helvetica', 'normal');
-        doc.text(int.client || '—', margin + 45, y);
+        y += 10; doc.setDrawColor('#1a5279'); doc.line(margin + 10, y, pageWidth - margin - 10, y); y += 10;
+        doc.setTextColor('#333333'); doc.setFontSize(10); doc.setFont('helvetica', 'bold');
+        doc.text('Client :', margin + 10, y); doc.setFont('helvetica', 'normal'); doc.text(int.client || '—', margin + 45, y);
         if (int.email) { y += 7; doc.setFont('helvetica', 'bold'); doc.text('Email :', margin + 10, y); doc.setFont('helvetica', 'normal'); doc.text(int.email, margin + 45, y); }
         if (int.tel) { y += 7; doc.setFont('helvetica', 'bold'); doc.text('Téléphone :', margin + 10, y); doc.setFont('helvetica', 'normal'); doc.text(int.tel, margin + 45, y); }
         if (int.adresse) { y += 7; doc.setFont('helvetica', 'bold'); doc.text('Adresse :', margin + 10, y); doc.setFont('helvetica', 'normal'); var adrLines = doc.splitTextToSize(int.adresse, pageWidth - margin - 55); doc.text(adrLines, margin + 45, y); y += (adrLines.length - 1) * 5; }
-        y += 7;
-        doc.setFont('helvetica', 'bold'); doc.text('Date :', margin + 10, y); doc.setFont('helvetica', 'normal');
+        y += 7; doc.setFont('helvetica', 'bold'); doc.text('Date :', margin + 10, y); doc.setFont('helvetica', 'normal');
         var dateStr = formatDate(int.date);
         if (int.heure) dateStr += ' de ' + int.heure;
         if (int.heureFin) dateStr += ' à ' + int.heureFin;
@@ -4660,38 +4888,15 @@
         var heures = (int.duree || 0) / 60;
         var mainOeuvre = heures * (int.taux || settings.tauxDefaut);
         doc.text('Main d\'œuvre (' + formatDuree(int.duree) + ')', margin + 15, y + 5);
-        doc.text(mainOeuvre.toFixed(2) + ' CHF', pageWidth - margin - 15, y + 5, { align: 'right' });
-        y += 7;
+        doc.text(mainOeuvre.toFixed(2) + ' CHF', pageWidth - margin - 15, y + 5, { align: 'right' }); y += 7;
         if ((int.deplacement || 0) > 0) { doc.text('Frais de déplacement', margin + 15, y + 5); doc.text((int.deplacement || 0).toFixed(2) + ' CHF', pageWidth - margin - 15, y + 5, { align: 'right' }); y += 7; }
-        if (int.pieces && int.pieces.length > 0) {
-          int.pieces.forEach(function(p) {
-            var qte = parseInt(p.qte) || 1;
-            var label = p.nom + (qte > 1 ? ' ×' + qte : '');
-            doc.text('• ' + label, margin + 15, y + 5);
-            doc.text((parseFloat(p.prix) * qte).toFixed(2) + ' CHF', pageWidth - margin - 15, y + 5, { align: 'right' });
-            y += 7;
-          });
-        }
-        if (int.frais && int.frais.length > 0) {
-          int.frais.forEach(function(f) {
-            doc.text('• ' + f.libelle, margin + 15, y + 5);
-            doc.text((parseFloat(f.montant) || 0).toFixed(2) + ' CHF', pageWidth - margin - 15, y + 5, { align: 'right' });
-            y += 7;
-          });
-        }
-        var ht = getTotalHT(int); var ttc = getTotalTTC(int);
-        var tvaMontant = getTvaMontant(int);
+        if (int.pieces && int.pieces.length > 0) { int.pieces.forEach(function(p) { var qte = parseInt(p.qte) || 1; var label = p.nom + (qte > 1 ? ' ×' + qte : ''); doc.text('• ' + label, margin + 15, y + 5); doc.text((parseFloat(p.prix) * qte).toFixed(2) + ' CHF', pageWidth - margin - 15, y + 5, { align: 'right' }); y += 7; }); }
+        if (int.frais && int.frais.length > 0) { int.frais.forEach(function(f) { doc.text('• ' + f.libelle, margin + 15, y + 5); doc.text((parseFloat(f.montant) || 0).toFixed(2) + ' CHF', pageWidth - margin - 15, y + 5, { align: 'right' }); y += 7; }); }
+        var ht = getTotalHT(int); var ttc = getTotalTTC(int); var tvaMontant = getTvaMontant(int);
         doc.setDrawColor('#cccccc'); doc.line(margin + 10, y, pageWidth - margin - 10, y); y += 6;
         doc.text('Total HT', margin + 15, y + 4); doc.text(ht.toFixed(2) + ' CHF', pageWidth - margin - 15, y + 4, { align: 'right' }); y += 6;
-        if (settings.tvaActive) {
-          if (isAutoliquidation(int)) {
-            doc.text('Autoliquidation (client UE)', margin + 15, y + 4); doc.text('0.00 CHF', pageWidth - margin - 15, y + 4, { align: 'right' }); y += 6;
-          } else {
-            doc.text('TVA (' + settings.tva + '%)', margin + 15, y + 4); doc.text(tvaMontant.toFixed(2) + ' CHF', pageWidth - margin - 15, y + 4, { align: 'right' }); y += 6;
-          }
-        } else {
-          doc.setTextColor('#666666'); doc.setFontSize(8); doc.text('TVA non applicable (art. 10 al. 2 LTVA)', margin + 15, y + 4); y += 6; doc.setTextColor('#333333'); doc.setFontSize(9);
-        }
+        if (settings.tvaActive) { if (isAutoliquidation(int)) { doc.text('Autoliquidation (client UE)', margin + 15, y + 4); doc.text('0.00 CHF', pageWidth - margin - 15, y + 4, { align: 'right' }); y += 6; } else { doc.text('TVA (' + settings.tva + '%)', margin + 15, y + 4); doc.text(tvaMontant.toFixed(2) + ' CHF', pageWidth - margin - 15, y + 4, { align: 'right' }); y += 6; } }
+        else { doc.setTextColor('#666666'); doc.setFontSize(8); doc.text('TVA non applicable (art. 10 al. 2 LTVA)', margin + 15, y + 4); y += 6; doc.setTextColor('#333333'); doc.setFontSize(9); }
         doc.setDrawColor('#1a5279'); doc.line(margin + 10, y, pageWidth - margin - 10, y); y += 8;
         doc.setTextColor('#1a5279'); doc.setFontSize(13); doc.setFont('helvetica', 'bold');
         doc.text('TOTAL', margin + 15, y + 5); doc.text(ttc.toFixed(2) + ' CHF', pageWidth - margin - 15, y + 5, { align: 'right' });
@@ -4700,37 +4905,13 @@
         if (settings.siret) { doc.text('IDE : ' + settings.siret, margin + 10, y); y += 4; }
         if (settings.tvaActive && settings.tvaIntra) { doc.text('N° TVA : ' + settings.tvaIntra, margin + 10, y); y += 4; }
         if (settings.iban) { doc.text('IBAN : ' + settings.iban, margin + 10, y); y += 4; }
-        if (settings.assuranceNom) { doc.text('Assurance RC : ' + settings.assuranceNom + (settings.assuranceNum ? ' (Police ' + settings.assuranceNum + ')' : ''), margin + 10, y); y += 4; }
+        if (settings.assuranceNom) { doc.text('Assurance RC : ' + settings.assuranceNom, margin + 10, y); y += 4; }
         if (settings.delaiPaiement) { doc.text('Paiement à ' + settings.delaiPaiement + ' jours', margin + 10, y); y += 4; }
         y += 4;
-        if (int.paye) {
-          doc.setFillColor('#2e7d32'); doc.rect(margin + 10, y, pageWidth - 2 * margin - 20, 10, 'F');
-          doc.setTextColor('#ffffff'); doc.setFontSize(10); doc.setFont('helvetica', 'bold');
-          doc.text('PAYÉE le ' + formatDate(int.datePaiement), pageWidth / 2, y + 6.5, { align: 'center' });
-        } else {
-          doc.setFillColor('#c62828'); doc.rect(margin + 10, y, pageWidth - 2 * margin - 20, 10, 'F');
-          doc.setTextColor('#ffffff'); doc.setFontSize(10); doc.setFont('helvetica', 'bold');
-          doc.text('EN ATTENTE DE PAIEMENT', pageWidth / 2, y + 6.5, { align: 'center' });
-        }
-        if (int.signatureClient || int.signatureTech) {
-          y += 18;
-          doc.setTextColor('#1a5279'); doc.setFontSize(9); doc.setFont('helvetica', 'bold');
-          doc.text('Signatures :', margin + 10, y); y += 4;
-          var sigY = y;
-          if (int.signatureTech) { try { doc.addImage(int.signatureTech, 'JPEG', margin + 10, sigY, 50, 20); doc.setFontSize(7); doc.setTextColor('#666666'); doc.text('Technicien', margin + 35, sigY + 25, { align: 'center' }); } catch(e) {} }
-          if (int.signatureClient) { try { doc.addImage(int.signatureClient, 'JPEG', pageWidth - margin - 60, sigY, 50, 20); doc.setFontSize(7); doc.setTextColor('#666666'); doc.text('Client', pageWidth - margin - 35, sigY + 25, { align: 'center' }); } catch(e) {} }
-          y += 30;
-        }
-        if (settings.iban) {
-          addSwissQRBill(doc, int, pageWidth, pageHeight, margin, swissQRBill);
-        } else {
-          y = pageHeight - 25;
-          doc.setDrawColor('#cccccc'); doc.line(margin + 10, y, pageWidth - margin - 10, y); y += 5;
-          doc.setTextColor('#666666'); doc.setFontSize(7); doc.setFont('helvetica', 'normal');
-          doc.text(settings.nom + ' - ' + settings.adresse + (settings.siret ? ' - IDE : ' + settings.siret : ''), pageWidth / 2, y, { align: 'center' });
-          y += 4;
-          doc.text('Tel : ' + settings.tel + ' - ' + settings.email, pageWidth / 2, y, { align: 'center' });
-        }
+        if (int.paye) { doc.setFillColor('#2e7d32'); doc.rect(margin + 10, y, pageWidth - 2 * margin - 20, 10, 'F'); doc.setTextColor('#ffffff'); doc.setFontSize(10); doc.setFont('helvetica', 'bold'); doc.text('PAYÉE le ' + formatDate(int.datePaiement), pageWidth / 2, y + 6.5, { align: 'center' }); }
+        else { doc.setFillColor('#c62828'); doc.rect(margin + 10, y, pageWidth - 2 * margin - 20, 10, 'F'); doc.setTextColor('#ffffff'); doc.setFontSize(10); doc.setFont('helvetica', 'bold'); doc.text('EN ATTENTE DE PAIEMENT', pageWidth / 2, y + 6.5, { align: 'center' }); }
+        if (settings.iban) { addSwissQRBill(doc, int, pageWidth, pageHeight, margin, swissQRBill); }
+        else { y = pageHeight - 25; doc.setDrawColor('#cccccc'); doc.line(margin + 10, y, pageWidth - margin - 10, y); y += 5; doc.setTextColor('#666666'); doc.setFontSize(7); doc.setFont('helvetica', 'normal'); doc.text(settings.nom + ' - ' + settings.adresse, pageWidth / 2, y, { align: 'center' }); y += 4; doc.text('Tel : ' + settings.tel + ' - ' + settings.email, pageWidth / 2, y, { align: 'center' }); }
         return doc;
       }
       function generateFacturePDF(id, silent) {
@@ -4740,8 +4921,7 @@
         Promise.all([loadJsPDF(), loadSwissQRBill().catch(function() { return null; })]).then(function(results) {
           try {
             var doc = createFactureDoc(int, results[1]);
-            var fileName = 'Facture_' + (int.numeroFacture || 'Client').replace(/[^a-zA-Z0-9\-]/g, '_') + '.pdf';
-            doc.save(fileName);
+            doc.save('Facture_' + (int.numeroFacture || 'Client').replace(/[^a-zA-Z0-9\-]/g, '_') + '.pdf');
             if (!silent) showToast('Facture PDF téléchargée', 'success');
           } catch (e) { showToast('Erreur PDF : ' + e.message, 'error'); }
         }).catch(function() { showToast('Impossible de charger le générateur PDF', 'error'); });
@@ -4754,8 +4934,7 @@
         var pageHeight = doc.internal.pageSize.getHeight();
         var margin = 15;
         var y = margin;
-        doc.setFillColor('#4338ca');
-        doc.rect(0, 0, pageWidth, 40, 'F');
+        doc.setFillColor('#4338ca'); doc.rect(0, 0, pageWidth, 40, 'F');
         doc.setTextColor('#ffffff'); doc.setFontSize(20); doc.setFont('helvetica', 'bold');
         doc.text(settings.nom.toUpperCase(), pageWidth / 2, 22, { align: 'center' });
         doc.setFontSize(9); doc.setFont('helvetica', 'normal');
@@ -4765,8 +4944,7 @@
         doc.text('DEVIS', margin + 10, y);
         doc.setFontSize(11); doc.setFont('helvetica', 'normal');
         doc.text(d.numeroDevis || '', pageWidth - margin - 10, y, { align: 'right' });
-        y += 10;
-        doc.setDrawColor('#4338ca'); doc.line(margin + 10, y, pageWidth - margin - 10, y); y += 10;
+        y += 10; doc.setDrawColor('#4338ca'); doc.line(margin + 10, y, pageWidth - margin - 10, y); y += 10;
         doc.setTextColor('#333333'); doc.setFontSize(10); doc.setFont('helvetica', 'bold');
         doc.text('Client :', margin + 10, y); doc.setFont('helvetica', 'normal'); doc.text(d.client || '—', margin + 45, y);
         if (d.email) { y += 7; doc.setFont('helvetica', 'bold'); doc.text('Email :', margin + 10, y); doc.setFont('helvetica', 'normal'); doc.text(d.email, margin + 45, y); }
@@ -4788,28 +4966,12 @@
         doc.text('Main d\'œuvre (' + formatDuree(d.duree) + ')', margin + 15, y + 5);
         doc.text(mainOeuvre.toFixed(2) + ' CHF', pageWidth - margin - 15, y + 5, { align: 'right' }); y += 7;
         if ((d.deplacement || 0) > 0) { doc.text('Frais de déplacement', margin + 15, y + 5); doc.text((d.deplacement || 0).toFixed(2) + ' CHF', pageWidth - margin - 15, y + 5, { align: 'right' }); y += 7; }
-        if (d.pieces && d.pieces.length > 0) {
-          d.pieces.forEach(function(p) {
-            var qte = parseInt(p.qte) || 1;
-            var label = p.nom + (qte > 1 ? ' ×' + qte : '');
-            doc.text('• ' + label, margin + 15, y + 5);
-            doc.text((parseFloat(p.prix) * qte).toFixed(2) + ' CHF', pageWidth - margin - 15, y + 5, { align: 'right' });
-            y += 7;
-          });
-        }
-        var ht = getTotalHT(d); var ttc = getTotalTTC(d);
-        var tvaMontant = getTvaMontant(d);
+        if (d.pieces && d.pieces.length > 0) { d.pieces.forEach(function(p) { var qte = parseInt(p.qte) || 1; var label = p.nom + (qte > 1 ? ' ×' + qte : ''); doc.text('• ' + label, margin + 15, y + 5); doc.text((parseFloat(p.prix) * qte).toFixed(2) + ' CHF', pageWidth - margin - 15, y + 5, { align: 'right' }); y += 7; }); }
+        var ht = getTotalHT(d); var ttc = getTotalTTC(d); var tvaMontant = getTvaMontant(d);
         doc.setDrawColor('#cccccc'); doc.line(margin + 10, y, pageWidth - margin - 10, y); y += 6;
         doc.text('Total HT', margin + 15, y + 4); doc.text(ht.toFixed(2) + ' CHF', pageWidth - margin - 15, y + 4, { align: 'right' }); y += 6;
-        if (settings.tvaActive) {
-          if (isAutoliquidation(d)) {
-            doc.text('Autoliquidation (client UE)', margin + 15, y + 4); doc.text('0.00 CHF', pageWidth - margin - 15, y + 4, { align: 'right' }); y += 6;
-          } else {
-            doc.text('TVA (' + settings.tva + '%)', margin + 15, y + 4); doc.text(tvaMontant.toFixed(2) + ' CHF', pageWidth - margin - 15, y + 4, { align: 'right' }); y += 6;
-          }
-        } else {
-          doc.setTextColor('#666666'); doc.setFontSize(8); doc.text('TVA non applicable (art. 10 al. 2 LTVA)', margin + 15, y + 4); y += 6; doc.setTextColor('#333333'); doc.setFontSize(9);
-        }
+        if (settings.tvaActive) { if (isAutoliquidation(d)) { doc.text('Autoliquidation (client UE)', margin + 15, y + 4); doc.text('0.00 CHF', pageWidth - margin - 15, y + 4, { align: 'right' }); y += 6; } else { doc.text('TVA (' + settings.tva + '%)', margin + 15, y + 4); doc.text(tvaMontant.toFixed(2) + ' CHF', pageWidth - margin - 15, y + 4, { align: 'right' }); y += 6; } }
+        else { doc.setTextColor('#666666'); doc.setFontSize(8); doc.text('TVA non applicable (art. 10 al. 2 LTVA)', margin + 15, y + 4); y += 6; doc.setTextColor('#333333'); doc.setFontSize(9); }
         doc.setDrawColor('#4338ca'); doc.line(margin + 10, y, pageWidth - margin - 10, y); y += 8;
         doc.setTextColor('#4338ca'); doc.setFontSize(13); doc.setFont('helvetica', 'bold');
         doc.text('TOTAL', margin + 15, y + 5); doc.text(ttc.toFixed(2) + ' CHF', pageWidth - margin - 15, y + 5, { align: 'right' });
@@ -4819,17 +4981,10 @@
         doc.setFillColor(statutColor); doc.rect(margin + 10, y, pageWidth - 2 * margin - 20, 10, 'F');
         doc.setTextColor('#ffffff'); doc.setFontSize(10); doc.setFont('helvetica', 'bold');
         doc.text(statutLabel, pageWidth / 2, y + 6.5, { align: 'center' });
-        if (d.signatureClient || d.signatureTech) {
-          y += 18;
-          doc.setTextColor('#4338ca'); doc.setFontSize(9); doc.setFont('helvetica', 'bold');
-          doc.text('Signatures :', margin + 10, y); y += 4;
-          if (d.signatureTech) { try { doc.addImage(d.signatureTech, 'JPEG', margin + 10, y, 50, 20); doc.setFontSize(7); doc.setTextColor('#666666'); doc.text('Technicien', margin + 35, y + 25, { align: 'center' }); } catch(e) {} }
-          if (d.signatureClient) { try { doc.addImage(d.signatureClient, 'JPEG', pageWidth - margin - 60, y, 50, 20); doc.setFontSize(7); doc.setTextColor('#666666'); doc.text('Client', pageWidth - margin - 35, y + 25, { align: 'center' }); } catch(e) {} }
-        }
         y = pageHeight - 25;
         doc.setDrawColor('#cccccc'); doc.line(margin + 10, y, pageWidth - margin - 10, y); y += 5;
         doc.setTextColor('#666666'); doc.setFontSize(7); doc.setFont('helvetica', 'normal');
-        doc.text(settings.nom + ' - ' + settings.adresse + (settings.siret ? ' - IDE : ' + settings.siret : ''), pageWidth / 2, y, { align: 'center' });
+        doc.text(settings.nom + ' - ' + settings.adresse, pageWidth / 2, y, { align: 'center' });
         y += 4;
         doc.text('Tel : ' + settings.tel + ' - ' + settings.email, pageWidth / 2, y, { align: 'center' });
         return doc;
@@ -4840,8 +4995,7 @@
         loadJsPDF().then(function() {
           try {
             var doc = createDevisDoc(d);
-            var fileName = 'Devis_' + (d.numeroDevis || 'Client').replace(/[^a-zA-Z0-9\-]/g, '_') + '.pdf';
-            doc.save(fileName);
+            doc.save('Devis_' + (d.numeroDevis || 'Client').replace(/[^a-zA-Z0-9\-]/g, '_') + '.pdf');
             if (!silent) showToast('Devis PDF téléchargé', 'success');
           } catch (e) { showToast('Erreur PDF : ' + e.message, 'error'); }
         }).catch(function() { showToast('Impossible de charger le générateur PDF', 'error'); });
@@ -4858,87 +5012,16 @@
         var ht = getTotalHT(int); var ttc = getTotalTTC(int);
         var tvaMontant = getTvaMontant(int);
         var piecesHtml = '';
-        if (int.pieces && int.pieces.length > 0) {
-          int.pieces.forEach(function(p) {
-            var qte = parseInt(p.qte) || 1;
-            piecesHtml += '<tr><td style="padding:6px 8px; border-bottom:1px solid #eee;">' + escapeHtml(p.nom) + (qte > 1 ? ' ×' + qte : '') + '</td><td style="text-align:right; padding:6px 8px; border-bottom:1px solid #eee;">' + (parseFloat(p.prix) * qte).toFixed(2) + ' CHF</td></tr>';
-          });
-        }
-        if (int.frais && int.frais.length > 0) {
-          int.frais.forEach(function(f) {
-            piecesHtml += '<tr><td style="padding:6px 8px; border-bottom:1px solid #eee;">' + escapeHtml(f.libelle) + '</td><td style="text-align:right; padding:6px 8px; border-bottom:1px solid #eee;">' + (parseFloat(f.montant) || 0).toFixed(2) + ' CHF</td></tr>';
-          });
-        }
+        if (int.pieces && int.pieces.length > 0) { int.pieces.forEach(function(p) { var qte = parseInt(p.qte) || 1; piecesHtml += '<tr><td style="padding:6px 8px; border-bottom:1px solid #eee;">' + escapeHtml(p.nom) + (qte > 1 ? ' ×' + qte : '') + '</td><td style="text-align:right; padding:6px 8px; border-bottom:1px solid #eee;">' + (parseFloat(p.prix) * qte).toFixed(2) + ' CHF</td></tr>'; }); }
+        if (int.frais && int.frais.length > 0) { int.frais.forEach(function(f) { piecesHtml += '<tr><td style="padding:6px 8px; border-bottom:1px solid #eee;">' + escapeHtml(f.libelle) + '</td><td style="text-align:right; padding:6px 8px; border-bottom:1px solid #eee;">' + (parseFloat(f.montant) || 0).toFixed(2) + ' CHF</td></tr>'; }); }
         var dateStr = formatDate(int.date);
         if (int.heure) dateStr += ' de ' + int.heure;
         if (int.heureFin) dateStr += ' à ' + int.heureFin;
         var tvaLine = '';
-        if (!settings.tvaActive) {
-          tvaLine = '<tr><td style="padding:6px 8px; border-bottom:1px solid #eee; font-style:italic; color:#666;">TVA non applicable (art. 10 al. 2 LTVA)</td><td></td></tr>';
-        } else if (isAutoliquidation(int)) {
-          tvaLine = '<tr><td style="padding:6px 8px; border-bottom:1px solid #eee;">Autoliquidation (client UE)</td><td style="text-align:right; padding:6px 8px; border-bottom:1px solid #eee;">0.00 CHF</td></tr>';
-        } else {
-          tvaLine = '<tr><td style="padding:6px 8px; border-bottom:1px solid #eee;">TVA (' + settings.tva + '%)</td><td style="text-align:right; padding:6px 8px; border-bottom:1px solid #eee;">' + tvaMontant.toFixed(2) + ' CHF</td></tr>';
-        }
-        var mentionsHtml = '';
-        if (settings.siret) mentionsHtml += '<div>IDE : ' + escapeHtml(settings.siret) + '</div>';
-        if (settings.tvaActive && settings.tvaIntra) mentionsHtml += '<div>N° TVA : ' + escapeHtml(settings.tvaIntra) + '</div>';
-        if (settings.iban) mentionsHtml += '<div>IBAN : ' + escapeHtml(settings.iban) + '</div>';
-        if (settings.assuranceNom) mentionsHtml += '<div>Assurance RC : ' + escapeHtml(settings.assuranceNom) + (settings.assuranceNum ? ' (Police ' + escapeHtml(settings.assuranceNum) + ')' : '') + '</div>';
-        if (settings.delaiPaiement) mentionsHtml += '<div>Paiement à ' + settings.delaiPaiement + ' jours</div>';
-        printSection.innerHTML =
-          '<div style="font-family:Arial, sans-serif; max-width:800px; margin:0 auto; padding:20px;">' +
-            '<div style="background:#1a5279; color:white; padding:20px; text-align:center;">' +
-              '<h1 style="margin:0; font-size:1.8rem;">' + escapeHtml(settings.nom.toUpperCase()) + '</h1>' +
-              '<p style="margin:4px 0 0; font-size:0.9rem;">Artisan Plombier - Dépannage & Entretien</p>' +
-            '</div>' +
-            '<div style="padding:20px; border:1px solid #ddd;">' +
-              '<div style="display:flex; justify-content:space-between; margin-bottom:20px;">' +
-                '<h2 style="color:#1a5279; margin:0;">FACTURE</h2>' +
-                '<span style="font-family:monospace; font-weight:bold; color:#1a5279;">' + escapeHtml(int.numeroFacture || '') + '</span>' +
-              '</div>' +
-              '<table style="width:100%; border-collapse:collapse; margin-bottom:20px;">' +
-                '<tr><td style="padding:4px 0; font-weight:bold; width:120px;">Client :</td><td>' + escapeHtml(int.client) + '</td></tr>' +
-                (int.email ? '<tr><td style="padding:4px 0; font-weight:bold;">Email :</td><td>' + escapeHtml(int.email) + '</td></tr>' : '') +
-                (int.tel ? '<tr><td style="padding:4px 0; font-weight:bold;">Téléphone :</td><td>' + escapeHtml(int.tel) + '</td></tr>' : '') +
-                (int.adresse ? '<tr><td style="padding:4px 0; font-weight:bold;">Adresse :</td><td>' + escapeHtml(int.adresse) + '</td></tr>' : '') +
-                '<tr><td style="padding:4px 0; font-weight:bold;">Date :</td><td>' + dateStr + '</td></tr>' +
-                '<tr><td style="padding:4px 0; font-weight:bold;">Type :</td><td>' + typeInfo.label + '</td></tr>' +
-                '<tr><td style="padding:4px 0; font-weight:bold;">Durée :</td><td>' + formatDuree(int.duree) + '</td></tr>' +
-                '<tr><td style="padding:4px 0; font-weight:bold;">Description :</td><td>' + escapeHtml(int.description) + '</td></tr>' +
-              '</table>' +
-              '<table style="width:100%; border-collapse:collapse; margin-bottom:20px;">' +
-                '<thead><tr style="background:#f0f7ff;">' +
-                  '<th style="text-align:left; padding:8px; border-bottom:2px solid #1a5279;">Désignation</th>' +
-                  '<th style="text-align:right; padding:8px; border-bottom:2px solid #1a5279;">Montant</th>' +
-                '</tr></thead>' +
-                '<tbody>' +
-                  '<tr><td style="padding:6px 8px; border-bottom:1px solid #eee;">Main d\'œuvre (' + formatDuree(int.duree) + ')</td><td style="text-align:right; padding:6px 8px; border-bottom:1px solid #eee;">' + mainOeuvre.toFixed(2) + ' CHF</td></tr>' +
-                  ((int.deplacement || 0) > 0 ? '<tr><td style="padding:6px 8px; border-bottom:1px solid #eee;">Déplacement</td><td style="text-align:right; padding:6px 8px; border-bottom:1px solid #eee;">' + int.deplacement.toFixed(2) + ' CHF</td></tr>' : '') +
-                  piecesHtml +
-                  '<tr><td style="padding:6px 8px; border-bottom:1px solid #eee; font-weight:bold;">Total HT</td><td style="text-align:right; padding:6px 8px; border-bottom:1px solid #eee; font-weight:bold;">' + ht.toFixed(2) + ' CHF</td></tr>' +
-                  tvaLine +
-                '</tbody>' +
-                '<tfoot><tr style="background:#f0f7ff;">' +
-                  '<td style="padding:10px 8px; font-weight:bold; font-size:1.1rem; color:#1a5279;">TOTAL</td>' +
-                  '<td style="text-align:right; padding:10px 8px; font-weight:bold; font-size:1.1rem; color:#1a5279;">' + ttc.toFixed(2) + ' CHF</td>' +
-                '</tr></tfoot>' +
-              '</table>' +
-              (mentionsHtml ? '<div style="padding:10px; background:#f8fbfe; border-radius:8px; font-size:0.75rem; color:#666; line-height:1.6; margin-bottom:15px;">' + mentionsHtml + '</div>' : '') +
-              '<div style="text-align:center; padding:10px; font-weight:bold; ' + (int.paye ? 'background:#e8f5e9; color:#2e7d32;' : 'background:#ffebee; color:#c62828;') + '">' +
-                (int.paye ? '✓ PAYÉE le ' + formatDate(int.datePaiement) : '⚠ EN ATTENTE DE PAIEMENT') +
-              '</div>' +
-              ((int.signatureClient || int.signatureTech) ?
-                '<div style="display:flex; justify-content:space-between; margin-top:20px;">' +
-                  (int.signatureTech ? '<div style="text-align:center; font-size:0.7rem; color:#666;"><img src="' + int.signatureTech + '" style="height:60px;" alt="Signature tech" /><div>Technicien</div></div>' : '<div></div>') +
-                  (int.signatureClient ? '<div style="text-align:center; font-size:0.7rem; color:#666;"><img src="' + int.signatureClient + '" style="height:60px;" alt="Signature client" /><div>Client</div></div>' : '<div></div>') +
-                '</div>' : '') +
-              '<div style="margin-top:20px; padding-top:10px; border-top:1px solid #eee; font-size:0.75rem; color:#666; text-align:center;">' +
-                escapeHtml(settings.nom) + ' - ' + escapeHtml(settings.adresse) + (settings.siret ? ' - IDE : ' + escapeHtml(settings.siret) : '') + '<br>' +
-                'Tel : ' + escapeHtml(settings.tel) + ' - ' + escapeHtml(settings.email) +
-              '</div>' +
-            '</div>' +
-          '</div>';
+        if (!settings.tvaActive) tvaLine = '<tr><td style="padding:6px 8px; border-bottom:1px solid #eee; font-style:italic; color:#666;">TVA non applicable (art. 10 al. 2 LTVA)</td><td></td></tr>';
+        else if (isAutoliquidation(int)) tvaLine = '<tr><td style="padding:6px 8px; border-bottom:1px solid #eee;">Autoliquidation (client UE)</td><td style="text-align:right; padding:6px 8px; border-bottom:1px solid #eee;">0.00 CHF</td></tr>';
+        else tvaLine = '<tr><td style="padding:6px 8px; border-bottom:1px solid #eee;">TVA (' + settings.tva + '%)</td><td style="text-align:right; padding:6px 8px; border-bottom:1px solid #eee;">' + tvaMontant.toFixed(2) + ' CHF</td></tr>';
+        printSection.innerHTML = '<div style="font-family:Arial, sans-serif; max-width:800px; margin:0 auto; padding:20px;"><div style="background:#1a5279; color:white; padding:20px; text-align:center;"><h1 style="margin:0;">' + escapeHtml(settings.nom.toUpperCase()) + '</h1><p style="margin:4px 0 0;">Artisan Plombier</p></div><div style="padding:20px; border:1px solid #ddd;"><h2 style="color:#1a5279;">FACTURE ' + escapeHtml(int.numeroFacture || '') + '</h2><p><strong>Client :</strong> ' + escapeHtml(int.client) + '</p><p><strong>Date :</strong> ' + dateStr + '</p><p><strong>Description :</strong> ' + escapeHtml(int.description) + '</p><table style="width:100%; border-collapse:collapse;"><tbody><tr><td>Main d\'œuvre</td><td style="text-align:right;">' + mainOeuvre.toFixed(2) + ' CHF</td></tr>' + piecesHtml + '<tr><td>Total HT</td><td style="text-align:right;">' + ht.toFixed(2) + ' CHF</td></tr>' + tvaLine + '<tr style="background:#f0f7ff;"><td><strong>TOTAL</strong></td><td style="text-align:right;"><strong>' + ttc.toFixed(2) + ' CHF</strong></td></tr></tbody></table></div></div>';
         printSection.style.display = 'block';
         window.print();
         setTimeout(function() { printSection.style.display = 'none'; }, 1000);
@@ -4957,6 +5040,9 @@
           document.querySelectorAll('#quickFiltersInterventions .quick-filter').forEach(function(b) { b.classList.remove('active'); });
           this.classList.add('active');
           currentQuickFilter = this.dataset.filter;
+          // Réinitialiser les accordéons ouverts lors du changement de filtre
+          openMonths = {};
+          openDays = {};
           renderInterventions();
         });
       });
@@ -4971,12 +5057,7 @@
       });
 
       document.getElementById('exportDataBtn').addEventListener('click', function() {
-        var data = {
-          interventions: interventions, devisList: devisList, clients: clients,
-          stock: stock, factureCounter: factureCounter, devisCounter: devisCounter,
-          settings: settings, exportedAt: new Date().toISOString(),
-          schemaVersion: 2, appVersion: APP_VERSION, pays: 'CH', version: 'PipePline-CH-' + APP_VERSION
-        };
+        var data = { interventions: interventions, devisList: devisList, clients: clients, stock: stock, factureCounter: factureCounter, devisCounter: devisCounter, settings: settings, exportedAt: new Date().toISOString(), schemaVersion: 2, appVersion: APP_VERSION, pays: 'CH', version: 'PipePline-CH-' + APP_VERSION };
         var blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
         var link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
@@ -4993,30 +5074,8 @@
         haptic(15);
         var lines = [];
         lines.push(['Type', 'Numero', 'Date', 'Client', 'Email', 'Telephone', 'Description', 'Total HT', 'TVA', 'Total TTC', 'Paye', 'Statut'].join(';'));
-        interventions.forEach(function(int) {
-          var ht = getTotalHT(int);
-          var tva = settings.tvaActive ? getTvaMontant(int) : 0;
-          var ttc = getTotalTTC(int);
-          lines.push([
-            'Facture', int.numeroFacture || '', int.date || '',
-            (int.client || '').replace(/[;\n]/g, ' '), int.email || '', int.tel || '',
-            (int.description || '').replace(/[;\n]/g, ' '),
-            ht.toFixed(2).replace('.', ','), tva.toFixed(2).replace('.', ','),
-            ttc.toFixed(2).replace('.', ','), int.paye ? 'Oui' : 'Non', int.statut || ''
-          ].join(';'));
-        });
-        devisList.forEach(function(d) {
-          var ht = getTotalHT(d);
-          var tva = settings.tvaActive ? getTvaMontant(d) : 0;
-          var ttc = getTotalTTC(d);
-          lines.push([
-            'Devis', d.numeroDevis || '', d.date || '',
-            (d.client || '').replace(/[;\n]/g, ' '), d.email || '', d.tel || '',
-            (d.description || '').replace(/[;\n]/g, ' '),
-            ht.toFixed(2).replace('.', ','), tva.toFixed(2).replace('.', ','),
-            ttc.toFixed(2).replace('.', ','), '', d.statut || ''
-          ].join(';'));
-        });
+        interventions.forEach(function(int) { var ht = getTotalHT(int); var tva = settings.tvaActive ? getTvaMontant(int) : 0; var ttc = getTotalTTC(int); lines.push(['Facture', int.numeroFacture || '', int.date || '', (int.client || '').replace(/[;\n]/g, ' '), int.email || '', int.tel || '', (int.description || '').replace(/[;\n]/g, ' '), ht.toFixed(2).replace('.', ','), tva.toFixed(2).replace('.', ','), ttc.toFixed(2).replace('.', ','), int.paye ? 'Oui' : 'Non', int.statut || ''].join(';')); });
+        devisList.forEach(function(d) { var ht = getTotalHT(d); var tva = settings.tvaActive ? getTvaMontant(d) : 0; var ttc = getTotalTTC(d); lines.push(['Devis', d.numeroDevis || '', d.date || '', (d.client || '').replace(/[;\n]/g, ' '), d.email || '', d.tel || '', (d.description || '').replace(/[;\n]/g, ' '), ht.toFixed(2).replace('.', ','), tva.toFixed(2).replace('.', ','), ttc.toFixed(2).replace('.', ','), '', d.statut || ''].join(';')); });
         var csv = '\uFEFF' + lines.join('\r\n');
         var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
         var link = document.createElement('a');
@@ -5038,10 +5097,7 @@
             var nbInt = (data.interventions || []).length;
             var nbDevis = (data.devisList || []).length;
             var exportDate = data.exportedAt ? new Date(data.exportedAt).toLocaleString('fr-CH') : 'inconnue';
-            var msg = '⚠ ATTENTION : Cette opération va REMPLACER toutes vos données actuelles.\n\n' +
-                      'Contenu du fichier :\n• ' + nbInt + ' intervention(s)\n• ' + nbDevis + ' devis\n• Exporté le : ' + exportDate + '\n\n' +
-                      'Vos données actuelles :\n• ' + interventions.length + ' intervention(s)\n• ' + devisList.length + ' devis\n\n' +
-                      'Voulez-vous continuer ?';
+            var msg = '⚠ ATTENTION : Cette opération va REMPLACER toutes vos données actuelles.\n\n' + 'Contenu du fichier :\n• ' + nbInt + ' intervention(s)\n• ' + nbDevis + ' devis\n• Exporté le : ' + exportDate + '\n\n' + 'Voulez-vous continuer ?';
             showConfirm(msg, function(confirm) {
               if (!confirm) { document.getElementById('importDataInput').value = ''; return; }
               try {
@@ -5056,18 +5112,11 @@
                 if (data.settings) { for (var key in data.settings) { if (settings.hasOwnProperty(key)) settings[key] = data.settings[key]; } }
                 invalidateTotals();
                 storageDirty = true;
-                saveToStorage().then(function() {
-                  renderAll();
-                  haptic(15);
-                  showToast('Restauration réussie : ' + nbInt + ' interventions, ' + nbDevis + ' devis', 'success');
-                });
+                saveToStorage().then(function() { renderAll(); haptic(15); showToast('Restauration réussie : ' + nbInt + ' interventions, ' + nbDevis + ' devis', 'success'); });
               } catch (err) { showToast('Erreur lors de la restauration : ' + err.message, 'error'); }
               document.getElementById('importDataInput').value = '';
             });
-          } catch (err) {
-            showToast('Fichier invalide : ' + err.message, 'error');
-            document.getElementById('importDataInput').value = '';
-          }
+          } catch (err) { showToast('Fichier invalide : ' + err.message, 'error'); document.getElementById('importDataInput').value = ''; }
         };
         reader.onerror = function() { showToast('Erreur lecture du fichier', 'error'); document.getElementById('importDataInput').value = ''; };
         reader.readAsText(file);
@@ -5077,67 +5126,126 @@
 
       document.getElementById('openStockBtn').addEventListener('click', function() {
         haptic(10);
+        stockSearchTerm = '';
+        var searchInput = document.getElementById('stockSearchInput');
+        if (searchInput) searchInput.value = '';
         renderStockList();
         document.getElementById('stockModal').classList.add('show');
       });
-      document.getElementById('closeStock').addEventListener('click', function() {
-        document.getElementById('stockModal').classList.remove('show');
-      });
+      document.getElementById('closeStock').addEventListener('click', function() { document.getElementById('stockModal').classList.remove('show'); });
+      document.getElementById('stockSearchInput').addEventListener('input', debounce(function() { stockSearchTerm = this.value; renderStockList(); }, 150));
+      document.getElementById('stockSortSelect').addEventListener('change', function() { stockSortMode = this.value; renderStockList(); });
+
+      function renderStockStats() {
+        var total = Object.keys(stock).length;
+        var low = 0, out = 0;
+        Object.keys(stock).forEach(function(k) {
+          var item = stock[k];
+          if (item.qte <= 0) out++;
+          else if (item.qte <= item.seuil) low++;
+        });
+        var elTotal = document.getElementById('stockStatTotal');
+        var elLow = document.getElementById('stockStatLow');
+        var elOut = document.getElementById('stockStatOut');
+        if (elTotal) elTotal.textContent = total;
+        if (elLow) elLow.textContent = low;
+        if (elOut) elOut.textContent = out;
+      }
+
+      function getFilteredSortedStock() {
+        var term = (stockSearchTerm || '').toLowerCase().trim();
+        var keys = Object.keys(stock);
+        var items = keys.map(function(k) { return { key: k, nom: k, qte: stock[k].qte, seuil: stock[k].seuil }; });
+        if (term) items = items.filter(function(it) { return it.nom.toLowerCase().indexOf(term) !== -1; });
+        items.sort(function(a, b) {
+          switch (stockSortMode) {
+            case 'name_desc': return b.nom.localeCompare(a.nom);
+            case 'qty_asc': return a.qte - b.qte;
+            case 'qty_desc': return b.qte - a.qte;
+            case 'low_first':
+              var aLow = a.qte <= a.seuil ? 0 : 1;
+              var bLow = b.qte <= b.seuil ? 0 : 1;
+              if (aLow !== bLow) return aLow - bLow;
+              return a.nom.localeCompare(b.nom);
+            case 'name_asc': default: return a.nom.localeCompare(b.nom);
+          }
+        });
+        return items;
+      }
 
       function renderStockList() {
+        renderStockStats();
         var container = document.getElementById('stockList');
-        var keys = Object.keys(stock);
-        if (keys.length === 0) { container.innerHTML = '<div class="empty-state" style="padding:16px;">Aucun article en stock</div>'; return; }
-        container.innerHTML = keys.sort().map(function(k) {
-          var item = stock[k];
-          var low = item.qte <= item.seuil;
-          return '<div class="stock-row">' +
-            '<span class="stock-name">' + escapeHtml(k) + '</span>' +
-            '<span class="stock-qte' + (low ? ' low' : '') + '">' + item.qte + '</span>' +
-            '<span class="stock-seuil">seuil ' + item.seuil + '</span>' +
-            '<button class="stock-del" data-key="' + escapeHtml(k) + '" aria-label="Supprimer">✕</button>' +
+        if (!container) return;
+        var items = getFilteredSortedStock();
+        if (items.length === 0) {
+          container.innerHTML = '<div class="stock-empty">' + (stockSearchTerm ? 'Aucun article ne correspond à « ' + escapeHtml(stockSearchTerm) + ' »' : 'Aucun article en stock.<br>Ajoutez votre premier article ci-dessous.') + '</div>';
+          return;
+        }
+        container.innerHTML = items.map(function(it) {
+          var qte = it.qte; var seuil = it.seuil;
+          var state = 'ok'; var stateLabel = '';
+          if (qte <= 0) { state = 'out'; stateLabel = '<span class="si-badge out">Rupture</span>'; }
+          else if (qte <= seuil) { state = 'low'; stateLabel = '<span class="si-badge low">Stock bas</span>'; }
+          return '<div class="stock-item ' + (state === 'ok' ? '' : state) + '" data-key="' + escapeHtml(it.key) + '">' +
+            '<div class="si-info">' +
+              '<div class="si-name">' + escapeHtml(it.key) + stateLabel + '</div>' +
+              '<div class="si-cat">Seuil : ' + seuil + ' • ' + (state === 'ok' ? 'OK' : (state === 'low' ? 'à réapprovisionner' : 'rupture')) + '</div>' +
+            '</div>' +
+            '<div class="stock-qty-control">' +
+              '<button type="button" class="sq-minus" data-key="' + escapeHtml(it.key) + '">−</button>' +
+              '<span class="sq-value ' + (state === 'ok' ? '' : state) + '">' + qte + '</span>' +
+              '<button type="button" class="sq-plus" data-key="' + escapeHtml(it.key) + '">+</button>' +
+            '</div>' +
+            '<div class="si-actions">' +
+              '<button type="button" class="si-btn edit-stock" data-key="' + escapeHtml(it.key) + '" title="Modifier">✎</button>' +
+              '<button type="button" class="si-btn del del-stock" data-key="' + escapeHtml(it.key) + '" title="Supprimer">🗑</button>' +
+            '</div>' +
           '</div>';
         }).join('');
-        container.querySelectorAll('.stock-del').forEach(function(btn) {
-          btn.addEventListener('click', function() {
-            var key = this.dataset.key;
+        container.querySelectorAll('.sq-plus').forEach(function(btn) {
+          btn.addEventListener('click', function(e) { e.stopPropagation(); var key = this.dataset.key; if (!stock[key]) return; stock[key].qte = (parseInt(stock[key].qte) || 0) + 1; storageSet(STOCK_KEY, stock); haptic(8); renderStockList(); });
+        });
+        container.querySelectorAll('.sq-minus').forEach(function(btn) {
+          btn.addEventListener('click', function(e) { e.stopPropagation(); var key = this.dataset.key; if (!stock[key]) return; stock[key].qte = Math.max(0, (parseInt(stock[key].qte) || 0) - 1); storageSet(STOCK_KEY, stock); haptic(8); renderStockList(); });
+        });
+        container.querySelectorAll('.edit-stock').forEach(function(btn) {
+          btn.addEventListener('click', function(e) { e.stopPropagation(); var key = this.dataset.key; if (!stock[key]) return; document.getElementById('stockName').value = key; document.getElementById('stockQte').value = stock[key].qte; document.getElementById('stockSeuil').value = stock[key].seuil; document.getElementById('stockName').focus(); haptic(8); });
+        });
+        container.querySelectorAll('.del-stock').forEach(function(btn) {
+          btn.addEventListener('click', function(e) {
+            e.stopPropagation(); var key = this.dataset.key;
             showConfirm('Supprimer "' + key + '" du stock ?', function(c) {
               if (c) { delete stock[key]; storageSet(STOCK_KEY, stock); renderStockList(); renderPieces(); showToast('Article supprimé', 'success'); }
             });
           });
         });
       }
+
       document.getElementById('addStockBtn').addEventListener('click', function() {
         var name = document.getElementById('stockName').value.trim();
         var qte = parseInt(document.getElementById('stockQte').value) || 0;
         var seuil = parseInt(document.getElementById('stockSeuil').value) || 0;
         if (!name) { showToast('Nom requis', 'warning'); return; }
         var key = name.toLowerCase();
+        var existing = !!stock[key];
         stock[key] = { qte: qte, seuil: seuil };
         storageSet(STOCK_KEY, stock);
         document.getElementById('stockName').value = '';
         document.getElementById('stockQte').value = 0;
         document.getElementById('stockSeuil').value = 1;
         renderStockList();
-        showToast('Article ajouté', 'success');
+        showToast(existing ? 'Article mis à jour' : 'Article ajouté', 'success');
+        haptic(15);
       });
 
       function renderRecap() {
         var month = recapDate.getMonth();
         var year = recapDate.getFullYear();
         document.getElementById('recapMonthLabel').textContent = formatMois(recapDate);
-        var filtered = interventions.filter(function(int) {
-          var d = new Date(int.date + 'T00:00:00');
-          return d.getMonth() === month && d.getFullYear() === year;
-        });
+        var filtered = interventions.filter(function(int) { var d = new Date(int.date + 'T00:00:00'); return d.getMonth() === month && d.getFullYear() === year; });
         var totalHT = 0, totalTTC = 0, totalNet = 0, totalHeures = 0, payees = 0, impayees = 0;
-        filtered.forEach(function(int) {
-          totalHT += getTotalHT(int);
-          totalTTC += getTotalTTC(int);
-          totalNet += getTotalNet(int);
-          totalHeures += int.duree || 0;
-          if (int.paye) payees++; else impayees++;
-        });
+        filtered.forEach(function(int) { totalHT += getTotalHT(int); totalTTC += getTotalTTC(int); totalNet += getTotalNet(int); totalHeures += int.duree || 0; if (int.paye) payees++; else impayees++; });
         document.getElementById('recapGrid').innerHTML =
           '<div class="recap-card"><div class="recap-label">CA TTC</div><div class="recap-value">' + formatCHF(totalTTC) + '</div></div>' +
           '<div class="recap-card"><div class="recap-label">CA Net (après ' + settings.taxe + '%)</div><div class="recap-value green">' + formatCHF(totalNet) + '</div></div>' +
@@ -5146,9 +5254,8 @@
           '<div class="recap-card"><div class="recap-label">Payées</div><div class="recap-value green">' + payees + '</div></div>' +
           '<div class="recap-card"><div class="recap-label">Impayées</div><div class="recap-value red">' + impayees + '</div></div>';
         var detail = document.getElementById('recapDetail');
-        if (filtered.length === 0) {
-          detail.innerHTML = '<div class="empty-state">Aucune intervention ce mois</div>';
-        } else {
+        if (filtered.length === 0) detail.innerHTML = '<div class="empty-state">Aucune intervention ce mois</div>';
+        else {
           var html = '<h3 style="font-size:0.9rem; color:var(--accent); margin-bottom:10px;">Détail</h3><div style="display:flex; flex-direction:column; gap:6px;">';
           filtered.sort(function(a, b) { return (b.date || '').localeCompare(a.date || ''); }).forEach(function(int) {
             var typeInfo = TYPES_TACHES[int.type] || TYPES_TACHES.autre;
@@ -5177,28 +5284,15 @@
       });
 
       function switchTab(tabName) {
-        document.querySelectorAll('.main-tab').forEach(function(t) {
-          if (t.dataset.tab === tabName) t.classList.add('active');
-          else t.classList.remove('active');
-        });
-        document.querySelectorAll('.bottom-nav-item').forEach(function(t) {
-          if (t.dataset.tab === tabName) t.classList.add('active');
-          else t.classList.remove('active');
-        });
-        document.querySelectorAll('.tab-content').forEach(function(c) {
-          if (c.id === 'tab-' + tabName) c.classList.add('active');
-          else c.classList.remove('active');
-        });
+        document.querySelectorAll('.main-tab').forEach(function(t) { if (t.dataset.tab === tabName) t.classList.add('active'); else t.classList.remove('active'); });
+        document.querySelectorAll('.bottom-nav-item').forEach(function(t) { if (t.dataset.tab === tabName) t.classList.add('active'); else t.classList.remove('active'); });
+        document.querySelectorAll('.tab-content').forEach(function(c) { if (c.id === 'tab-' + tabName) c.classList.add('active'); else c.classList.remove('active'); });
         if (tabName === 'recap') renderRecap();
         if (tabName === 'planning') renderPlanning();
         haptic(8);
       }
-      document.querySelectorAll('.main-tab').forEach(function(tab) {
-        tab.addEventListener('click', function() { switchTab(this.dataset.tab); });
-      });
-      document.querySelectorAll('.bottom-nav-item').forEach(function(tab) {
-        tab.addEventListener('click', function() { switchTab(this.dataset.tab); });
-      });
+      document.querySelectorAll('.main-tab').forEach(function(tab) { tab.addEventListener('click', function() { switchTab(this.dataset.tab); }); });
+      document.querySelectorAll('.bottom-nav-item').forEach(function(tab) { tab.addEventListener('click', function() { switchTab(this.dataset.tab); }); });
 
       setInterval(function() { if (storageDirty) saveToStorage(); }, 180000);
 
@@ -5296,86 +5390,37 @@
         else { cx = e.clientX; cy = e.clientY; }
         return { x: cx - rect.left, y: cy - rect.top };
       }
-      function startDraw(e, who) {
-        var canvas = who === 'client' ? clientCanvas : techCanvas;
-        var pos = getPos(e, canvas);
-        if (who === 'client') { clientDrawing = true; clientLastX = pos.x; clientLastY = pos.y; }
-        else { techDrawing = true; techLastX = pos.x; techLastY = pos.y; }
-      }
+      function startDraw(e, who) { var canvas = who === 'client' ? clientCanvas : techCanvas; var pos = getPos(e, canvas); if (who === 'client') { clientDrawing = true; clientLastX = pos.x; clientLastY = pos.y; } else { techDrawing = true; techLastX = pos.x; techLastY = pos.y; } }
       function draw(e, who) {
-        var canvas = who === 'client' ? clientCanvas : techCanvas;
-        var ctx = who === 'client' ? clientCtx : techCtx;
-        var drawing = who === 'client' ? clientDrawing : techDrawing;
-        if (!drawing) return;
+        var canvas = who === 'client' ? clientCanvas : techCanvas; var ctx = who === 'client' ? clientCtx : techCtx; var drawing = who === 'client' ? clientDrawing : techDrawing; if (!drawing) return;
         var pos = getPos(e, canvas);
         ctx.beginPath();
-        if (who === 'client') { ctx.moveTo(clientLastX, clientLastY); ctx.lineTo(pos.x, pos.y); clientLastX = pos.x; clientLastY = pos.y; }
-        else { ctx.moveTo(techLastX, techLastY); ctx.lineTo(pos.x, pos.y); techLastX = pos.x; techLastY = pos.y; }
+        if (who === 'client') { ctx.moveTo(clientLastX, clientLastY); ctx.lineTo(pos.x, pos.y); clientLastX = pos.x; clientLastY = pos.y; } else { ctx.moveTo(techLastX, techLastY); ctx.lineTo(pos.x, pos.y); techLastX = pos.x; techLastY = pos.y; }
         ctx.stroke();
       }
       function endDraw(who) { if (who === 'client') clientDrawing = false; else techDrawing = false; }
-      function clearCanvas(who) {
-        var canvas = who === 'client' ? clientCanvas : techCanvas;
-        var ctx = who === 'client' ? clientCtx : techCtx;
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-      }
-      function isCanvasEmpty(canvas) {
-        var ctx = canvas.getContext('2d');
-        var data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
-        for (var i = 0; i < data.length; i += 4) { if (data[i + 3] !== 0) return false; }
-        return true;
-      }
+      function clearCanvas(who) { var canvas = who === 'client' ? clientCanvas : techCanvas; var ctx = who === 'client' ? clientCtx : techCtx; ctx.clearRect(0, 0, canvas.width, canvas.height); }
+      function isCanvasEmpty(canvas) { var ctx = canvas.getContext('2d'); var data = ctx.getImageData(0, 0, canvas.width, canvas.height).data; for (var i = 0; i < data.length; i += 4) { if (data[i + 3] !== 0) return false; } return true; }
       function compressImage(canvas, maxW, quality) {
         maxW = maxW || 500; quality = quality || 0.7;
-        try {
-          var tmp = document.createElement('canvas');
-          var ratio = canvas.width / canvas.height;
-          var w = Math.min(maxW, canvas.width);
-          var h = Math.round(w / ratio);
-          tmp.width = w; tmp.height = h;
-          var ctx = tmp.getContext('2d');
-          ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, w, h);
-          ctx.drawImage(canvas, 0, 0, w, h);
-          return tmp.toDataURL('image/jpeg', quality);
-        } catch(e) { return canvas.toDataURL('image/png'); }
+        try { var tmp = document.createElement('canvas'); var ratio = canvas.width / canvas.height; var w = Math.min(maxW, canvas.width); var h = Math.round(w / ratio); tmp.width = w; tmp.height = h; var ctx = tmp.getContext('2d'); ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, w, h); ctx.drawImage(canvas, 0, 0, w, h); return tmp.toDataURL('image/jpeg', quality); }
+        catch(e) { return canvas.toDataURL('image/png'); }
       }
-
       function openSignatureModal(id, type) {
-        currentSignatureTarget = { id: id, type: type };
-        clientSignatureData = null;
-        techSignatureData = null;
+        currentSignatureTarget = { id: id, type: type }; clientSignatureData = null; techSignatureData = null;
         document.getElementById('signatureModal').classList.add('show');
         setTimeout(function() {
           initSignatureCanvases();
           var item = type === 'facture' ? interventions.find(function(i) { return i.id === id; }) : devisList.find(function(d) { return d.id === id; });
-          clearCanvas('client');
-          clearCanvas('tech');
-          if (item && item.signatureClient) {
-            var img = new Image();
-            img.onload = function() { clientCtx.drawImage(img, 0, 0, clientCanvas.width / 2, clientCanvas.height / 2); };
-            img.src = item.signatureClient;
-          }
-          if (item && item.signatureTech) {
-            var img2 = new Image();
-            img2.onload = function() { techCtx.drawImage(img2, 0, 0, techCanvas.width / 2, techCanvas.height / 2); };
-            img2.src = item.signatureTech;
-          }
+          clearCanvas('client'); clearCanvas('tech');
+          if (item && item.signatureClient) { var img = new Image(); img.onload = function() { clientCtx.drawImage(img, 0, 0, clientCanvas.width / 2, clientCanvas.height / 2); }; img.src = item.signatureClient; }
+          if (item && item.signatureTech) { var img2 = new Image(); img2.onload = function() { techCtx.drawImage(img2, 0, 0, techCanvas.width / 2, techCanvas.height / 2); }; img2.src = item.signatureTech; }
         }, 150);
       }
       document.getElementById('clearClientSig').addEventListener('click', function() { haptic(8); clearCanvas('client'); });
       document.getElementById('clearTechSig').addEventListener('click', function() { haptic(8); clearCanvas('tech'); });
-      document.getElementById('saveClientSig').addEventListener('click', function() {
-        if (isCanvasEmpty(clientCanvas)) { showToast('Veuillez signer avant de valider', 'warning'); return; }
-        clientSignatureData = compressImage(clientCanvas, 500, 0.7);
-        haptic(15);
-        showToast('Signature client enregistrée', 'success');
-      });
-      document.getElementById('saveTechSig').addEventListener('click', function() {
-        if (isCanvasEmpty(techCanvas)) { showToast('Veuillez signer avant de valider', 'warning'); return; }
-        techSignatureData = compressImage(techCanvas, 500, 0.7);
-        haptic(15);
-        showToast('Signature technicien enregistrée', 'success');
-      });
+      document.getElementById('saveClientSig').addEventListener('click', function() { if (isCanvasEmpty(clientCanvas)) { showToast('Veuillez signer avant de valider', 'warning'); return; } clientSignatureData = compressImage(clientCanvas, 500, 0.7); haptic(15); showToast('Signature client enregistrée', 'success'); });
+      document.getElementById('saveTechSig').addEventListener('click', function() { if (isCanvasEmpty(techCanvas)) { showToast('Veuillez signer avant de valider', 'warning'); return; } techSignatureData = compressImage(techCanvas, 500, 0.7); haptic(15); showToast('Signature technicien enregistrée', 'success'); });
       function openSignatureFullscreen(target) {
         signatureFullscreenTarget = target;
         document.getElementById('sfTitle').textContent = target === 'client' ? 'Signature client' : 'Signature technicien';
@@ -5383,16 +5428,11 @@
         setTimeout(function() {
           sfCanvas = document.getElementById('sfCanvas');
           var rect = sfCanvas.getBoundingClientRect();
-          sfCanvas.width = rect.width * 2;
-          sfCanvas.height = rect.height * 2;
+          sfCanvas.width = rect.width * 2; sfCanvas.height = rect.height * 2;
           sfCtx = sfCanvas.getContext('2d');
           sfCtx.scale(2, 2); sfCtx.lineWidth = 3; sfCtx.lineCap = 'round'; sfCtx.lineJoin = 'round'; sfCtx.strokeStyle = '#1a5279';
           var source = target === 'client' ? clientCanvas : techCanvas;
-          if (source && !isCanvasEmpty(source)) {
-            var img = new Image();
-            img.onload = function() { sfCtx.drawImage(img, 0, 0, sfCanvas.width / 2, sfCanvas.height / 2); };
-            img.src = source.toDataURL('image/png');
-          }
+          if (source && !isCanvasEmpty(source)) { var img = new Image(); img.onload = function() { sfCtx.drawImage(img, 0, 0, sfCanvas.width / 2, sfCanvas.height / 2); }; img.src = source.toDataURL('image/png'); }
           sfCanvas.addEventListener('touchstart', function(e) { e.preventDefault(); sfStart(e); }, { passive: false });
           sfCanvas.addEventListener('touchmove', function(e) { e.preventDefault(); sfMove(e); }, { passive: false });
           sfCanvas.addEventListener('touchend', function(e) { e.preventDefault(); sfEnd(); }, { passive: false });
@@ -5403,19 +5443,11 @@
         }, 50);
       }
       function sfStart(e) { var pos = getPos(e, sfCanvas); sfDrawing = true; sfLastX = pos.x; sfLastY = pos.y; }
-      function sfMove(e) {
-        if (!sfDrawing) return;
-        var pos = getPos(e, sfCanvas);
-        sfCtx.beginPath(); sfCtx.moveTo(sfLastX, sfLastY); sfCtx.lineTo(pos.x, pos.y); sfCtx.stroke();
-        sfLastX = pos.x; sfLastY = pos.y;
-      }
+      function sfMove(e) { if (!sfDrawing) return; var pos = getPos(e, sfCanvas); sfCtx.beginPath(); sfCtx.moveTo(sfLastX, sfLastY); sfCtx.lineTo(pos.x, pos.y); sfCtx.stroke(); sfLastX = pos.x; sfLastY = pos.y; }
       function sfEnd() { sfDrawing = false; }
       document.getElementById('fullscreenClientSig').addEventListener('click', function() { haptic(10); openSignatureFullscreen('client'); });
       document.getElementById('fullscreenTechSig').addEventListener('click', function() { haptic(10); openSignatureFullscreen('tech'); });
-      document.getElementById('sfClear').addEventListener('click', function() {
-        if (sfCtx && sfCanvas) sfCtx.clearRect(0, 0, sfCanvas.width, sfCanvas.height);
-        haptic(8);
-      });
+      document.getElementById('sfClear').addEventListener('click', function() { if (sfCtx && sfCanvas) sfCtx.clearRect(0, 0, sfCanvas.width, sfCanvas.height); haptic(8); });
       document.getElementById('sfValidate').addEventListener('click', function() {
         if (!sfCanvas || isCanvasEmpty(sfCanvas)) { showToast('Veuillez signer', 'warning'); return; }
         var target = signatureFullscreenTarget;
@@ -5439,10 +5471,7 @@
         if (clientSignatureData || techSignatureData) { markAsDirty(); renderAll(); showToast('Signatures enregistrées', 'success'); }
         clientSignatureData = null; techSignatureData = null; currentSignatureTarget = null;
       }
-      document.getElementById('closeSignatureModal').addEventListener('click', function() {
-        saveSignatures();
-        document.getElementById('signatureModal').classList.remove('show');
-      });
+      document.getElementById('closeSignatureModal').addEventListener('click', function() { saveSignatures(); document.getElementById('signatureModal').classList.remove('show'); });
 
       function openRemoteSignModal(id, type) {
         remoteSignTarget = { id: id, type: type };
@@ -5455,10 +5484,8 @@
       }
       document.getElementById('closeRemoteSign').addEventListener('click', function() { document.getElementById('remoteSignModal').classList.remove('show'); });
       document.getElementById('copyRemoteLink').addEventListener('click', function() {
-        var input = document.getElementById('remoteSignLink');
-        input.select();
-        try { document.execCommand('copy'); showToast('Lien copié', 'success'); }
-        catch(e) { navigator.clipboard.writeText(input.value).then(function() { showToast('Lien copié', 'success'); }); }
+        var input = document.getElementById('remoteSignLink'); input.select();
+        try { document.execCommand('copy'); showToast('Lien copié', 'success'); } catch(e) { navigator.clipboard.writeText(input.value).then(function() { showToast('Lien copié', 'success'); }); }
         haptic(15);
       });
       document.getElementById('sendRemoteSms').addEventListener('click', function() {
@@ -5496,97 +5523,57 @@
             '<input type="number" class="piece-prix" placeholder="Prix CHF" value="' + (p.prix || '') + '" step="0.01" min="0" data-idx="' + i + '" data-field="prix" />' +
             '<button data-idx="' + i + '" class="del-piece" aria-label="Supprimer">✕</button>';
           container.appendChild(row);
-          if (stockInfo && stockInfo.low) {
-            var warn = document.createElement('div');
-            warn.style.cssText = 'font-size:0.65rem; color:var(--danger); margin-top:-4px; margin-bottom:4px; padding-left:4px;';
-            warn.textContent = '⚠ Stock bas (' + stockInfo.qte + ')';
-            container.appendChild(warn);
-          }
+          if (stockInfo && stockInfo.low) { var warn = document.createElement('div'); warn.style.cssText = 'font-size:0.65rem; color:var(--danger); margin-top:-4px; margin-bottom:4px; padding-left:4px;'; warn.textContent = '⚠ Stock bas (' + stockInfo.qte + ')'; container.appendChild(warn); }
         });
         container.querySelectorAll('input').forEach(function(inp) {
-          inp.addEventListener('input', function() {
-            var idx = parseInt(this.dataset.idx);
-            tempPieces[idx][this.dataset.field] = this.value;
-            updatePiecesTotal();
-          });
+          inp.addEventListener('input', function() { var idx = parseInt(this.dataset.idx); tempPieces[idx][this.dataset.field] = this.value; updatePiecesTotal(); });
           inp.addEventListener('blur', function() { if (this.dataset.field === 'nom') renderPieces(); });
         });
-        container.querySelectorAll('.del-piece').forEach(function(btn) {
-          btn.addEventListener('click', function() { haptic(8); tempPieces.splice(parseInt(this.dataset.idx), 1); renderPieces(); });
-        });
+        container.querySelectorAll('.del-piece').forEach(function(btn) { btn.addEventListener('click', function() { haptic(8); tempPieces.splice(parseInt(this.dataset.idx), 1); renderPieces(); }); });
         updatePiecesTotal();
       }
       function updatePiecesTotal() { document.getElementById('piecesTotal').textContent = formatCHF(getPiecesTotal(tempPieces)); }
-      document.getElementById('addPieceBtn').addEventListener('click', function() {
-        haptic(8); tempPieces.push({ nom: '', prix: '', qte: 1 }); renderPieces();
-      });
+      document.getElementById('addPieceBtn').addEventListener('click', function() { haptic(8); tempPieces.push({ nom: '', prix: '', qte: 1 }); renderPieces(); });
 
       function renderFrais() {
         var container = document.getElementById('fraisContainer');
         if (!container) return;
         container.innerHTML = '';
         tempFrais.forEach(function(f, i) {
-          var row = document.createElement('div');
-          row.className = 'frais-row';
-          row.innerHTML =
-            '<input type="text" class="frais-libelle" placeholder="Ex: Carburant" value="' + escapeHtml(f.libelle || '') + '" data-idx="' + i + '" data-field="libelle" />' +
+          var row = document.createElement('div'); row.className = 'frais-row';
+          row.innerHTML = '<input type="text" class="frais-libelle" placeholder="Ex: Carburant" value="' + escapeHtml(f.libelle || '') + '" data-idx="' + i + '" data-field="libelle" />' +
             '<input type="number" class="frais-montant" placeholder="CHF" value="' + (f.montant || '') + '" step="0.01" min="0" data-idx="' + i + '" data-field="montant" />' +
             '<button data-idx="' + i + '" class="del-frais" aria-label="Supprimer">✕</button>';
           container.appendChild(row);
         });
-        container.querySelectorAll('input').forEach(function(inp) {
-          inp.addEventListener('input', function() {
-            var idx = parseInt(this.dataset.idx);
-            tempFrais[idx][this.dataset.field] = this.value;
-            updateFraisTotal();
-          });
-        });
-        container.querySelectorAll('.del-frais').forEach(function(btn) {
-          btn.addEventListener('click', function() { haptic(8); tempFrais.splice(parseInt(this.dataset.idx), 1); renderFrais(); });
-        });
+        container.querySelectorAll('input').forEach(function(inp) { inp.addEventListener('input', function() { var idx = parseInt(this.dataset.idx); tempFrais[idx][this.dataset.field] = this.value; updateFraisTotal(); }); });
+        container.querySelectorAll('.del-frais').forEach(function(btn) { btn.addEventListener('click', function() { haptic(8); tempFrais.splice(parseInt(this.dataset.idx), 1); renderFrais(); }); });
         updateFraisTotal();
       }
       function updateFraisTotal() { document.getElementById('fraisTotal').textContent = formatCHF(getFraisTotal(tempFrais)); }
-      document.getElementById('addFraisBtn').addEventListener('click', function() {
-        haptic(8); tempFrais.push({ libelle: '', montant: '' }); renderFrais();
-      });
+      document.getElementById('addFraisBtn').addEventListener('click', function() { haptic(8); tempFrais.push({ libelle: '', montant: '' }); renderFrais(); });
 
       function renderDevisPieces() {
         var container = document.getElementById('devisPiecesContainer');
         if (!container) return;
         container.innerHTML = '';
         tempDevisPieces.forEach(function(p, i) {
-          var row = document.createElement('div');
-          row.className = 'piece-row';
-          row.innerHTML =
-            '<input type="text" class="piece-nom" placeholder="Nom" value="' + escapeHtml(p.nom || '') + '" data-idx="' + i + '" data-field="nom" />' +
+          var row = document.createElement('div'); row.className = 'piece-row';
+          row.innerHTML = '<input type="text" class="piece-nom" placeholder="Nom" value="' + escapeHtml(p.nom || '') + '" data-idx="' + i + '" data-field="nom" />' +
             '<input type="number" class="piece-qte" placeholder="Qté" value="' + (p.qte || 1) + '" min="1" step="1" data-idx="' + i + '" data-field="qte" />' +
             '<input type="number" class="piece-prix" placeholder="Prix CHF" value="' + (p.prix || '') + '" step="0.01" min="0" data-idx="' + i + '" data-field="prix" />' +
             '<button data-idx="' + i + '" class="del-piece" aria-label="Supprimer">✕</button>';
           container.appendChild(row);
         });
-        container.querySelectorAll('input').forEach(function(inp) {
-          inp.addEventListener('input', function() {
-            var idx = parseInt(this.dataset.idx);
-            tempDevisPieces[idx][this.dataset.field] = this.value;
-            updateDevisPiecesTotal();
-          });
-        });
-        container.querySelectorAll('.del-piece').forEach(function(btn) {
-          btn.addEventListener('click', function() { haptic(8); tempDevisPieces.splice(parseInt(this.dataset.idx), 1); renderDevisPieces(); });
-        });
+        container.querySelectorAll('input').forEach(function(inp) { inp.addEventListener('input', function() { var idx = parseInt(this.dataset.idx); tempDevisPieces[idx][this.dataset.field] = this.value; updateDevisPiecesTotal(); }); });
+        container.querySelectorAll('.del-piece').forEach(function(btn) { btn.addEventListener('click', function() { haptic(8); tempDevisPieces.splice(parseInt(this.dataset.idx), 1); renderDevisPieces(); }); });
         updateDevisPiecesTotal();
       }
       function updateDevisPiecesTotal() { document.getElementById('devisPiecesTotal').textContent = formatCHF(getPiecesTotal(tempDevisPieces)); }
-      document.getElementById('addDevisPieceBtn').addEventListener('click', function() {
-        haptic(8); tempDevisPieces.push({ nom: '', prix: '', qte: 1 }); renderDevisPieces();
-      });
+      document.getElementById('addDevisPieceBtn').addEventListener('click', function() { haptic(8); tempDevisPieces.push({ nom: '', prix: '', qte: 1 }); renderDevisPieces(); });
 
       function updateDureeTotal(prefix) {
-        var j = document.getElementById(prefix + 'DureeJours');
-        var h = document.getElementById(prefix + 'DureeHeures');
-        var m = document.getElementById(prefix + 'DureeMinutes');
-        var badge = document.getElementById(prefix + 'DureeTotalBadge');
+        var j = document.getElementById(prefix + 'DureeJours'); var h = document.getElementById(prefix + 'DureeHeures'); var m = document.getElementById(prefix + 'DureeMinutes'); var badge = document.getElementById(prefix + 'DureeTotalBadge');
         if (!j || !h || !m || !badge) return;
         var total = dureeVersMinutes(j.value, h.value, m.value);
         badge.textContent = 'Total : ' + formatDuree(total) + ' (' + (total / 60).toFixed(1) + 'h)';
@@ -5600,14 +5587,9 @@
         updateDureeTotal(prefix);
       }
       ['int', 'devis'].forEach(function(prefix) {
-        ['DureeJours', 'DureeHeures', 'DureeMinutes'].forEach(function(field) {
-          var el = document.getElementById(prefix + field);
-          if (el) el.addEventListener('input', function() { updateDureeTotal(prefix); });
-        });
+        ['DureeJours', 'DureeHeures', 'DureeMinutes'].forEach(function(field) { var el = document.getElementById(prefix + field); if (el) el.addEventListener('input', function() { updateDureeTotal(prefix); }); });
       });
-      document.querySelectorAll('.duree-presets button[data-prefix]').forEach(function(btn) {
-        btn.addEventListener('click', function() { applyDureePreset(this.dataset.prefix, parseFloat(this.dataset.hours)); });
-      });
+      document.querySelectorAll('.duree-presets button[data-prefix]').forEach(function(btn) { btn.addEventListener('click', function() { applyDureePreset(this.dataset.prefix, parseFloat(this.dataset.hours)); }); });
 
       function compressPhotoFile(file, maxW, quality) {
         maxW = maxW || 800; quality = quality || 0.7;
@@ -5618,18 +5600,14 @@
             img.onload = function() {
               var canvas = document.createElement('canvas');
               var ratio = img.width / img.height;
-              var w = Math.min(maxW, img.width);
-              var h = Math.round(w / ratio);
+              var w = Math.min(maxW, img.width); var h = Math.round(w / ratio);
               canvas.width = w; canvas.height = h;
-              var ctx = canvas.getContext('2d');
-              ctx.drawImage(img, 0, 0, w, h);
+              var ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, w, h);
               resolve(canvas.toDataURL('image/jpeg', quality));
             };
-            img.onerror = reject;
-            img.src = e.target.result;
+            img.onerror = reject; img.src = e.target.result;
           };
-          reader.onerror = reject;
-          reader.readAsDataURL(file);
+          reader.onerror = reject; reader.readAsDataURL(file);
         });
       }
       function renderPhotos() {
@@ -5637,29 +5615,16 @@
         if (!container) return;
         container.innerHTML = '';
         tempPhotos.forEach(function(p, i) {
-          var item = document.createElement('div');
-          item.className = 'photo-item';
+          var item = document.createElement('div'); item.className = 'photo-item';
           item.innerHTML = '<img src="' + p + '" data-idx="' + i + '" loading="lazy" alt="Photo ' + (i+1) + '" />' +
             '<button class="photo-remove" data-idx="' + i + '" aria-label="Supprimer">✕</button>';
           container.appendChild(item);
         });
-        var addBtn = document.createElement('button');
-        addBtn.type = 'button';
-        addBtn.className = 'photo-add-btn';
-        addBtn.innerHTML = '+ Ajouter';
+        var addBtn = document.createElement('button'); addBtn.type = 'button'; addBtn.className = 'photo-add-btn'; addBtn.innerHTML = '+ Ajouter';
         addBtn.addEventListener('click', function() { document.getElementById('photoInput').click(); });
         container.appendChild(addBtn);
-        container.querySelectorAll('.photo-remove').forEach(function(btn) {
-          btn.addEventListener('click', function(e) {
-            e.stopPropagation();
-            haptic(8);
-            tempPhotos.splice(parseInt(this.dataset.idx), 1);
-            renderPhotos();
-          });
-        });
-        container.querySelectorAll('.photo-item img').forEach(function(img) {
-          img.addEventListener('click', function() { openPhotoViewer(tempPhotos, parseInt(this.dataset.idx)); });
-        });
+        container.querySelectorAll('.photo-remove').forEach(function(btn) { btn.addEventListener('click', function(e) { e.stopPropagation(); haptic(8); tempPhotos.splice(parseInt(this.dataset.idx), 1); renderPhotos(); }); });
+        container.querySelectorAll('.photo-item img').forEach(function(img) { img.addEventListener('click', function() { openPhotoViewer(tempPhotos, parseInt(this.dataset.idx)); }); });
       }
       document.getElementById('addPhotoBtn').addEventListener('click', function() { haptic(10); document.getElementById('photoInput').click(); });
       document.getElementById('photoInput').addEventListener('change', function(e) {
@@ -5667,12 +5632,7 @@
         if (!files.length) return;
         if (tempPhotos.length + files.length > 20) showToast('Maximum 20 photos par intervention', 'warning');
         var promises = files.slice(0, 20 - tempPhotos.length).map(function(f) { return compressPhotoFile(f, 800, 0.7); });
-        Promise.all(promises).then(function(results) {
-          tempPhotos = tempPhotos.concat(results);
-          renderPhotos();
-          haptic(15);
-          showToast(files.length + ' photo(s) ajoutée(s)', 'success');
-        }).catch(function() { showToast('Erreur chargement photo', 'error'); });
+        Promise.all(promises).then(function(results) { tempPhotos = tempPhotos.concat(results); renderPhotos(); haptic(15); showToast(files.length + ' photo(s) ajoutée(s)', 'success'); }).catch(function() { showToast('Erreur chargement photo', 'error'); });
         e.target.value = '';
       });
       function openPhotoViewer(photos, startIdx) {
@@ -5681,71 +5641,43 @@
         var idx = startIdx || 0;
         function render() {
           overlay.innerHTML = '';
-          var img = document.createElement('img');
-          img.src = photos[idx];
+          var img = document.createElement('img'); img.src = photos[idx];
           img.style.cssText = 'max-width:100%; max-height:100%; object-fit:contain; border-radius:12px;';
-          img.alt = 'Photo ' + (idx+1);
           overlay.appendChild(img);
-          var close = document.createElement('button');
-          close.textContent = '✕';
+          var close = document.createElement('button'); close.textContent = '✕';
           close.style.cssText = 'position:absolute; top:20px; right:20px; background:white; color:#1a5279; border:none; width:44px; height:44px; border-radius:50%; font-size:1.2rem; cursor:pointer;';
-          close.addEventListener('click', function() { document.body.removeChild(overlay); });
-          overlay.appendChild(close);
+          close.addEventListener('click', function() { document.body.removeChild(overlay); }); overlay.appendChild(close);
           if (photos.length > 1) {
-            var prev = document.createElement('button');
-            prev.textContent = '◀';
+            var prev = document.createElement('button'); prev.textContent = '◀';
             prev.style.cssText = 'position:absolute; left:20px; top:50%; transform:translateY(-50%); background:rgba(255,255,255,0.9); color:#1a5279; border:none; width:44px; height:44px; border-radius:50%; font-size:1.2rem; cursor:pointer;';
-            prev.addEventListener('click', function() { idx = (idx - 1 + photos.length) % photos.length; render(); });
-            overlay.appendChild(prev);
-            var next = document.createElement('button');
-            next.textContent = '▶';
+            prev.addEventListener('click', function() { idx = (idx - 1 + photos.length) % photos.length; render(); }); overlay.appendChild(prev);
+            var next = document.createElement('button'); next.textContent = '▶';
             next.style.cssText = 'position:absolute; right:20px; top:50%; transform:translateY(-50%); background:rgba(255,255,255,0.9); color:#1a5279; border:none; width:44px; height:44px; border-radius:50%; font-size:1.2rem; cursor:pointer;';
-            next.addEventListener('click', function() { idx = (idx + 1) % photos.length; render(); });
-            overlay.appendChild(next);
+            next.addEventListener('click', function() { idx = (idx + 1) % photos.length; render(); }); overlay.appendChild(next);
           }
           overlay.onclick = function(e) { if (e.target === overlay) document.body.removeChild(overlay); };
         }
-        render();
-        document.body.appendChild(overlay);
+        render(); document.body.appendChild(overlay);
       }
 
       function checkBackupReminder() {
-        var alertEl = document.getElementById('alertBackup');
-        var alertText = document.getElementById('alertBackupText');
-        var seuil = settings.seuilSauvegarde || 15;
+        var alertEl = document.getElementById('alertBackup'); var alertText = document.getElementById('alertBackupText'); var seuil = settings.seuilSauvegarde || 15;
         if (!backupMeta.lastExportAt) {
           var derniereAlerte = backupMeta.lastReminderAt ? new Date(backupMeta.lastReminderAt) : null;
-          if (derniereAlerte) {
-            var joursDepuisAlerte = Math.floor((new Date() - derniereAlerte) / 86400000);
-            if (joursDepuisAlerte < 7) { alertEl.classList.remove('show'); return; }
-          }
+          if (derniereAlerte) { var joursDepuisAlerte = Math.floor((new Date() - derniereAlerte) / 86400000); if (joursDepuisAlerte < 7) { alertEl.classList.remove('show'); return; } }
           alertText.innerHTML = 'Pensez à <strong>sauvegarder</strong> vos données pour les protéger';
           alertEl.classList.add('show');
           return;
         }
         var jours = joursDepuis(backupMeta.lastExportAt);
         if (jours === null || jours < seuil) { alertEl.classList.remove('show'); return; }
-        if (backupMeta.lastReminderAt) {
-          var joursDepuisRappel = joursDepuis(backupMeta.lastReminderAt);
-          if (joursDepuisRappel !== null && joursDepuisRappel < 7) { alertEl.classList.remove('show'); return; }
-        }
+        if (backupMeta.lastReminderAt) { var joursDepuisRappel = joursDepuis(backupMeta.lastReminderAt); if (joursDepuisRappel !== null && joursDepuisRappel < 7) { alertEl.classList.remove('show'); return; } }
         alertText.innerHTML = 'Cela fait <strong>' + jours + ' jours</strong> depuis votre dernière sauvegarde';
         alertEl.classList.add('show');
       }
-      function dismissBackupReminder() {
-        backupMeta.lastReminderAt = new Date().toISOString();
-        storageDirty = true;
-        saveToStorage();
-        document.getElementById('alertBackup').classList.remove('show');
-      }
-      document.getElementById('alertBackup').addEventListener('click', function(e) {
-        if (e.target.closest('.alert-close')) return;
-        document.getElementById('exportDataBtn').click();
-      });
-      document.getElementById('alertBackupClose').addEventListener('click', function(e) {
-        e.stopPropagation();
-        dismissBackupReminder();
-      });
+      function dismissBackupReminder() { backupMeta.lastReminderAt = new Date().toISOString(); storageDirty = true; saveToStorage(); document.getElementById('alertBackup').classList.remove('show'); }
+      document.getElementById('alertBackup').addEventListener('click', function(e) { if (e.target.closest('.alert-close')) return; document.getElementById('exportDataBtn').click(); });
+      document.getElementById('alertBackupClose').addEventListener('click', function(e) { e.stopPropagation(); dismissBackupReminder(); });
 
       function checkStorageUsage() {
         if (!navigator.storage || !navigator.storage.estimate) return;
@@ -5754,34 +5686,14 @@
         navigator.storage.estimate().then(function(est) {
           localStorage.setItem(STORAGE_ALERT_KEY, new Date().toISOString());
           var pct = Math.round((est.usage / est.quota) * 100);
-          if (pct >= 80) {
-            document.getElementById('alertStorageText').innerHTML = 'Stockage <strong>' + pct + '%</strong> utilisé. Sauvegardez puis nettoyez.';
-            document.getElementById('alertStorage').classList.add('show');
-          }
+          if (pct >= 80) { document.getElementById('alertStorageText').innerHTML = 'Stockage <strong>' + pct + '%</strong> utilisé. Sauvegardez puis nettoyez.'; document.getElementById('alertStorage').classList.add('show'); }
         }).catch(function() {});
       }
-      document.getElementById('alertStorageClose').addEventListener('click', function() {
-        document.getElementById('alertStorage').classList.remove('show');
-        localStorage.setItem(STORAGE_ALERT_KEY, new Date().toISOString());
-      });
+      document.getElementById('alertStorageClose').addEventListener('click', function() { document.getElementById('alertStorage').classList.remove('show'); localStorage.setItem(STORAGE_ALERT_KEY, new Date().toISOString()); });
 
-      setupAutocomplete('intClient', 'intClientAutocomplete', function(c) {
-        document.getElementById('intClient').value = c.nom || '';
-        if (c.email) document.getElementById('intEmail').value = c.email;
-        if (c.tel) document.getElementById('intTel').value = c.tel;
-        if (c.adresse) document.getElementById('intAdresse').value = c.adresse;
-      });
-      setupAutocomplete('planClient', 'planClientAutocomplete', function(c) {
-        document.getElementById('planClient').value = c.nom || '';
-        if (c.tel) document.getElementById('planTel').value = c.tel;
-        if (c.adresse) document.getElementById('planAdresse').value = c.adresse;
-      });
-      setupAutocomplete('devisClient', 'devisClientAutocomplete', function(c) {
-        document.getElementById('devisClient').value = c.nom || '';
-        if (c.email) document.getElementById('devisEmail').value = c.email;
-        if (c.tel) document.getElementById('devisTel').value = c.tel;
-        if (c.adresse) document.getElementById('devisAdresse').value = c.adresse;
-      });
+      setupAutocomplete('intClient', 'intClientAutocomplete', function(c) { document.getElementById('intClient').value = c.nom || ''; if (c.email) document.getElementById('intEmail').value = c.email; if (c.tel) document.getElementById('intTel').value = c.tel; if (c.adresse) document.getElementById('intAdresse').value = c.adresse; });
+      setupAutocomplete('planClient', 'planClientAutocomplete', function(c) { document.getElementById('planClient').value = c.nom || ''; if (c.tel) document.getElementById('planTel').value = c.tel; if (c.adresse) document.getElementById('planAdresse').value = c.adresse; });
+      setupAutocomplete('devisClient', 'devisClientAutocomplete', function(c) { document.getElementById('devisClient').value = c.nom || ''; if (c.email) document.getElementById('devisEmail').value = c.email; if (c.tel) document.getElementById('devisTel').value = c.tel; if (c.adresse) document.getElementById('devisAdresse').value = c.adresse; });
 
       document.getElementById('verifyAddressBtn').addEventListener('click', function() {
         var adresse = document.getElementById('intAdresse').value.trim();
@@ -5790,38 +5702,23 @@
       });
 
       document.addEventListener('keydown', function(e) {
-        if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-          e.preventDefault();
-          storageDirty = true;
-          saveToStorage().then(function() { showToast('Sauvegardé (Ctrl+S)', 'success'); });
-        }
+        if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); storageDirty = true; saveToStorage().then(function() { showToast('Sauvegardé (Ctrl+S)', 'success'); }); }
         if (e.key === 'Escape') {
-          document.querySelectorAll('.modal-overlay.show').forEach(function(m) {
-            if (m.id === 'signatureModal') saveSignatures();
-            m.classList.remove('show');
-          });
-          var sf = document.getElementById('signatureFullscreen');
-          if (sf.classList.contains('show')) sf.classList.remove('show');
-          var as = document.getElementById('actionSheet');
-          if (as.classList.contains('show')) as.classList.remove('show');
+          document.querySelectorAll('.modal-overlay.show').forEach(function(m) { if (m.id === 'signatureModal') saveSignatures(); m.classList.remove('show'); });
+          var sf = document.getElementById('signatureFullscreen'); if (sf.classList.contains('show')) sf.classList.remove('show');
+          var as = document.getElementById('actionSheet'); if (as.classList.contains('show')) as.classList.remove('show');
           editingDevisId = null; editingPlanningId = null; convertDevisSourceId = null;
         }
       });
 
       window.addEventListener('beforeunload', function() { if (storageDirty) saveToStorage(); });
       window.addEventListener('pagehide', function() { if (storageDirty) saveToStorage(); });
-      document.addEventListener('visibilitychange', function() {
-        if (document.visibilityState === 'hidden' && storageDirty) saveToStorage();
-      });
+      document.addEventListener('visibilitychange', function() { if (document.visibilityState === 'hidden' && storageDirty) saveToStorage(); });
 
       if ('BroadcastChannel' in window) {
         try {
           broadcastChannel = new BroadcastChannel('pipepline_ch_sync');
-          broadcastChannel.onmessage = function(e) {
-            if (e.data && e.data.type === 'data-updated') {
-              loadFromStorage().then(function() { renderAll(); });
-            }
-          };
+          broadcastChannel.onmessage = function(e) { if (e.data && e.data.type === 'data-updated') { loadFromStorage().then(function() { renderAll(); }); } };
         } catch(e) {}
       }
 
@@ -5834,7 +5731,7 @@
         renderRecap();
       }
 
-      showSkeleton(document.getElementById('interventionsList'), 3);
+      showSkeleton(document.getElementById('interventionsGroups'), 3);
       showSkeleton(document.getElementById('factureList'), 3);
 
       loadFromStorage().then(function() {
@@ -5852,12 +5749,7 @@
           saveToStorage();
         }
         if (Object.keys(stock).length === 0) {
-          stock = {
-            'joint': { qte: 5, seuil: 2 },
-            'mécanisme chasse': { qte: 1, seuil: 2 },
-            'receveur douche': { qte: 0, seuil: 1 },
-            'mitigeur': { qte: 2, seuil: 1 }
-          };
+          stock = { 'joint': { qte: 5, seuil: 2 }, 'mécanisme chasse': { qte: 1, seuil: 2 }, 'receveur douche': { qte: 0, seuil: 1 }, 'mitigeur': { qte: 2, seuil: 1 } };
           storageSet(STOCK_KEY, stock);
         }
         renderAll();
