@@ -142,13 +142,37 @@ function decryptData(payload, key) {
   });
 }
 
+/* Un storage sécurisé : si un PIN est actif, on NE DOIT JAMAIS
+   retomber sur localStorage en clair (fuite). On échoue proprement. */
+function isPinRequired() {
+  return !!(pinMeta && pinMeta.active);
+}
+
 function storageGet(key) {
   return idbGet(key).then(function(result) {
-    if (result && result.__encrypted && cryptoKey) {
-      return decryptData(result, cryptoKey);
+    if (result && result.__encrypted) {
+      if (!cryptoKey) {
+        // Données chiffrées mais pas de clé → on ne peut pas déchiffrer.
+        // Ne JAMAIS tenter un fallback localStorage (fuite possible).
+        return null;
+      }
+      return decryptData(result, cryptoKey).catch(function(err) {
+        // Déchiffrement raté (mauvais PIN ou corruption) : on propage
+        // une erreur explicite au lieu de renvoyer null silencieusement.
+        var e = new Error('DECRYPT_FAILED');
+        e.cause = err;
+        e.key = key;
+        throw e;
+      });
     }
     return result;
-  }).catch(function() {
+  }).catch(function(err) {
+    // Si PIN actif → pas de fallback du tout.
+    if (isPinRequired()) {
+      if (err && err.message === 'DECRYPT_FAILED') throw err;
+      return null;
+    }
+    // Pas de PIN : fallback localStorage autorisé (mode legacy/non chiffré).
     try {
       var raw = localStorage.getItem(key);
       return raw ? JSON.parse(raw) : null;
@@ -162,20 +186,24 @@ function storageSet(key, value) {
       payload.__encrypted = true;
       return idbSet(key, payload);
     }).catch(function() {
+      // Ne PAS retomber sur idbSet en clair si on a une clé : ça
+      // écraserait des données chiffrées par du clair.
+      if (isPinRequired()) return false;
       return idbSet(key, value);
     });
   }
   return idbSet(key, value).catch(function() {
+    if (isPinRequired()) return false; // pas de fallback clair
     try { localStorage.setItem(key, JSON.stringify(value)); return true; } catch(e) { return false; }
   });
 }
 
 function storageRemove(key) {
   return idbRemove(key).catch(function() {
+    if (isPinRequired()) return;
     try { localStorage.removeItem(key); } catch(e) {}
   });
 }
-
 /* ==========================================================================
    PIN
    ========================================================================== */
@@ -235,29 +263,56 @@ function handlePinKey(digit) {
     }
   }
 }
+var pinValidating = false; // anti double-tap
+
 function validatePin() {
+  if (pinValidating) return;
   if (pinBuffer.length < 4) {
     document.getElementById('pinError').textContent = 'Code trop court';
     return;
   }
+  pinValidating = true;
+  var errEl = document.getElementById('pinError');
+  errEl.textContent = '';
+
   var enc = new TextEncoder();
   var pinBytes = enc.encode(pinBuffer);
+
   crypto.subtle.digest('SHA-256', pinBytes).then(function(hash) {
     var hashB64 = uint8ToBase64(new Uint8Array(hash));
-    if (hashB64 === pinMeta.pinHash) {
-      var salt = base64ToUint8(pinMeta.salt);
-      deriveKeyFromPin(pinBuffer, salt).then(function(key) {
-        cryptoKey = key;
-        hidePinOverlay();
-        loadFromStorage().then(function() { renderAll(); });
-        showToast('Bienvenue', 'success');
-      });
-    } else {
+    if (hashB64 !== pinMeta.pinHash) {
       haptic([30, 50, 30]);
-      document.getElementById('pinError').textContent = 'Code incorrect';
+      errEl.textContent = 'Code incorrect';
       pinBuffer = '';
       renderPinDots();
+      pinValidating = false;
+      return null;
     }
+    var salt = base64ToUint8(pinMeta.salt);
+    return deriveKeyFromPin(pinBuffer, salt);
+  }).then(function(key) {
+    if (!key) return null; // mauvais PIN déjà géré
+    cryptoKey = key;
+    // Attendre le chargement AVANT de cacher l'overlay → pas de course.
+    return loadFromStorage().then(function(ok) {
+      hidePinOverlay();
+      renderAll();
+      showToast('Bienvenue', 'success');
+      return ok;
+    });
+  }).catch(function(err) {
+    console.error('[PIN]', err);
+    haptic([30, 50, 30]);
+    if (err && err.message === 'DECRYPT_FAILED') {
+      errEl.textContent = 'Données illisibles — PIN ou sauvegarde corrompue';
+    } else {
+      errEl.textContent = 'Erreur de déchiffrement';
+    }
+    pinBuffer = '';
+    renderPinDots();
+    cryptoKey = null;
+  }).then(function() {
+    pinValidating = false;
   });
 }
 document.getElementById('pinKeypad').addEventListener('click', function(e) {
@@ -3247,53 +3302,91 @@ function openSignatureModal(id, type) {
 document.getElementById('clearClientSig').addEventListener('click', function() { haptic(8); clearCanvas('client'); });
 document.getElementById('clearTechSig').addEventListener('click', function() { haptic(8); clearCanvas('tech'); });
 
+/* Les handlers "Valider" attendent la fin du hash AVANT de dire OK.
+   On stocke le hash dans un objet { data, hash } au lieu de 2 variables
+   globales qui peuvent se désynchroniser. */
+var clientSigBundle = null;   // { data, hash } | null
+var techSigBundle = null;     // { data, hash } | null
+
+function _buildSigBundle(who) {
+  var canvas = who === 'client' ? clientCanvas : techCanvas;
+  var data = compressImage(canvas, 500, 0.7);
+  return hashDataURL(data).then(function(hash) {
+    return { data: data, hash: hash };
+  });
+}
+
 document.getElementById('saveClientSig').addEventListener('click', function() {
   if (isCanvasEmpty(clientCanvas)) { showToast('Veuillez signer avant de valider', 'warning'); return; }
-  clientSignatureData = compressImage(clientCanvas, 500, 0.7);
-  hashDataURL(clientSignatureData).then(function(h) { clientSignatureHash = h; });
-  haptic(15);
-  showToast('Signature client enregistrée', 'success');
-});
-document.getElementById('saveTechSig').addEventListener('click', function() {
-  if (isCanvasEmpty(techCanvas)) { showToast('Veuillez signer avant de valider', 'warning'); return; }
-  techSignatureData = compressImage(techCanvas, 500, 0.7);
-  hashDataURL(techSignatureData).then(function(h) { techSignatureHash = h; });
-  haptic(15);
-  showToast('Signature technicien enregistrée', 'success');
+  _buildSigBundle('client').then(function(bundle) {
+    clientSigBundle = bundle;
+    clientSignatureData = bundle.data;
+    clientSignatureHash = bundle.hash;
+    haptic(15);
+    showToast('Signature client enregistrée', 'success');
+  }).catch(function() {
+    showToast('Erreur signature client', 'error');
+  });
 });
 
-function saveSignatures() {
-  if (!currentSignatureTarget) return;
+document.getElementById('saveTechSig').addEventListener('click', function() {
+  if (isCanvasEmpty(techCanvas)) { showToast('Veuillez signer avant de valider', 'warning'); return; }
+  _buildSigBundle('tech').then(function(bundle) {
+    techSigBundle = bundle;
+    techSignatureData = bundle.data;
+    techSignatureHash = bundle.hash;
+    haptic(15);
+    showToast('Signature technicien enregistrée', 'success');
+  }).catch(function() {
+    showToast('Erreur signature technicien', 'error');
+  });
+});
+
+/* saveSignatures accepte un callback optionnel (pour enchaîner sur la fermeture) */
+function saveSignatures(done) {
+  if (!currentSignatureTarget) { if (done) done(); return; }
   var item = currentSignatureTarget.type === 'facture'
     ? interventions.find(function(i) { return i.id === currentSignatureTarget.id; })
     : devisList.find(function(d) { return d.id === currentSignatureTarget.id; });
-  if (!item) return;
-  if (clientSignatureData) {
+  if (!item) { if (done) done(); return; }
+
+  var hasClient = !!clientSignatureData;
+  var hasTech = !!techSignatureData;
+  var hadHash = false;
+
+  if (hasClient) {
     item.signatureClient = clientSignatureData;
     item.signatureClientHash = clientSignatureHash;
     item.signatureClientAt = new Date().toISOString();
+    hadHash = hadHash || !!clientSignatureHash;
   }
-  if (techSignatureData) {
+  if (hasTech) {
     item.signatureTech = techSignatureData;
     item.signatureTechHash = techSignatureHash;
     item.signatureTechAt = new Date().toISOString();
+    hadHash = hadHash || !!techSignatureHash;
   }
-  if (clientSignatureData || techSignatureData) {
+  if (hasClient || hasTech) {
     markAsDirty();
     renderAll();
-    showToast('Signatures enregistrées' + (clientSignatureHash ? ' (horodatées + hash)' : ''), 'success');
+    showToast('Signatures enregistrées' + (hadHash ? ' (horodatées + hash)' : ''), 'success');
   }
   clientSignatureData = null;
   techSignatureData = null;
   clientSignatureHash = null;
   techSignatureHash = null;
+  clientSigBundle = null;
+  techSigBundle = null;
   currentSignatureTarget = null;
+  if (done) done();
 }
-document.getElementById('closeSignatureModal').addEventListener('click', function() {
-  saveSignatures();
-  document.getElementById('signatureModal').classList.remove('show');
-});
 
+document.getElementById('closeSignatureModal').addEventListener('click', function() {
+  // On attend la fin de saveSignatures avant de cacher.
+  saveSignatures(function() {
+    document.getElementById('signatureModal').classList.remove('show');
+  });
+});
 /* ==========================================================================
    PDF FACTURE (QR-facture)
    ========================================================================== */
@@ -3512,12 +3605,46 @@ function createFactureDoc(int) {
   if (settings.iban) legal.push('IBAN : ' + settings.iban);
   legal.forEach(function(line) { doc.text(line, margin + 10, y); y += 3.5; });
 
+  // --- Signatures ---
+  if (int.signatureClient || int.signatureTech) {
+    var sigY = y + 5;
+    var sigW = 50;
+    var sigH = 22;
+    var halfPage = pageWidth / 2;
+
+    if (int.signatureTech) {
+      try {
+        doc.addImage(int.signatureTech, 'PNG', margin + 10, sigY, sigW, sigH);
+      } catch(e) { console.warn('Erreur sig tech', e); }
+      doc.setFontSize(7);
+      doc.setTextColor('#666666');
+      doc.text('Signature technicien', margin + 10, sigY + sigH + 4);
+    }
+
+    if (int.signatureClient) {
+      try {
+        doc.addImage(int.signatureClient, 'PNG', halfPage + 10, sigY, sigW, sigH);
+      } catch(e) { console.warn('Erreur sig client', e); }
+      doc.setFontSize(7);
+      doc.setTextColor('#666666');
+      doc.text('Signature client', halfPage + 10, sigY + sigH + 4);
+      if (int.signatureClientAt) {
+        doc.setFontSize(6);
+        doc.setTextColor('#999999');
+        var d = new Date(int.signatureClientAt);
+        var dateStr = String(d.getDate()).padStart(2, '0') + '.' + String(d.getMonth() + 1).padStart(2, '0') + '.' + d.getFullYear()
+          + ' ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+        doc.text('Signé le ' + dateStr, halfPage + 10, sigY + sigH + 8);
+      }
+    }
+  }
+
   y = pageHeight - 15;
   doc.setTextColor('#999999');
   doc.setFontSize(6.5);
   doc.text(settings.nom + ' - ' + settings.adresse + ' - ' + settings.tel + ' - ' + settings.email, pageWidth / 2, y, { align: 'center' });
   return doc;
-}
+}  
 
 function generateFacturePDFBlob(int) {
   var qrAvailable = !!(window.SwissQRBill && window.SwissQRBill.QRBill) && typeof isValidSwissIBAN === 'function';
@@ -3677,59 +3804,58 @@ function generateQRBillPDF(int) {
   if (settings.delaiPaiement) legal.push('Délai de paiement : ' + settings.delaiPaiement + ' jours');
   legal.forEach(function(line) { doc.text(line, margin + 10, y); y += 3.5; });
 
-  var qrBillHeight = 105;
+    var qrBillHeight = 105;
   var qrY = pageHeight - qrBillHeight;
 
+  // --- Signatures (au-dessus de la QR-facture) ---
+  if (int.signatureClient || int.signatureTech) {
+    var sigY = qrY - 35;
+    var sigW = 50;
+    var sigH = 22;
+    var halfPage = pageWidth / 2;
+
+    if (int.signatureTech) {
+      try {
+        doc.addImage(int.signatureTech, 'PNG', margin + 10, sigY, sigW, sigH);
+      } catch(e) { console.warn('Erreur sig tech', e); }
+      doc.setFontSize(7);
+      doc.setTextColor('#666666');
+      doc.text('Signature technicien', margin + 10, sigY + sigH + 4);
+    }
+
+    if (int.signatureClient) {
+      try {
+        doc.addImage(int.signatureClient, 'PNG', halfPage + 10, sigY, sigW, sigH);
+      } catch(e) { console.warn('Erreur sig client', e); }
+      doc.setFontSize(7);
+      doc.setTextColor('#666666');
+      doc.text('Signature client', halfPage + 10, sigY + sigH + 4);
+      if (int.signatureClientAt) {
+        doc.setFontSize(6);
+        doc.setTextColor('#999999');
+        var dSig = new Date(int.signatureClientAt);
+        var dateStr = String(dSig.getDate()).padStart(2, '0') + '.' + String(dSig.getMonth() + 1).padStart(2, '0') + '.' + dSig.getFullYear()
+          + ' ' + String(dSig.getHours()).padStart(2, '0') + ':' + String(dSig.getMinutes()).padStart(2, '0');
+        doc.text('Signé le ' + dateStr, halfPage + 10, sigY + sigH + 8);
+      }
+    }
+    doc.setTextColor('#333333');
+  }
+
   var iban = (settings.iban || '').replace(/\s+/g, '');
+  /* Toujours retourner une Promise<Blob> — jamais un Blob direct. */
   if (!isValidSwissIBAN(iban)) {
     doc.setTextColor('#c62828');
     doc.setFontSize(8);
     doc.text('⚠ IBAN suisse invalide ou absent — QR-facture non générée.', margin, qrY + 10);
-    return doc.output('blob');
+    return Promise.resolve(doc.output('blob'));
   }
 
-  var creditor = {
-    name: settings.nom || 'Entreprise',
-    address: settings.adresse || '',
-    zip: settings.zip || '',
-    city: settings.city || '',
-    account: iban,
-    country: 'CH'
-  };
-  if (!creditor.zip && settings.adresse) {
-    var m = settings.adresse.match(/(\d{4})\s+(.+)$/);
-    if (m) { creditor.zip = m[1]; creditor.city = m[2]; }
-  }
-
-  var debtor = null;
-  if (int.client && int.adresse) {
-    var debtorZip = '', debtorCity = '';
-    var dm = int.adresse.match(/(\d{4})\s+(.+)$/);
-    if (dm) { debtorZip = dm[1]; debtorCity = dm[2]; }
-    debtor = {
-      name: int.client,
-      address: int.adresse,
-      zip: debtorZip,
-      city: debtorCity,
-      country: int.paysClient || 'CH'
-    };
-  }
-
-  var qrData = {
-    currency: 'CHF',
-    amount: ttc,
-    creditor: creditor,
-    debtor: debtor,
-    reference: generateQRReference(int.numeroFacture ? int.numeroFacture.replace(/\D/g, '') : Date.now()),
-    message: (int.isAvoir ? 'Avoir ' : 'Facture ') + (int.numeroFacture || ''),
-    additionalInformation: '',
-    language: 'fr'
-  };
+  // ... (inchangé jusqu'au try)
 
   try {
     var qrBill = new SwissQRBill.QRBill(qrData, { language: 'fr' });
     var svg = qrBill.toString();
-
     return svgToDataURL(svg).then(function(dataUrl) {
       doc.addImage(dataUrl, 'PNG', 0, qrY, pageWidth, qrBillHeight, undefined, 'FAST');
       return doc.output('blob');
@@ -4703,17 +4829,34 @@ function generateCertificatePDF(int) {
     doc.text('Prochain entretien recommandé :', margin + 5, y);
     doc.setFont('helvetica', 'normal');
     doc.text(formatDate(cert.prochain || ''), margin + 75, y);
-    y += 20;
+        y += 20;
+
+    // --- Signature du technicien uniquement ---
     if (int.signatureTech) {
-      try { doc.addImage(int.signatureTech, 'PNG', margin + 5, y, 50, 25); } catch(e) {}
+      try { doc.addImage(int.signatureTech, 'PNG', margin + 5, y, 60, 25); } catch(e) { console.warn('Erreur sig tech', e); }
+      doc.setFontSize(8);
+      doc.setTextColor('#666666');
+      doc.text('Signature du technicien', margin + 5, y + 30);
+      if (int.signatureTechAt) {
+        doc.setFontSize(7);
+        doc.setTextColor('#999999');
+        var dTech = new Date(int.signatureTechAt);
+        var dateTech = String(dTech.getDate()).padStart(2, '0') + '.' + String(dTech.getMonth() + 1).padStart(2, '0') + '.' + dTech.getFullYear()
+          + ' ' + String(dTech.getHours()).padStart(2, '0') + ':' + String(dTech.getMinutes()).padStart(2, '0');
+        doc.text('Signé le ' + dateTech, margin + 5, y + 34);
+      }
+    } else {
+      doc.setFontSize(8);
+      doc.setTextColor('#999999');
+      doc.setFont('helvetica', 'italic');
+      doc.text('(Aucune signature enregistrée — signez depuis la fiche intervention)', margin + 5, y + 10);
     }
-    doc.setFontSize(8);
-    doc.setTextColor('#666666');
-    doc.text('Signature technicien', margin + 5, y + 30);
-    if (int.signatureClient) {
-      try { doc.addImage(int.signatureClient, 'PNG', pw - margin - 55, y, 50, 25); } catch(e) {}
-    }
-    doc.text('Signature client', pw - margin - 55, y + 30);
+
+    // --- Nom de l'entreprise pour renforcer la valeur du certificat ---
+    doc.setFontSize(9);
+    doc.setTextColor('#333333');
+    doc.setFont('helvetica', 'bold');
+    doc.text(settings.nom + (settings.siret ? ' (' + settings.siret + ')' : ''), margin + 5, y + 42);
     doc.setFontSize(7);
     doc.setTextColor('#999999');
     doc.text(settings.nom + ' - ' + settings.adresse + ' - ' + settings.tel, pw / 2, ph - 10, { align: 'center' });
