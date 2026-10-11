@@ -3389,7 +3389,7 @@ function createFactureDoc(int) {
   var descLines = doc.splitTextToSize(int.description || '—', pageWidth - margin - 55);
   doc.text(descLines, margin + 45, y);
   y += descLines.length * 5;
-  y += 12;
+    y += 12;
   doc.setFillColor(int.isAvoir ? '#f3e5f5' : '#f0f7ff');
   doc.rect(margin + 10, y, pageWidth - 2 * margin - 20, 9, 'F');
   doc.setTextColor(headerColor);
@@ -3397,29 +3397,101 @@ function createFactureDoc(int) {
   doc.setFont('helvetica', 'bold');
   doc.text('DÉSIGNATION', margin + 15, y + 6.5);
   doc.text('MONTANT', pageWidth - margin - 15, y + 6.5, { align: 'right' });
-  y += 10;
+  y += 12;
   doc.setTextColor('#333333');
   doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
+
   var ht = getTotalHT(int);
   var ttc = getTotalTTC(int);
   var tvaMontant = getTvaMontant(int);
-  doc.text('Total HT', margin + 15, y + 5);
-  doc.text(ht.toFixed(2) + ' CHF', pageWidth - margin - 15, y + 5, { align: 'right' });
+
+  // --- Détail des lignes ---
+  if (!int.isAvoir) {
+    var heures = (int.duree || 0) / 60;
+    var taux = int.taux || settings.tauxDefaut;
+    var mainOeuvre = heures * taux;
+    var deplacement = int.deplacement || 0;
+    var kmMontant = getKmFraisAmount(int);
+    var piecesArr = int.pieces || [];
+    var fraisArr = int.frais || [];
+
+    // Main d'œuvre
+    if (mainOeuvre > 0) {
+      var labelMO = 'Main d\'œuvre (' + formatDuree(int.duree) + ' à ' + taux + ' CHF/h)';
+      doc.text(labelMO, margin + 15, y + 5);
+      doc.text(mainOeuvre.toFixed(2) + ' CHF', pageWidth - margin - 15, y + 5, { align: 'right' });
+      y += 7;
+    }
+
+    // Déplacement
+    if (deplacement > 0) {
+      doc.text('Déplacement', margin + 15, y + 5);
+      doc.text(deplacement.toFixed(2) + ' CHF', pageWidth - margin - 15, y + 5, { align: 'right' });
+      y += 7;
+    }
+
+    // Frais kilométriques
+    if (int.kmActive && kmMontant > 0) {
+      var labelKm = 'Frais kilométriques (' + (int.kmDistance || 0) + ' km × ' + (int.kmRetour || 1) + ' × ' + (int.kmTaux || 0.70) + ' CHF)';
+      doc.text(labelKm, margin + 15, y + 5);
+      doc.text(kmMontant.toFixed(2) + ' CHF', pageWidth - margin - 15, y + 5, { align: 'right' });
+      y += 7;
+    }
+
+    // Pièces
+    piecesArr.forEach(function(p) {
+      if (!p.nom || !p.prix) return;
+      var qte = parseInt(p.qte) || 1;
+      var ligne = p.nom + (qte > 1 ? ' × ' + qte : '');
+      var totalPiece = (parseFloat(p.prix) || 0) * qte;
+      var lines = doc.splitTextToSize('• ' + ligne, pageWidth - margin - 55);
+      doc.text(lines, margin + 15, y + 5);
+      doc.text(totalPiece.toFixed(2) + ' CHF', pageWidth - margin - 15, y + 5, { align: 'right' });
+      y += (lines.length * 4) + 3;
+    });
+
+    // Notes de frais
+    fraisArr.forEach(function(f) {
+      if (!f.libelle || !f.montant) return;
+      var lines = doc.splitTextToSize('• ' + f.libelle, pageWidth - margin - 55);
+      doc.text(lines, margin + 15, y + 5);
+      doc.text((parseFloat(f.montant) || 0).toFixed(2) + ' CHF', pageWidth - margin - 15, y + 5, { align: 'right' });
+      y += (lines.length * 4) + 3;
+    });
+  } else {
+    // Avoir libre : juste le montant forcé
+    doc.text('Avoir', margin + 15, y + 5);
+    doc.text(ht.toFixed(2) + ' CHF', pageWidth - margin - 15, y + 5, { align: 'right' });
+    y += 7;
+  }
+
+  // --- Sous-total HT ---
+  doc.setDrawColor('#cccccc');
+  doc.line(margin + 10, y, pageWidth - margin - 10, y);
+  y += 6;
+  doc.setFont('helvetica', 'bold');
+  doc.text('Total HT', margin + 15, y + 4);
+  doc.text(ht.toFixed(2) + ' CHF', pageWidth - margin - 15, y + 4, { align: 'right' });
+  doc.setFont('helvetica', 'normal');
   y += 7;
+
   if (settings.tvaActive && !isAutoliquidation(int)) {
-    doc.text('TVA (' + settings.tva + '%)', margin + 15, y + 5);
-    doc.text(tvaMontant.toFixed(2) + ' CHF', pageWidth - margin - 15, y + 5, { align: 'right' });
+    doc.text('TVA (' + settings.tva + '%)', margin + 15, y + 4);
+    doc.text(tvaMontant.toFixed(2) + ' CHF', pageWidth - margin - 15, y + 4, { align: 'right' });
     y += 7;
   } else if (isAutoliquidation(int)) {
     doc.setFontSize(8);
-    doc.text('Autoliquidation — TVA due par le client (art. 8 al. 1 LTVA)', margin + 15, y + 5);
+    doc.text('Autoliquidation — TVA due par le client (art. 8 al. 1 LTVA)', margin + 15, y + 4);
     y += 7;
+    doc.setFontSize(9);
   } else {
     doc.setFontSize(8);
-    doc.text('TVA non applicable (art. 10 al. 2 LTVA)', margin + 15, y + 5);
+    doc.text('TVA non applicable (art. 10 al. 2 LTVA)', margin + 15, y + 4);
     y += 7;
+    doc.setFontSize(9);
   }
+
   doc.setDrawColor(headerColor);
   doc.line(margin + 10, y, pageWidth - margin - 10, y);
   y += 8;
@@ -3428,7 +3500,6 @@ function createFactureDoc(int) {
   doc.setFont('helvetica', 'bold');
   doc.text('TOTAL', margin + 15, y + 5);
   doc.text(ttc.toFixed(2) + ' CHF', pageWidth - margin - 15, y + 5, { align: 'right' });
-
   y += 20;
   doc.setTextColor('#666666');
   doc.setFontSize(7);
