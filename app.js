@@ -4,7 +4,34 @@
    Fichier : app.js
    ========================================================================== */
 'use strict';
-
+/* ==========================================================================
+   ANTI-ZOOM (iOS Safari ignore user-scalable=no)
+   ========================================================================== */
+(function antiZoom() {
+  document.addEventListener('touchstart', function(e) {
+    if (e.touches.length > 1) e.preventDefault();
+  }, { passive: false });
+  document.addEventListener('touchmove', function(e) {
+    if (e.touches.length > 1) e.preventDefault();
+  }, { passive: false });
+  var lastTouchEnd = 0;
+  document.addEventListener('touchend', function(e) {
+    var now = Date.now();
+    if (now - lastTouchEnd <= 300) e.preventDefault();
+    lastTouchEnd = now;
+  }, { passive: false });
+  document.addEventListener('dblclick', function(e) {
+    e.preventDefault();
+  }, { passive: false });
+  document.addEventListener('wheel', function(e) {
+    if (e.ctrlKey) e.preventDefault();
+  }, { passive: false });
+  document.addEventListener('keydown', function(e) {
+    if ((e.ctrlKey || e.metaKey) && (e.key === '+' || e.key === '-' || e.key === '=' || e.key === '0')) {
+      e.preventDefault();
+    }
+  }, { passive: false });
+})();
 /* ==========================================================================
    SERVICE WORKER
    ========================================================================== */
