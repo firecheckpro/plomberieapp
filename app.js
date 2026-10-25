@@ -135,30 +135,45 @@ function decryptData(payload, key) {
       crypto.subtle.decrypt({ name: 'AES-GCM', iv: iv }, key, ciphertext)
         .then(function(plaintext) {
           var dec = new TextDecoder();
-          resolve(JSON.parse(dec.decode(plaintext)));
+          try {
+            resolve(JSON.parse(dec.decode(plaintext)));
+          } catch(e) {
+            reject(new Error('DECRYPT_FAILED'));
+          }
         })
         .catch(reject);
     } catch(e) { reject(e); }
   });
 }
 
-/* Un storage sécurisé : si un PIN est actif, on NE DOIT JAMAIS
-   retomber sur localStorage en clair (fuite). On échoue proprement. */
 function isPinRequired() {
   return !!(pinMeta && pinMeta.active);
 }
 
+/* ==========================================================================
+   QUEUE DE SAUVEGARDE (sérialisation des écritures IndexedDB)
+   ========================================================================== */
+var saveQueue = Promise.resolve();
+function enqueueSave(fn) {
+  saveQueue = saveQueue.then(fn, fn).catch(function(e) {
+    console.error('[SaveQueue]', e);
+  });
+  return saveQueue;
+}
+
+/* ==========================================================================
+   STORAGE SÉCURISÉ
+   ========================================================================== */
 function storageGet(key) {
   return idbGet(key).then(function(result) {
     if (result && result.__encrypted) {
       if (!cryptoKey) {
-        // Données chiffrées mais pas de clé → on ne peut pas déchiffrer.
-        // Ne JAMAIS tenter un fallback localStorage (fuite possible).
-        return null;
+        var e = new Error('DECRYPT_FAILED');
+        e.key = key;
+        e.cause = 'no_key';
+        throw e;
       }
       return decryptData(result, cryptoKey).catch(function(err) {
-        // Déchiffrement raté (mauvais PIN ou corruption) : on propage
-        // une erreur explicite au lieu de renvoyer null silencieusement.
         var e = new Error('DECRYPT_FAILED');
         e.cause = err;
         e.key = key;
@@ -167,12 +182,10 @@ function storageGet(key) {
     }
     return result;
   }).catch(function(err) {
-    // Si PIN actif → pas de fallback du tout.
     if (isPinRequired()) {
       if (err && err.message === 'DECRYPT_FAILED') throw err;
       return null;
     }
-    // Pas de PIN : fallback localStorage autorisé (mode legacy/non chiffré).
     try {
       var raw = localStorage.getItem(key);
       return raw ? JSON.parse(raw) : null;
@@ -181,20 +194,21 @@ function storageGet(key) {
 }
 
 function storageSet(key, value) {
-  if (cryptoKey && !(value && value.__encrypted)) {
-    return encryptData(value, cryptoKey).then(function(payload) {
-      payload.__encrypted = true;
-      return idbSet(key, payload);
-    }).catch(function() {
-      // Ne PAS retomber sur idbSet en clair si on a une clé : ça
-      // écraserait des données chiffrées par du clair.
+  return enqueueSave(function() {
+    if (cryptoKey && !(value && value.__encrypted)) {
+      return encryptData(value, cryptoKey).then(function(payload) {
+        payload.__encrypted = true;
+        return idbSet(key, payload);
+      }).catch(function() {
+        if (isPinRequired()) return false;
+        return idbSet(key, value);
+      });
+    }
+    return idbSet(key, value).catch(function() {
       if (isPinRequired()) return false;
-      return idbSet(key, value);
+      try { localStorage.setItem(key, JSON.stringify(value)); return true; }
+      catch(e) { return false; }
     });
-  }
-  return idbSet(key, value).catch(function() {
-    if (isPinRequired()) return false; // pas de fallback clair
-    try { localStorage.setItem(key, JSON.stringify(value)); return true; } catch(e) { return false; }
   });
 }
 
@@ -204,6 +218,7 @@ function storageRemove(key) {
     try { localStorage.removeItem(key); } catch(e) {}
   });
 }
+
 /* ==========================================================================
    PIN
    ========================================================================== */
@@ -233,6 +248,22 @@ function uint8ToBase64(arr) {
   return btoa(bin);
 }
 
+/* Hash de vérification du PIN via PBKDF2 (même sel que la clé AES) */
+function computePinHashB64(pin, saltUint8) {
+  var enc = new TextEncoder();
+  return crypto.subtle.importKey('raw', enc.encode(pin), { name: 'PBKDF2' }, false, ['deriveBits'])
+    .then(function(baseKey) {
+      return crypto.subtle.deriveBits(
+        { name: 'PBKDF2', salt: saltUint8, iterations: 100000, hash: 'SHA-256' },
+        baseKey,
+        256
+      );
+    })
+    .then(function(bits) {
+      return uint8ToBase64(new Uint8Array(bits));
+    });
+}
+
 function showPinOverlay() {
   document.getElementById('pinOverlay').classList.add('show');
   pinBuffer = '';
@@ -242,7 +273,7 @@ function showPinOverlay() {
 function hidePinOverlay() {
   document.getElementById('pinOverlay').classList.remove('show');
   isAuthenticated = true;
-  sessionStorage.setItem(SESSION_KEY, '1');
+  try { sessionStorage.setItem(SESSION_KEY, '1'); } catch(e) {}
 }
 function renderPinDots() {
   var dots = document.querySelectorAll('#pinDisplay .pin-dot');
@@ -263,7 +294,7 @@ function handlePinKey(digit) {
     }
   }
 }
-var pinValidating = false; // anti double-tap
+var pinValidating = false;
 
 function validatePin() {
   if (pinValidating) return;
@@ -275,11 +306,10 @@ function validatePin() {
   var errEl = document.getElementById('pinError');
   errEl.textContent = '';
 
-  var enc = new TextEncoder();
-  var pinBytes = enc.encode(pinBuffer);
+  var salt = base64ToUint8(pinMeta.salt);
+  var pinAttempt = pinBuffer;
 
-  crypto.subtle.digest('SHA-256', pinBytes).then(function(hash) {
-    var hashB64 = uint8ToBase64(new Uint8Array(hash));
+  computePinHashB64(pinAttempt, salt).then(function(hashB64) {
     if (hashB64 !== pinMeta.pinHash) {
       haptic([30, 50, 30]);
       errEl.textContent = 'Code incorrect';
@@ -288,17 +318,14 @@ function validatePin() {
       pinValidating = false;
       return null;
     }
-    var salt = base64ToUint8(pinMeta.salt);
-    return deriveKeyFromPin(pinBuffer, salt);
+    return deriveKeyFromPin(pinAttempt, salt);
   }).then(function(key) {
-    if (!key) return null; // mauvais PIN déjà géré
+    if (!key) return null;
     cryptoKey = key;
-    // Attendre le chargement AVANT de cacher l'overlay → pas de course.
-    return loadFromStorage().then(function(ok) {
+    return loadFromStorage().then(function() {
       hidePinOverlay();
       renderAll();
       showToast('Bienvenue', 'success');
-      return ok;
     });
   }).catch(function(err) {
     console.error('[PIN]', err);
@@ -324,6 +351,77 @@ document.addEventListener('keydown', function(e) {
   if (e.key >= '0' && e.key <= '9') handlePinKey(e.key);
   else if (e.key === 'Backspace') handlePinKey('clear');
   else if (e.key === 'Enter') handlePinKey('ok');
+});
+
+/* ==========================================================================
+   MODALE MOT DE PASSE (remplace prompt())
+   ========================================================================== */
+var passwordModalResolve = null;
+
+function askPassword(options) {
+  options = options || {};
+  return new Promise(function(resolve) {
+    passwordModalResolve = resolve;
+    var title = document.getElementById('passwordModalTitle');
+    var desc = document.getElementById('passwordModalDesc');
+    var group = document.getElementById('passwordConfirmGroup');
+    var input = document.getElementById('passwordInput');
+    var confirm = document.getElementById('passwordConfirm');
+    var err = document.getElementById('passwordError');
+    var btn = document.getElementById('passwordConfirmBtn');
+    title.textContent = options.title || 'Mot de passe';
+    desc.textContent = options.description || '';
+    group.style.display = options.requireConfirm ? 'block' : 'none';
+    input.value = '';
+    confirm.value = '';
+    err.textContent = '';
+    input.type = 'password';
+    confirm.type = 'password';
+    btn.textContent = options.confirmLabel || 'Valider';
+    document.getElementById('passwordModal').classList.add('show');
+    setTimeout(function() { input.focus(); }, 150);
+  });
+}
+
+function _closePasswordModal(result) {
+  document.getElementById('passwordModal').classList.remove('show');
+  var r = passwordModalResolve;
+  passwordModalResolve = null;
+  if (r) r(result);
+}
+
+document.getElementById('passwordCancel').addEventListener('click', function() {
+  haptic(8);
+  _closePasswordModal(null);
+});
+
+document.getElementById('passwordConfirmBtn').addEventListener('click', function() {
+  var input = document.getElementById('passwordInput');
+  var confirm = document.getElementById('passwordConfirm');
+  var err = document.getElementById('passwordError');
+  var requireConfirm = document.getElementById('passwordConfirmGroup').style.display !== 'none';
+  var pwd = input.value;
+  if (!pwd || pwd.length < 8) {
+    err.textContent = 'Minimum 8 caractères';
+    return;
+  }
+  if (requireConfirm && pwd !== confirm.value) {
+    err.textContent = 'Les mots de passe ne correspondent pas';
+    return;
+  }
+  haptic(15);
+  _closePasswordModal(pwd);
+});
+
+document.getElementById('passwordInput').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') {
+    var requireConfirm = document.getElementById('passwordConfirmGroup').style.display !== 'none';
+    if (requireConfirm) document.getElementById('passwordConfirm').focus();
+    else document.getElementById('passwordConfirmBtn').click();
+  }
+});
+document.getElementById('passwordConfirm').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') document.getElementById('passwordConfirmBtn').click();
 });
 
 /* ==========================================================================
@@ -388,7 +486,7 @@ window.addEventListener('offline', updateOfflineBadge);
 updateOfflineBadge();
 
 /* ==========================================================================
-   LIBRAIRIES PDF & QR-FACTURE (inline — plus de dossier lib/)
+   PDF LIB (jsPDF uniquement — SwissQRBill retiré)
    ========================================================================== */
 var libCache = {};
 
@@ -423,26 +521,8 @@ function loadJsPDF() {
   return libCache.jspdf;
 }
 
-function loadSwissQRBill() {
-  if (libCache.qr) return libCache.qr;
-  libCache.qr = new Promise(function(resolve, reject) {
-    if (window.SwissQRBill && window.SwissQRBill.QRBill) { resolve(window.SwissQRBill); return; }
-    var localPath = 'lib/swissqrbill.min.js';
-    var cdnPath = 'https://cdn.jsdelivr.net/npm/swissqrbill@4/dist/swissqrbill.min.js';
-    loadScript(localPath).then(function() {
-      if (window.SwissQRBill && window.SwissQRBill.QRBill) resolve(window.SwissQRBill);
-      else throw new Error('SwissQRBill local indisponible');
-    }).catch(function() {
-      console.warn('[PipePline] SwissQRBill local absent, fallback CDN');
-      loadScript(cdnPath).then(function() { resolve(window.SwissQRBill); })
-        .catch(function() { reject(new Error('SwissQRBill indisponible (local + CDN)')); });
-    });
-  });
-  return libCache.qr;
-}
-
 /* ==========================================================================
-   VALIDATION IBAN SUISSE + RÉFÉRENCE QR (inline)
+   VALIDATION IBAN SUISSE (conservé pour settings, plus utilisé pour QR)
    ========================================================================== */
 function isValidSwissIBAN(iban) {
   if (!iban) return false;
@@ -463,23 +543,6 @@ function isValidSwissIBAN(iban) {
   return remainder === 1;
 }
 
-function generateQRReference(baseNumber) {
-  var base = String(baseNumber).replace(/\D/g, '').slice(0, 26).padStart(26, '0');
-  var digits = base.split('').map(Number);
-  var table = [0, 9, 4, 6, 8, 2, 7, 1, 3, 5];
-  var carry = 0;
-  for (var i = 0; i < digits.length - 1; i++) {
-    carry = table[(carry + digits[i]) % 10];
-  }
-  var check = (10 - carry) % 10;
-  return base.slice(0, 25) + check;
-}
-
-function formatQRReference(ref) {
-  var clean = String(ref).replace(/\s+/g, '');
-  return clean.replace(/(.{5})/g, '$1 ').trim();
-}
-
 /* ==========================================================================
    ÉTAT DE L'APPLICATION
    ========================================================================== */
@@ -495,6 +558,9 @@ var SAVE_DELAY = 1500;
 var WORK_HOURS_PER_DAY = 7;
 var TVA_SEUIL_CHF = 100000;
 var TVA_BANNER_DURATION = 5000;
+var MAX_PHOTO_BYTES = 20 * 1024 * 1024;
+var MAX_PHOTOS = 20;
+var MAX_IMPORT_BYTES = 50 * 1024 * 1024;
 
 var TYPES_TACHES = {
   depannage: { label: 'Dépannage', color: 'depannage' },
@@ -584,6 +650,7 @@ function formatDate(dateStr) {
   if (!dateStr) return '—';
   try {
     var d = new Date(dateStr + 'T00:00:00');
+    if (isNaN(d.getTime())) return '—';
     var day = String(d.getDate()).padStart(2, '0');
     var month = String(d.getMonth() + 1).padStart(2, '0');
     var year = d.getFullYear();
@@ -595,7 +662,9 @@ function formatMois(date) {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 function formatCHF(n) {
-  if (isNaN(n) || n === null) n = 0;
+  if (!isFinite(n) || n === null || n === undefined) n = 0;
+  n = Number(n);
+  if (!isFinite(n)) n = 0;
   var parts = n.toFixed(2).split('.');
   var intPart = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, "'");
   return intPart + '.' + parts[1] + ' CHF';
@@ -642,6 +711,7 @@ function ajouterMinutes(heure, minutes) {
 function joursEntre(d1, d2) {
   var a = new Date(d1 + 'T00:00:00');
   var b = new Date(d2 + 'T00:00:00');
+  if (isNaN(a.getTime()) || isNaN(b.getTime())) return 0;
   return Math.floor((b - a) / 86400000);
 }
 function joursDepuis(iso) {
@@ -680,6 +750,7 @@ function formatDayHeader(dateStr) {
   if (!dateStr) return '—';
   try {
     var d = new Date(dateStr + 'T00:00:00');
+    if (isNaN(d.getTime())) return '—';
     var dayName = d.toLocaleDateString('fr-CH', { weekday: 'long' });
     var dayNum = d.getDate();
     var monthName = d.toLocaleDateString('fr-CH', { month: 'long' });
@@ -778,7 +849,7 @@ function getKmFraisAmount(item) {
   return getKmTotal(item.kmDistance, item.kmRetour, item.kmTaux);
 }
 function getTotalHT(item) {
-  if (item.montantForceHT !== undefined && item.montantForceHT !== null) return item.montantForceHT;
+  if (typeof item.montantForceHT === 'number' && isFinite(item.montantForceHT)) return item.montantForceHT;
   var cacheKey = item.id + '_ht';
   if (totalCache.has(cacheKey)) return totalCache.get(cacheKey);
   var heures = (item.duree || 0) / 60;
@@ -855,7 +926,9 @@ function adjustStock(pieces, sign) {
     var key = p.nom.trim().toLowerCase();
     if (stock[key]) stock[key].qte = Math.max(0, stock[key].qte + sign * (parseInt(p.qte) || 1));
   });
-  storageSet(STOCK_KEY, stock);
+  storageSet(STOCK_KEY, stock).catch(function() {
+    showToast('Erreur sauvegarde stock', 'error');
+  });
 }
 function decrementStock(pieces) { adjustStock(pieces, -1); }
 function restoreStock(pieces) { adjustStock(pieces, +1); }
@@ -911,6 +984,10 @@ function showConfirm(message, callback) {
   document.getElementById('confirmMessage').textContent = message;
   document.getElementById('confirmModal').classList.add('show');
   confirmCallback = callback;
+  setTimeout(function() {
+    var yes = document.getElementById('confirmYes');
+    if (yes) yes.focus();
+  }, 100);
 }
 document.getElementById('confirmYes').addEventListener('click', function() {
   document.getElementById('confirmModal').classList.remove('show');
@@ -966,9 +1043,9 @@ function saveToStorage(silent) {
 function loadFromStorage() {
   return storageGet(STORAGE_KEY).then(function(data) {
     if (data) {
-      interventions = data.interventions || [];
-      devisList = data.devisList || [];
-      clients = data.clients || [];
+      interventions = Array.isArray(data.interventions) ? data.interventions : [];
+      devisList = Array.isArray(data.devisList) ? data.devisList : [];
+      clients = Array.isArray(data.clients) ? data.clients : [];
       factureCounter = data.factureCounter || 1;
       devisCounter = data.devisCounter || 1;
       avoirCounter = data.avoirCounter || 1;
@@ -980,7 +1057,8 @@ function loadFromStorage() {
     }
     return storageGet(SETTINGS_KEY);
   }).then(function(s) {
-    if (s) {
+    if (s && typeof s === 'object') {
+      sanitizeSettings(s);
       for (var key in s) {
         if (settings.hasOwnProperty(key)) settings[key] = s[key];
       }
@@ -994,7 +1072,7 @@ function loadFromStorage() {
     if (!backupMeta.lastReminderAt && !backupMeta.lastExportAt) backupMeta.lastReminderAt = new Date().toISOString();
     return storageGet(STOCK_KEY);
   }).then(function(s) {
-    if (s) stock = s;
+    if (s && typeof s === 'object') stock = s;
     storageDirty = false;
     invalidateTotals();
     return true;
@@ -1093,7 +1171,7 @@ function showTvaBanner() {
   var banner = document.getElementById('alertTva');
   var text = document.getElementById('alertTvaText');
   if (!settings.tvaActive) text.innerHTML = '<strong>TVA non applicable</strong> — CA annuel < ' + formatCHF(TVA_SEUIL_CHF) + '. Vos factures porteront la mention « TVA non applicable (art. 10 al. 2 LTVA) ».';
-  else text.innerHTML = '<strong>Assujetti à la TVA suisse</strong> — Taux : ' + settings.tva + ' %. N° TVA : ' + (settings.tvaIntra || 'à renseigner') + '. Clients UE : autoliquidation (0 %).';
+  else text.innerHTML = '<strong>Assujetti à la TVA suisse</strong> — Taux : ' + settings.tva + ' %. N° TVA : ' + escapeHtml(settings.tvaIntra || 'à renseigner') + '. Clients UE : autoliquidation (0 %).';
   banner.classList.remove('hiding');
   banner.classList.add('show');
   if (tvaBannerTimeout) clearTimeout(tvaBannerTimeout);
@@ -1115,7 +1193,7 @@ function updateTvaBannerContent() {
   if (!banner.classList.contains('show')) return;
   var text = document.getElementById('alertTvaText');
   if (!settings.tvaActive) text.innerHTML = '<strong>TVA non applicable</strong> — CA annuel < ' + formatCHF(TVA_SEUIL_CHF) + '. Vos factures porteront la mention « TVA non applicable (art. 10 al. 2 LTVA) ».';
-  else text.innerHTML = '<strong>Assujetti à la TVA suisse</strong> — Taux : ' + settings.tva + ' %. N° TVA : ' + (settings.tvaIntra || 'à renseigner') + '. Clients UE : autoliquidation (0 %).';
+  else text.innerHTML = '<strong>Assujetti à la TVA suisse</strong> — Taux : ' + settings.tva + ' %. N° TVA : ' + escapeHtml(settings.tvaIntra || 'à renseigner') + '. Clients UE : autoliquidation (0 %).';
 }
 
 function checkRecurringClients() {
@@ -1127,6 +1205,7 @@ function checkRecurringClients() {
     if (!int.recurring) return;
     if (int.isAvoir) return;
     var lastDate = new Date(int.date + 'T00:00:00');
+    if (isNaN(lastDate.getTime())) return;
     var nextDate = new Date(lastDate);
     nextDate.setMonth(nextDate.getMonth() + 11);
     var diffDays = Math.floor((nextDate - now) / 86400000);
@@ -1175,11 +1254,13 @@ function renderStats() {
       }
     }
     var intDate = new Date(int.date + 'T00:00:00');
-    if (intDate.getMonth() === currentMonth && intDate.getFullYear() === currentYear) {
-      caMois += ttc;
-      caNetMois += net;
+    if (!isNaN(intDate.getTime())) {
+      if (intDate.getMonth() === currentMonth && intDate.getFullYear() === currentYear) {
+        caMois += ttc;
+        caNetMois += net;
+      }
+      if (intDate.getFullYear() === currentYear) caAnnuel += ttc;
     }
-    if (intDate.getFullYear() === currentYear) caAnnuel += ttc;
   }
   document.getElementById('totalInterventions').textContent = total;
   document.getElementById('totalImpayees').textContent = impayees;
@@ -1498,7 +1579,7 @@ function buildInterventionCard(int) {
     + '<div class="int-title">'
     + '<span class="int-type-badge ' + typeInfo.color + '">' + typeInfo.label + '</span>'
     + '<span class="int-client">' + escapeHtml(int.client || 'Client') + '</span>'
-    + (int.numeroFacture ? '<span style="font-size:0.65rem; font-family:var(--mono-stack); background:var(--accent-light); padding:2px 8px; border-radius:var(--r-full); color:var(--accent);">' + int.numeroFacture + '</span>' : '')
+    + (int.numeroFacture ? '<span style="font-size:0.65rem; font-family:var(--mono-stack); background:var(--accent-light); padding:2px 8px; border-radius:var(--r-full); color:var(--accent);">' + escapeHtml(int.numeroFacture) + '</span>' : '')
     + (int.signatureClient ? '<span style="font-size:0.6rem; color:var(--success);" title="Signée">✍</span>' : '')
     + (int.recurring ? '<span class="recurring-badge">🔁 Récurrent</span>' : '')
     + '</div>'
@@ -1799,10 +1880,12 @@ function buildPlanningText(format) {
   var monthLabel = formatMois(days[0]);
   lines.push('📅 PLANNING SEMAINE — ' + monthLabel);
   lines.push('');
+  var totalEvents = 0;
   days.forEach(function(day) {
     var dayStr = toDateStr(day);
     var events = interventions.filter(function(int) { return int.date === dayStr && !int.isAvoir; });
     if (events.length === 0) return;
+    totalEvents += events.length;
     events.sort(function(a, b) { return (a.heure || '99:99').localeCompare(b.heure || '99:99'); });
     var dayLabel = day.toLocaleDateString('fr-CH', { weekday: 'long', day: 'numeric', month: 'long' });
     lines.push('▶ ' + dayLabel.charAt(0).toUpperCase() + dayLabel.slice(1));
@@ -1821,10 +1904,8 @@ function buildPlanningText(format) {
     });
     lines.push('');
   });
-  var totalEvents = days.reduce(function(sum, day) {
-    return sum + interventions.filter(function(int) { return int.date === toDateStr(day) && !int.isAvoir; }).length;
-  }, 0);
-  lines.push('Total : ' + totalEvents + ' intervention(s)');
+  if (totalEvents === 0) lines.push('Aucune intervention cette semaine.');
+  else lines.push('Total : ' + totalEvents + ' intervention(s)');
   lines.push('');
   lines.push('— ' + settings.nom);
   return lines.join('\n');
@@ -2233,8 +2314,8 @@ function renderPieces() {
     var row = document.createElement('div');
     row.className = 'piece-row';
     row.innerHTML = '<input type="text" class="piece-nom" placeholder="Nom" value="' + escapeHtml(p.nom || '') + '" data-idx="' + i + '" data-field="nom" />'
-      + '<input type="number" class="piece-qte" placeholder="Qté" value="' + (p.qte || 1) + '" min="1" step="1" data-idx="' + i + '" data-field="qte" />'
-      + '<input type="number" class="piece-prix" placeholder="Prix CHF" value="' + (p.prix || '') + '" step="0.01" min="0" data-idx="' + i + '" data-field="prix" />'
+      + '<input type="number" class="piece-qte" placeholder="Qté" value="' + (p.qte || 1) + '" min="1" step="1" data-idx="' + i + '" data-field="qte" inputmode="numeric" />'
+      + '<input type="number" class="piece-prix" placeholder="Prix CHF" value="' + (p.prix || '') + '" step="0.01" min="0" data-idx="' + i + '" data-field="prix" inputmode="decimal" />'
       + '<button data-idx="' + i + '" class="del-piece" aria-label="Supprimer">✕</button>';
     container.appendChild(row);
     if (stockInfo && stockInfo.low) {
@@ -2249,9 +2330,6 @@ function renderPieces() {
       var idx = parseInt(this.dataset.idx);
       tempPieces[idx][this.dataset.field] = this.value;
       updatePiecesTotal();
-    });
-    inp.addEventListener('blur', function() {
-      if (this.dataset.field === 'nom') renderPieces();
     });
   });
   container.querySelectorAll('.del-piece').forEach(function(btn) {
@@ -2276,7 +2354,7 @@ function renderFrais() {
     var row = document.createElement('div');
     row.className = 'frais-row';
     row.innerHTML = '<input type="text" class="frais-libelle" placeholder="Ex: Carburant" value="' + escapeHtml(f.libelle || '') + '" data-idx="' + i + '" data-field="libelle" />'
-      + '<input type="number" class="frais-montant" placeholder="CHF" value="' + (f.montant || '') + '" step="0.01" min="0" data-idx="' + i + '" data-field="montant" />'
+      + '<input type="number" class="frais-montant" placeholder="CHF" value="' + (f.montant || '') + '" step="0.01" min="0" data-idx="' + i + '" data-field="montant" inputmode="decimal" />'
       + '<button data-idx="' + i + '" class="del-frais" aria-label="Supprimer">✕</button>';
     container.appendChild(row);
   });
@@ -2309,8 +2387,8 @@ function renderDevisPieces() {
     var row = document.createElement('div');
     row.className = 'piece-row';
     row.innerHTML = '<input type="text" class="piece-nom" placeholder="Nom" value="' + escapeHtml(p.nom || '') + '" data-idx="' + i + '" data-field="nom" />'
-      + '<input type="number" class="piece-qte" placeholder="Qté" value="' + (p.qte || 1) + '" min="1" step="1" data-idx="' + i + '" data-field="qte" />'
-      + '<input type="number" class="piece-prix" placeholder="Prix CHF" value="' + (p.prix || '') + '" step="0.01" min="0" data-idx="' + i + '" data-field="prix" />'
+      + '<input type="number" class="piece-qte" placeholder="Qté" value="' + (p.qte || 1) + '" min="1" step="1" data-idx="' + i + '" data-field="qte" inputmode="numeric" />'
+      + '<input type="number" class="piece-prix" placeholder="Prix CHF" value="' + (p.prix || '') + '" step="0.01" min="0" data-idx="' + i + '" data-field="prix" inputmode="decimal" />'
       + '<button data-idx="' + i + '" class="del-piece" aria-label="Supprimer">✕</button>';
     container.appendChild(row);
   });
@@ -2366,27 +2444,52 @@ function compressPhotoFile(file, maxW, quality) {
   maxW = maxW || 800;
   quality = quality || 0.7;
   return new Promise(function(resolve, reject) {
+    if (!file || file.size === 0) { reject(new Error('Fichier vide')); return; }
+    if (file.size > MAX_PHOTO_BYTES) {
+      reject(new Error('Photo trop volumineuse (>20 Mo)'));
+      return;
+    }
     var reader = new FileReader();
     reader.onload = function(e) {
       var img = new Image();
       img.onload = function() {
-        var canvas = document.createElement('canvas');
-        var ratio = img.width / img.height;
-        var w = Math.min(maxW, img.width);
-        var h = Math.round(w / ratio);
-        canvas.width = w;
-        canvas.height = h;
-        var ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, w, h);
-        resolve(canvas.toDataURL('image/jpeg', quality));
+        try {
+          var canvas = document.createElement('canvas');
+          var ratio = img.width / img.height;
+          var w = Math.min(maxW, img.width);
+          var h = Math.round(w / ratio);
+          canvas.width = w;
+          canvas.height = h;
+          var ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, w, h);
+          resolve(canvas.toDataURL('image/jpeg', quality));
+        } catch(err) { reject(err); }
       };
-      img.onerror = reject;
+      img.onerror = function() { reject(new Error('Image illisible')); };
       img.src = e.target.result;
     };
-    reader.onerror = reject;
+    reader.onerror = function() { reject(new Error('Lecture échouée')); };
     reader.readAsDataURL(file);
   });
 }
+
+function processPhotoFiles(files) {
+  var results = [];
+  var i = 0;
+  function next() {
+    if (i >= files.length) return Promise.resolve(results);
+    var f = files[i++];
+    return compressPhotoFile(f, 800, 0.7).then(function(dataUrl) {
+      results.push(dataUrl);
+      return next();
+    }).catch(function(err) {
+      console.warn('[Photo]', f.name, err.message);
+      return next();
+    });
+  }
+  return next();
+}
+
 function renderPhotos() {
   var container = document.getElementById('photosPreview');
   if (!container) return;
@@ -2414,14 +2517,16 @@ document.getElementById('addPhotoBtn').addEventListener('click', function() { ha
 document.getElementById('photoInput').addEventListener('change', function(e) {
   var files = Array.from(e.target.files || []);
   if (!files.length) return;
-  if (tempPhotos.length + files.length > 20) showToast('Maximum 20 photos', 'warning');
-  var promises = files.slice(0, 20 - tempPhotos.length).map(function(f) { return compressPhotoFile(f, 800, 0.7); });
-  Promise.all(promises).then(function(results) {
+  var slots = MAX_PHOTOS - tempPhotos.length;
+  if (slots <= 0) { showToast('Maximum ' + MAX_PHOTOS + ' photos', 'warning'); e.target.value = ''; return; }
+  var batch = files.slice(0, slots);
+  processPhotoFiles(batch).then(function(results) {
     tempPhotos = tempPhotos.concat(results);
     renderPhotos();
     haptic(15);
-    showToast(files.length + ' photo(s) ajoutée(s)', 'success');
-  }).catch(function() { showToast('Erreur chargement photo', 'error'); });
+    if (results.length > 0) showToast(results.length + ' photo(s) ajoutée(s)', 'success');
+    else showToast('Aucune photo valide', 'warning');
+  });
   e.target.value = '';
 });
 function openPhotoViewer(photos, startIdx) {
@@ -2437,7 +2542,7 @@ function openPhotoViewer(photos, startIdx) {
     var close = document.createElement('button');
     close.textContent = '✕';
     close.style.cssText = 'position:absolute; top:20px; right:20px; background:white; color:#1a5279; border:none; width:44px; height:44px; border-radius:50%; font-size:1.2rem; cursor:pointer;';
-    close.addEventListener('click', function() { document.body.removeChild(overlay); });
+    close.addEventListener('click', function() { if (overlay.parentNode) document.body.removeChild(overlay); });
     overlay.appendChild(close);
     if (photos.length > 1) {
       var prev = document.createElement('button');
@@ -2451,7 +2556,7 @@ function openPhotoViewer(photos, startIdx) {
       next.addEventListener('click', function() { idx = (idx + 1) % photos.length; render(); });
       overlay.appendChild(next);
     }
-    overlay.onclick = function(e) { if (e.target === overlay) document.body.removeChild(overlay); };
+    overlay.onclick = function(e) { if (e.target === overlay && overlay.parentNode) document.body.removeChild(overlay); };
   }
   render();
   document.body.appendChild(overlay);
@@ -2891,7 +2996,7 @@ function renderFactures() {
     else statutHtml = '<span style="color:var(--danger); font-weight:600; font-size:0.7rem;">⚠ Impayée</span>';
 
     item.innerHTML = '<div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap; flex:1;">'
-      + '<span class="fact-num" ' + (int.isAvoir ? 'style="background:#f3e5f5; color:var(--purple);"' : '') + '>' + (int.numeroFacture || '—') + '</span>'
+      + '<span class="fact-num" ' + (int.isAvoir ? 'style="background:#f3e5f5; color:var(--purple);"' : '') + '>' + escapeHtml(int.numeroFacture || '—') + '</span>'
       + '<span class="fact-client">' + escapeHtml(int.client || '—') + '</span>'
       + (int.signatureClient ? '<span style="font-size:0.6rem; color:var(--success);">✍ Signée</span>' : '')
       + '</div>'
@@ -2903,9 +3008,9 @@ function renderFactures() {
       + '<div class="fact-actions">'
       + (int.tel ? '<a class="call" href="' + getPhoneHref(int.tel) + '" title="Appeler" onclick="event.stopPropagation();">☎</a>' : '')
       + (int.adresse && !int.isAvoir ? '<a class="route" href="' + getMapsHref(int.adresse) + '" target="_blank" rel="noopener" title="Itinéraire" onclick="event.stopPropagation();">📍</a>' : '')
-      + '<button class="view" data-id="' + int.id + '" title="Voir">👁</button>'
-      + (!int.paye && !int.isAvoir ? '<button class="pay" data-id="' + int.id + '" title="Payée">✓</button>' : '')
-      + '<button class="more" data-id="' + int.id + '" title="Plus">⋯</button>'
+      + '<button class="view" data-id="' + int.id + '" title="Voir" aria-label="Voir">👁</button>'
+      + (!int.paye && !int.isAvoir ? '<button class="pay" data-id="' + int.id + '" title="Payée" aria-label="Marquer payée">✓</button>' : '')
+      + '<button class="more" data-id="' + int.id + '" title="Plus" aria-label="Plus">⋯</button>'
       + '</div>';
     frag.appendChild(item);
   });
@@ -2961,7 +3066,7 @@ function renderDevis() {
     item.className = 'facture-item ' + borderClass;
     item.dataset.id = d.id;
     item.innerHTML = '<div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap; flex:1;">'
-      + '<span class="fact-num" style="background:var(--accent-light); color:var(--info);">' + (d.numeroDevis || '—') + '</span>'
+      + '<span class="fact-num" style="background:var(--accent-light); color:var(--info);">' + escapeHtml(d.numeroDevis || '—') + '</span>'
       + '<span class="fact-client">' + escapeHtml(d.client || '—') + '</span>'
       + '<span class="devis-badge ' + statusClass + '">' + statusLabel + '</span>'
       + '</div>'
@@ -2971,8 +3076,8 @@ function renderDevis() {
       + '</div>'
       + '<div class="fact-actions">'
       + (d.tel ? '<a class="call" href="' + getPhoneHref(d.tel) + '" title="Appeler" onclick="event.stopPropagation();">☎</a>' : '')
-      + '<button class="view" data-id="' + d.id + '" title="Voir">👁</button>'
-      + '<button class="more" data-id="' + d.id + '" title="Plus">⋯</button>'
+      + '<button class="view" data-id="' + d.id + '" title="Voir" aria-label="Voir">👁</button>'
+      + '<button class="more" data-id="' + d.id + '" title="Plus" aria-label="Plus">⋯</button>'
       + '</div>';
     frag.appendChild(item);
   });
@@ -3002,7 +3107,9 @@ function shareFacture(id) {
   generateFacturePDFBlob(int).then(function(blob) {
     if (!blob) { showToast('Impossible de générer le PDF', 'error'); return; }
     var file = new File([blob], (int.isAvoir ? 'Avoir_' : 'Facture_') + (int.numeroFacture || 'Client').replace(/[^a-zA-Z0-9\-]/g, '_') + '.pdf', { type: 'application/pdf' });
-    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    var canShare = false;
+    try { canShare = navigator.canShare && navigator.canShare({ files: [file] }); } catch(e) { canShare = false; }
+    if (canShare) {
       navigator.share({
         files: [file],
         title: (int.isAvoir ? 'Avoir ' : 'Facture ') + int.numeroFacture,
@@ -3023,7 +3130,9 @@ function shareDevis(id) {
   generateDevisPDFBlob(d).then(function(blob) {
     if (!blob) { showToast('Impossible de générer le PDF', 'error'); return; }
     var file = new File([blob], 'Devis_' + (d.numeroDevis || 'Client').replace(/[^a-zA-Z0-9\-]/g, '_') + '.pdf', { type: 'application/pdf' });
-    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    var canShare = false;
+    try { canShare = navigator.canShare && navigator.canShare({ files: [file] }); } catch(e) { canShare = false; }
+    if (canShare) {
       navigator.share({ files: [file], title: 'Devis ' + d.numeroDevis, text: 'Devis ' + d.numeroDevis + ' - ' + formatCHF(getTotalTTC(d)) })
         .catch(function(err) { if (err.name !== 'AbortError') downloadBlob(blob, file.name); });
     } else {
@@ -3176,8 +3285,9 @@ document.getElementById('confirmMail').addEventListener('click', function() {
   document.getElementById('mailModal').classList.remove('show');
   showToast('Client mail ouvert. Joignez le PDF.', 'success');
 });
+
 /* ==========================================================================
-   SIGNATURES (avec hash SHA-256)
+   SIGNATURES (avec hash SHA-256 + devicePixelRatio)
    ========================================================================== */
 var clientCanvas, clientCtx, techCanvas, techCtx;
 var clientDrawing = false, techDrawing = false;
@@ -3189,12 +3299,14 @@ function initSignatureCanvases() {
   signatureInitialized = true;
   clientCanvas = document.getElementById('clientSignatureCanvas');
   techCanvas = document.getElementById('techSignatureCanvas');
+  if (!clientCanvas || !techCanvas) return;
   [clientCanvas, techCanvas].forEach(function(canvas) {
     var rect = canvas.getBoundingClientRect();
-    canvas.width = rect.width * 2;
-    canvas.height = rect.height * 2;
+    var dpr = window.devicePixelRatio || 1;
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
     var ctx = canvas.getContext('2d');
-    ctx.scale(2, 2);
+    ctx.scale(dpr, dpr);
     ctx.lineWidth = 2;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
@@ -3213,6 +3325,25 @@ function initSignatureCanvases() {
     c.addEventListener('mouseleave', function() { endDraw(who); });
   });
 }
+
+function resizeSignatureCanvases() {
+  [clientCanvas, techCanvas].forEach(function(canvas) {
+    if (!canvas) return;
+    var rect = canvas.getBoundingClientRect();
+    var dpr = window.devicePixelRatio || 1;
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    var ctx = canvas.getContext('2d');
+    ctx.scale(dpr, dpr);
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = '#1a5279';
+  });
+  clientCtx = clientCanvas ? clientCanvas.getContext('2d') : null;
+  techCtx = techCanvas ? techCanvas.getContext('2d') : null;
+}
+
 function getPos(e, canvas) {
   var rect = canvas.getBoundingClientRect();
   var cx, cy;
@@ -3231,7 +3362,7 @@ function draw(e, who) {
   var canvas = who === 'client' ? clientCanvas : techCanvas;
   var ctx = who === 'client' ? clientCtx : techCtx;
   var drawing = who === 'client' ? clientDrawing : techDrawing;
-  if (!drawing) return;
+  if (!drawing || !ctx) return;
   var pos = getPos(e, canvas);
   ctx.beginPath();
   if (who === 'client') { ctx.moveTo(clientLastX, clientLastY); ctx.lineTo(pos.x, pos.y); clientLastX = pos.x; clientLastY = pos.y; }
@@ -3242,9 +3373,11 @@ function endDraw(who) { if (who === 'client') clientDrawing = false; else techDr
 function clearCanvas(who) {
   var canvas = who === 'client' ? clientCanvas : techCanvas;
   var ctx = who === 'client' ? clientCtx : techCtx;
+  if (!canvas || !ctx) return;
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 }
 function isCanvasEmpty(canvas) {
+  if (!canvas) return true;
   var ctx = canvas.getContext('2d');
   var data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
   for (var i = 0; i < data.length; i += 4) { if (data[i + 3] !== 0) return false; }
@@ -3281,20 +3414,23 @@ function openSignatureModal(id, type) {
   techSignatureData = null;
   clientSignatureHash = null;
   techSignatureHash = null;
+  clientSigBundle = null;
+  techSigBundle = null;
   document.getElementById('signatureModal').classList.add('show');
   setTimeout(function() {
     initSignatureCanvases();
+    resizeSignatureCanvases();
     var item = type === 'facture' ? interventions.find(function(i) { return i.id === id; }) : devisList.find(function(d) { return d.id === id; });
     clearCanvas('client');
     clearCanvas('tech');
-    if (item && item.signatureClient) {
+    if (item && item.signatureClient && clientCtx) {
       var img = new Image();
-      img.onload = function() { clientCtx.drawImage(img, 0, 0, clientCanvas.width / 2, clientCanvas.height / 2); };
+      img.onload = function() { clientCtx.drawImage(img, 0, 0, clientCanvas.width / (window.devicePixelRatio || 1), clientCanvas.height / (window.devicePixelRatio || 1)); };
       img.src = item.signatureClient;
     }
-    if (item && item.signatureTech) {
+    if (item && item.signatureTech && techCtx) {
       var img2 = new Image();
-      img2.onload = function() { techCtx.drawImage(img2, 0, 0, techCanvas.width / 2, techCanvas.height / 2); };
+      img2.onload = function() { techCtx.drawImage(img2, 0, 0, techCanvas.width / (window.devicePixelRatio || 1), techCanvas.height / (window.devicePixelRatio || 1)); };
       img2.src = item.signatureTech;
     }
   }, 150);
@@ -3302,11 +3438,8 @@ function openSignatureModal(id, type) {
 document.getElementById('clearClientSig').addEventListener('click', function() { haptic(8); clearCanvas('client'); });
 document.getElementById('clearTechSig').addEventListener('click', function() { haptic(8); clearCanvas('tech'); });
 
-/* Les handlers "Valider" attendent la fin du hash AVANT de dire OK.
-   On stocke le hash dans un objet { data, hash } au lieu de 2 variables
-   globales qui peuvent se désynchroniser. */
-var clientSigBundle = null;   // { data, hash } | null
-var techSigBundle = null;     // { data, hash } | null
+var clientSigBundle = null;
+var techSigBundle = null;
 
 function _buildSigBundle(who) {
   var canvas = who === 'client' ? clientCanvas : techCanvas;
@@ -3342,7 +3475,6 @@ document.getElementById('saveTechSig').addEventListener('click', function() {
   });
 });
 
-/* saveSignatures accepte un callback optionnel (pour enchaîner sur la fermeture) */
 function saveSignatures(done) {
   if (!currentSignatureTarget) { if (done) done(); return; }
   var item = currentSignatureTarget.type === 'facture'
@@ -3382,48 +3514,14 @@ function saveSignatures(done) {
 }
 
 document.getElementById('closeSignatureModal').addEventListener('click', function() {
-  // On attend la fin de saveSignatures avant de cacher.
   saveSignatures(function() {
     document.getElementById('signatureModal').classList.remove('show');
   });
 });
-/* ==========================================================================
-   PDF FACTURE (QR-facture)
-   ========================================================================== */
-function buildQRBillOptions(int) {
-  var zip = settings.zip || '';
-  var city = settings.city || '';
-  if (!zip && settings.adresse) {
-    var m = settings.adresse.match(/(\d{4})\s+(.+)$/);
-    if (m) { zip = m[1]; city = m[2]; }
-  }
-  return {
-    numero: int.numeroFacture,
-    isAvoir: !!int.isAvoir,
-    clientName: int.client,
-    clientAddress: int.adresse,
-    clientCountry: int.paysClient || 'CH',
-    date: formatDate(int.date),
-    description: int.description,
-    totalHT: getTotalHT(int),
-    totalTTC: getTotalTTC(int),
-    tvaAmount: getTvaMontant(int),
-    tvaActive: settings.tvaActive,
-    tvaRate: settings.tva,
-    autoliquidation: isAutoliquidation(int),
-    sellerName: settings.nom,
-    sellerAddress: settings.adresse,
-    sellerZip: zip,
-    sellerCity: city,
-    sellerIDE: settings.siret,
-    sellerTVA: settings.tvaIntra,
-    assuranceNom: settings.assuranceNom,
-    assuranceNum: settings.assuranceNum,
-    delaiPaiement: settings.delaiPaiement,
-    iban: settings.iban
-  };
-}
 
+/* ==========================================================================
+   PDF FACTURE (SIMPLE — fallback QR désactivé)
+   ========================================================================== */
 function createFactureDoc(int) {
   var jsPDF = window.jspdf.jsPDF;
   var doc = new jsPDF('p', 'mm', 'a4');
@@ -3437,7 +3535,7 @@ function createFactureDoc(int) {
   doc.setTextColor('#ffffff');
   doc.setFontSize(20);
   doc.setFont('helvetica', 'bold');
-  doc.text(settings.nom.toUpperCase(), pageWidth / 2, 22, { align: 'center' });
+  doc.text((settings.nom || 'ENTREPRISE').toUpperCase(), pageWidth / 2, 22, { align: 'center' });
   doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
   doc.text(int.isAvoir ? 'Artisan Plombier - AVOIR' : 'Artisan Plombier - Dépannage & Entretien', pageWidth / 2, 31, { align: 'center' });
@@ -3482,7 +3580,7 @@ function createFactureDoc(int) {
   var descLines = doc.splitTextToSize(int.description || '—', pageWidth - margin - 55);
   doc.text(descLines, margin + 45, y);
   y += descLines.length * 5;
-    y += 12;
+  y += 12;
   doc.setFillColor(int.isAvoir ? '#f3e5f5' : '#f0f7ff');
   doc.rect(margin + 10, y, pageWidth - 2 * margin - 20, 9, 'F');
   doc.setTextColor(headerColor);
@@ -3499,7 +3597,6 @@ function createFactureDoc(int) {
   var ttc = getTotalTTC(int);
   var tvaMontant = getTvaMontant(int);
 
-  // --- Détail des lignes ---
   if (!int.isAvoir) {
     var heures = (int.duree || 0) / 60;
     var taux = int.taux || settings.tauxDefaut;
@@ -3509,30 +3606,23 @@ function createFactureDoc(int) {
     var piecesArr = int.pieces || [];
     var fraisArr = int.frais || [];
 
-    // Main d'œuvre
     if (mainOeuvre > 0) {
       var labelMO = 'Main d\'œuvre (' + formatDuree(int.duree) + ' à ' + taux + ' CHF/h)';
       doc.text(labelMO, margin + 15, y + 5);
       doc.text(mainOeuvre.toFixed(2) + ' CHF', pageWidth - margin - 15, y + 5, { align: 'right' });
       y += 7;
     }
-
-    // Déplacement
     if (deplacement > 0) {
       doc.text('Déplacement', margin + 15, y + 5);
       doc.text(deplacement.toFixed(2) + ' CHF', pageWidth - margin - 15, y + 5, { align: 'right' });
       y += 7;
     }
-
-    // Frais kilométriques
     if (int.kmActive && kmMontant > 0) {
       var labelKm = 'Frais kilométriques (' + (int.kmDistance || 0) + ' km × ' + (int.kmRetour || 1) + ' × ' + (int.kmTaux || 0.70) + ' CHF)';
       doc.text(labelKm, margin + 15, y + 5);
       doc.text(kmMontant.toFixed(2) + ' CHF', pageWidth - margin - 15, y + 5, { align: 'right' });
       y += 7;
     }
-
-    // Pièces
     piecesArr.forEach(function(p) {
       if (!p.nom || !p.prix) return;
       var qte = parseInt(p.qte) || 1;
@@ -3543,8 +3633,6 @@ function createFactureDoc(int) {
       doc.text(totalPiece.toFixed(2) + ' CHF', pageWidth - margin - 15, y + 5, { align: 'right' });
       y += (lines.length * 4) + 3;
     });
-
-    // Notes de frais
     fraisArr.forEach(function(f) {
       if (!f.libelle || !f.montant) return;
       var lines = doc.splitTextToSize('• ' + f.libelle, pageWidth - margin - 55);
@@ -3553,13 +3641,11 @@ function createFactureDoc(int) {
       y += (lines.length * 4) + 3;
     });
   } else {
-    // Avoir libre : juste le montant forcé
     doc.text('Avoir', margin + 15, y + 5);
     doc.text(ht.toFixed(2) + ' CHF', pageWidth - margin - 15, y + 5, { align: 'right' });
     y += 7;
   }
 
-  // --- Sous-total HT ---
   doc.setDrawColor('#cccccc');
   doc.line(margin + 10, y, pageWidth - margin - 10, y);
   y += 6;
@@ -3605,7 +3691,6 @@ function createFactureDoc(int) {
   if (settings.iban) legal.push('IBAN : ' + settings.iban);
   legal.forEach(function(line) { doc.text(line, margin + 10, y); y += 3.5; });
 
-  // --- Signatures ---
   if (int.signatureClient || int.signatureTech) {
     var sigY = y + 5;
     var sigW = 50;
@@ -3613,18 +3698,15 @@ function createFactureDoc(int) {
     var halfPage = pageWidth / 2;
 
     if (int.signatureTech) {
-      try {
-        doc.addImage(int.signatureTech, 'PNG', margin + 10, sigY, sigW, sigH);
-      } catch(e) { console.warn('Erreur sig tech', e); }
+      try { doc.addImage(int.signatureTech, 'PNG', margin + 10, sigY, sigW, sigH); }
+      catch(e) { console.warn('Erreur sig tech', e); }
       doc.setFontSize(7);
       doc.setTextColor('#666666');
       doc.text('Signature technicien', margin + 10, sigY + sigH + 4);
     }
-
     if (int.signatureClient) {
-      try {
-        doc.addImage(int.signatureClient, 'PNG', halfPage + 10, sigY, sigW, sigH);
-      } catch(e) { console.warn('Erreur sig client', e); }
+      try { doc.addImage(int.signatureClient, 'PNG', halfPage + 10, sigY, sigW, sigH); }
+      catch(e) { console.warn('Erreur sig client', e); }
       doc.setFontSize(7);
       doc.setTextColor('#666666');
       doc.text('Signature client', halfPage + 10, sigY + sigH + 4);
@@ -3644,247 +3726,30 @@ function createFactureDoc(int) {
   doc.setFontSize(6.5);
   doc.text(settings.nom + ' - ' + settings.adresse + ' - ' + settings.tel + ' - ' + settings.email, pageWidth / 2, y, { align: 'center' });
   return doc;
-}  
+}
 
 function generateFacturePDFBlob(int) {
-  var qrAvailable = !!(window.SwissQRBill && window.SwissQRBill.QRBill) && typeof isValidSwissIBAN === 'function';
-  var ibanOk = qrAvailable && settings.iban && isValidSwissIBAN(settings.iban);
-  var promise;
-  if (ibanOk) {
-    promise = loadJsPDF()
-      .then(function() { return loadSwissQRBill(); })
-      .then(function() { return generateQRBillPDF(int); });
-  } else {
-    if (!qrAvailable && settings.iban) {
-      console.warn('[PipePline] QR-bill indisponible — PDF sans QR');
-    }
-    promise = loadJsPDF().then(function() { return createFactureDoc(int).output('blob'); });
-  }
-  return promise.catch(function(e) { console.error(e); return null; });
+  return loadJsPDF().then(function() {
+    return createFactureDoc(int).output('blob');
+  }).catch(function(e) { console.error(e); return null; });
 }
 
 function generateFacturePDF(id, silent) {
   var int = interventions.find(function(i) { return i.id === id; });
   if (!int) return;
   showToast('Génération du PDF...', 'info');
-  var qrAvailable = !!(window.SwissQRBill && window.SwissQRBill.QRBill) && typeof isValidSwissIBAN === 'function';
-  var ibanOk = qrAvailable && settings.iban && isValidSwissIBAN(settings.iban);
-  var promise;
-  if (ibanOk) {
-    promise = loadJsPDF()
-      .then(function() { return loadSwissQRBill(); })
-      .then(function() { return generateQRBillPDF(int); });
-  } else {
-    promise = loadJsPDF().then(function() { return createFactureDoc(int).output('blob'); });
-  }
-  promise.then(function(blob) {
-    downloadBlob(blob, (int.isAvoir ? 'Avoir_' : 'Facture_') + (int.numeroFacture || 'Client').replace(/[^a-zA-Z0-9\-]/g, '_') + '.pdf');
-    if (!silent) showToast((int.isAvoir ? 'Avoir' : 'Facture') + ' PDF ' + (ibanOk ? 'QR ' : '') + 'téléchargé', 'success');
+  loadJsPDF().then(function() {
+    try {
+      var doc = createFactureDoc(int);
+      doc.save((int.isAvoir ? 'Avoir_' : 'Facture_') + (int.numeroFacture || 'Client').replace(/[^a-zA-Z0-9\-]/g, '_') + '.pdf');
+      if (!silent) showToast('PDF téléchargé', 'success');
+    } catch(e) {
+      console.error(e);
+      showToast('Erreur PDF : ' + (e.message || e), 'error');
+    }
   }).catch(function(e) {
     console.error(e);
-    showToast('Erreur PDF : ' + (e.message || e), 'error');
-  });
-}
-
-/* Génère le PDF avec QR-facture suisse */
-function generateQRBillPDF(int) {
-  var jsPDF = window.jspdf.jsPDF;
-  var SwissQRBill = window.SwissQRBill;
-  var doc = new jsPDF({ unit: 'mm', format: 'a4' });
-
-  var pageWidth = doc.internal.pageSize.getWidth();
-  var pageHeight = doc.internal.pageSize.getHeight();
-  var margin = 15;
-  var y = margin;
-
-  var headerColor = int.isAvoir ? '#7b1fa2' : '#1a5279';
-  doc.setFillColor(headerColor);
-  doc.rect(0, 0, pageWidth, 40, 'F');
-  doc.setTextColor('#ffffff');
-  doc.setFontSize(20);
-  doc.setFont('helvetica', 'bold');
-  doc.text((settings.nom || 'ENTREPRISE').toUpperCase(), pageWidth / 2, 22, { align: 'center' });
-  doc.setFontSize(9);
-  doc.setFont('helvetica', 'normal');
-  doc.text('Artisan Plombier - Dépannage & Entretien', pageWidth / 2, 31, { align: 'center' });
-
-  y = 50;
-  doc.setTextColor(headerColor);
-  doc.setFontSize(16);
-  doc.setFont('helvetica', 'bold');
-  doc.text(int.isAvoir ? 'AVOIR' : 'FACTURE', margin + 10, y);
-  doc.setFontSize(11);
-  doc.setFont('helvetica', 'normal');
-  doc.text(int.numeroFacture || '', pageWidth - margin - 10, y, { align: 'right' });
-  y += 10;
-  doc.setDrawColor(headerColor);
-  doc.line(margin + 10, y, pageWidth - margin - 10, y);
-  y += 10;
-
-  doc.setTextColor('#333333');
-  doc.setFontSize(10);
-  doc.setFont('helvetica', 'bold');
-  doc.text('Client :', margin + 10, y);
-  doc.setFont('helvetica', 'normal');
-  doc.text(int.client || '—', margin + 45, y);
-
-  if (int.adresse) {
-    y += 7;
-    doc.setFont('helvetica', 'bold');
-    doc.text('Adresse :', margin + 10, y);
-    doc.setFont('helvetica', 'normal');
-    var addrLines = doc.splitTextToSize(int.adresse, pageWidth - margin - 55);
-    doc.text(addrLines, margin + 45, y);
-    y += (addrLines.length - 1) * 5;
-  }
-  y += 7;
-  doc.setFont('helvetica', 'bold');
-  doc.text('Date :', margin + 10, y);
-  doc.setFont('helvetica', 'normal');
-  doc.text(formatDate(int.date), margin + 45, y);
-
-  y += 7;
-  doc.setFont('helvetica', 'bold');
-  doc.text('Description :', margin + 10, y);
-  doc.setFont('helvetica', 'normal');
-  var descLines = doc.splitTextToSize(int.description || '—', pageWidth - margin - 55);
-  doc.text(descLines, margin + 45, y);
-  y += descLines.length * 5 + 8;
-
-  doc.setFillColor(int.isAvoir ? '#f3e5f5' : '#f0f7ff');
-  doc.rect(margin + 10, y, pageWidth - 2 * margin - 20, 9, 'F');
-  doc.setTextColor(headerColor);
-  doc.setFontSize(9);
-  doc.setFont('helvetica', 'bold');
-  doc.text('DÉSIGNATION', margin + 15, y + 6.5);
-  doc.text('MONTANT', pageWidth - margin - 15, y + 6.5, { align: 'right' });
-  y += 10;
-  doc.setTextColor('#333333');
-  doc.setFont('helvetica', 'normal');
-
-  var ht = getTotalHT(int);
-  var ttc = getTotalTTC(int);
-  var tvaMontant = getTvaMontant(int);
-
-  doc.text('Total HT', margin + 15, y + 5);
-  doc.text(ht.toFixed(2) + ' CHF', pageWidth - margin - 15, y + 5, { align: 'right' });
-  y += 7;
-
-  if (settings.tvaActive && !isAutoliquidation(int)) {
-    doc.text('TVA (' + settings.tva + '%)', margin + 15, y + 5);
-    doc.text(tvaMontant.toFixed(2) + ' CHF', pageWidth - margin - 15, y + 5, { align: 'right' });
-    y += 7;
-  } else if (isAutoliquidation(int)) {
-    doc.setFontSize(8);
-    doc.text('Autoliquidation — TVA due par le client (art. 8 al. 1 LTVA)', margin + 15, y + 5);
-    y += 7;
-  } else {
-    doc.setFontSize(8);
-    doc.text('TVA non applicable (art. 10 al. 2 LTVA)', margin + 15, y + 5);
-    y += 7;
-  }
-
-  doc.setDrawColor(headerColor);
-  doc.line(margin + 10, y, pageWidth - margin - 10, y);
-  y += 8;
-  doc.setTextColor(headerColor);
-  doc.setFontSize(13);
-  doc.setFont('helvetica', 'bold');
-  doc.text('TOTAL', margin + 15, y + 5);
-  doc.text(ttc.toFixed(2) + ' CHF', pageWidth - margin - 15, y + 5, { align: 'right' });
-
-  y += 15;
-  doc.setTextColor('#666666');
-  doc.setFontSize(7);
-  doc.setFont('helvetica', 'normal');
-  var legal = [];
-  if (settings.siret) legal.push('IDE : ' + settings.siret);
-  if (settings.tvaActive && settings.tvaIntra) legal.push('N° TVA : ' + settings.tvaIntra);
-  if (settings.assuranceNom) legal.push('RC pro : ' + settings.assuranceNom + (settings.assuranceNum ? ' (' + settings.assuranceNum + ')' : ''));
-  if (settings.delaiPaiement) legal.push('Délai de paiement : ' + settings.delaiPaiement + ' jours');
-  legal.forEach(function(line) { doc.text(line, margin + 10, y); y += 3.5; });
-
-    var qrBillHeight = 105;
-  var qrY = pageHeight - qrBillHeight;
-
-  // --- Signatures (au-dessus de la QR-facture) ---
-  if (int.signatureClient || int.signatureTech) {
-    var sigY = qrY - 35;
-    var sigW = 50;
-    var sigH = 22;
-    var halfPage = pageWidth / 2;
-
-    if (int.signatureTech) {
-      try {
-        doc.addImage(int.signatureTech, 'PNG', margin + 10, sigY, sigW, sigH);
-      } catch(e) { console.warn('Erreur sig tech', e); }
-      doc.setFontSize(7);
-      doc.setTextColor('#666666');
-      doc.text('Signature technicien', margin + 10, sigY + sigH + 4);
-    }
-
-    if (int.signatureClient) {
-      try {
-        doc.addImage(int.signatureClient, 'PNG', halfPage + 10, sigY, sigW, sigH);
-      } catch(e) { console.warn('Erreur sig client', e); }
-      doc.setFontSize(7);
-      doc.setTextColor('#666666');
-      doc.text('Signature client', halfPage + 10, sigY + sigH + 4);
-      if (int.signatureClientAt) {
-        doc.setFontSize(6);
-        doc.setTextColor('#999999');
-        var dSig = new Date(int.signatureClientAt);
-        var dateStr = String(dSig.getDate()).padStart(2, '0') + '.' + String(dSig.getMonth() + 1).padStart(2, '0') + '.' + dSig.getFullYear()
-          + ' ' + String(dSig.getHours()).padStart(2, '0') + ':' + String(dSig.getMinutes()).padStart(2, '0');
-        doc.text('Signé le ' + dateStr, halfPage + 10, sigY + sigH + 8);
-      }
-    }
-    doc.setTextColor('#333333');
-  }
-
-  var iban = (settings.iban || '').replace(/\s+/g, '');
-  /* Toujours retourner une Promise<Blob> — jamais un Blob direct. */
-  if (!isValidSwissIBAN(iban)) {
-    doc.setTextColor('#c62828');
-    doc.setFontSize(8);
-    doc.text('⚠ IBAN suisse invalide ou absent — QR-facture non générée.', margin, qrY + 10);
-    return Promise.resolve(doc.output('blob'));
-  }
-
-  // ... (inchangé jusqu'au try)
-
-  try {
-    var qrBill = new SwissQRBill.QRBill(qrData, { language: 'fr' });
-    var svg = qrBill.toString();
-    return svgToDataURL(svg).then(function(dataUrl) {
-      doc.addImage(dataUrl, 'PNG', 0, qrY, pageWidth, qrBillHeight, undefined, 'FAST');
-      return doc.output('blob');
-    });
-  } catch (e) {
-    console.error('[QRBill]', e);
-    doc.setTextColor('#c62828');
-    doc.setFontSize(8);
-    doc.text('⚠ Erreur génération QR-facture : ' + e.message, margin, qrY + 10);
-    return Promise.resolve(doc.output('blob'));
-  }
-}
-
-function svgToDataURL(svgString) {
-  return new Promise(function(resolve, reject) {
-    var img = new Image();
-    var svg64 = btoa(unescape(encodeURIComponent(svgString)));
-    img.onload = function() {
-      var canvas = document.createElement('canvas');
-      canvas.width = 2480;
-      canvas.height = 1240;
-      var ctx = canvas.getContext('2d');
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-      resolve(canvas.toDataURL('image/png'));
-    };
-    img.onerror = function() { reject(new Error('SVG → PNG échoué')); };
-    img.src = 'data:image/svg+xml;base64,' + svg64;
+    showToast('Impossible de charger le générateur PDF', 'error');
   });
 }
 
@@ -3903,7 +3768,7 @@ function createDevisDoc(d) {
   doc.setTextColor('#ffffff');
   doc.setFontSize(20);
   doc.setFont('helvetica', 'bold');
-  doc.text(settings.nom.toUpperCase(), pageWidth / 2, 22, { align: 'center' });
+  doc.text((settings.nom || 'ENTREPRISE').toUpperCase(), pageWidth / 2, 22, { align: 'center' });
   doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
   doc.text('Artisan Plombier - Devis', pageWidth / 2, 31, { align: 'center' });
@@ -4120,52 +3985,58 @@ function exportData(encrypt) {
   };
   var filename = 'pipepline_ch_sauvegarde_' + new Date().toISOString().slice(0, 10) + '.json';
   if (encrypt && window.crypto && window.crypto.subtle) {
-    var pwd = prompt('Mot de passe pour chiffrer la sauvegarde (min. 8 caractères) :');
-    if (!pwd || pwd.length < 8) { showToast('Mot de passe trop court, sauvegarde annulée', 'warning'); return; }
-    var salt = generateSalt();
-    var iterations = 100000;
-    var enc = new TextEncoder();
-    crypto.subtle.importKey('raw', enc.encode(pwd), { name: 'PBKDF2' }, false, ['deriveKey'])
-      .then(function(baseKey) {
-        return crypto.subtle.deriveKey(
-          { name: 'PBKDF2', salt: salt, iterations: iterations, hash: 'SHA-256' },
-          baseKey,
-          { name: 'AES-GCM', length: 256 },
-          false,
-          ['encrypt']
-        );
-      })
-      .then(function(key) {
-        var iv = new Uint8Array(12);
-        crypto.getRandomValues(iv);
-        return crypto.subtle.encrypt({ name: 'AES-GCM', iv: iv }, key, enc.encode(JSON.stringify(data)))
-          .then(function(ciphertext) {
-            return {
-              v: 1,
-              encrypted: true,
-              algo: 'AES-GCM-256',
-              kdf: 'PBKDF2-SHA256',
-              iterations: iterations,
-              salt: uint8ToBase64(salt),
-              iv: uint8ToBase64(iv),
-              ciphertext: uint8ToBase64(new Uint8Array(ciphertext))
-            };
-          });
-      })
-      .then(function(payload) {
-        var blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
-        var link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = filename.replace('.json', '_chiffre.json');
-        link.click();
-        backupMeta.lastExportAt = new Date().toISOString();
-        backupMeta.lastReminderAt = null;
-        saveToStorage(true);
-        checkBackupReminder();
-        haptic(15);
-        showToast('Sauvegarde chiffrée téléchargée', 'success');
-      })
-      .catch(function(e) { showToast('Erreur chiffrement : ' + e.message, 'error'); });
+    askPassword({
+      title: 'Chiffrer la sauvegarde',
+      description: 'Choisissez un mot de passe pour chiffrer votre sauvegarde. Vous devrez le saisir pour la restaurer.',
+      requireConfirm: true,
+      confirmLabel: 'Chiffrer & télécharger'
+    }).then(function(pwd) {
+      if (!pwd) { showToast('Sauvegarde annulée', 'warning'); return; }
+      var salt = generateSalt();
+      var iterations = 100000;
+      var enc = new TextEncoder();
+      crypto.subtle.importKey('raw', enc.encode(pwd), { name: 'PBKDF2' }, false, ['deriveKey'])
+        .then(function(baseKey) {
+          return crypto.subtle.deriveKey(
+            { name: 'PBKDF2', salt: salt, iterations: iterations, hash: 'SHA-256' },
+            baseKey,
+            { name: 'AES-GCM', length: 256 },
+            false,
+            ['encrypt']
+          );
+        })
+        .then(function(key) {
+          var iv = new Uint8Array(12);
+          crypto.getRandomValues(iv);
+          return crypto.subtle.encrypt({ name: 'AES-GCM', iv: iv }, key, enc.encode(JSON.stringify(data)))
+            .then(function(ciphertext) {
+              return {
+                v: 1,
+                encrypted: true,
+                algo: 'AES-GCM-256',
+                kdf: 'PBKDF2-SHA256',
+                iterations: iterations,
+                salt: uint8ToBase64(salt),
+                iv: uint8ToBase64(iv),
+                ciphertext: uint8ToBase64(new Uint8Array(ciphertext))
+              };
+            });
+        })
+        .then(function(payload) {
+          var blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+          var link = document.createElement('a');
+          link.href = URL.createObjectURL(blob);
+          link.download = filename.replace('.json', '_chiffre.json');
+          link.click();
+          backupMeta.lastExportAt = new Date().toISOString();
+          backupMeta.lastReminderAt = null;
+          saveToStorage(true);
+          checkBackupReminder();
+          haptic(15);
+          showToast('Sauvegarde chiffrée téléchargée', 'success');
+        })
+        .catch(function(e) { showToast('Erreur chiffrement : ' + e.message, 'error'); });
+    });
     return;
   }
   var blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -4243,39 +4114,50 @@ document.getElementById('importDataBtn').addEventListener('click', function() {
 document.getElementById('importDataInput').addEventListener('change', function(e) {
   var file = e.target.files && e.target.files[0];
   if (!file) return;
+  if (file.size > MAX_IMPORT_BYTES) {
+    showToast('Fichier trop volumineux (>50 Mo)', 'error');
+    this.value = '';
+    return;
+  }
   var reader = new FileReader();
   reader.onload = function(evt) {
     try {
       var data = JSON.parse(evt.target.result);
       if (data && data.encrypted === true) {
-        var pwd = prompt('Ce fichier est chiffré. Entrez le mot de passe :');
-        if (!pwd) { document.getElementById('importDataInput').value = ''; return; }
-        var salt = base64ToUint8(data.salt);
-        var iv = base64ToUint8(data.iv);
-        var ciphertext = base64ToUint8(data.ciphertext);
-        var enc = new TextEncoder();
-        crypto.subtle.importKey('raw', enc.encode(pwd), { name: 'PBKDF2' }, false, ['deriveKey'])
-          .then(function(baseKey) {
-            return crypto.subtle.deriveKey(
-              { name: 'PBKDF2', salt: salt, iterations: data.iterations || 100000, hash: 'SHA-256' },
-              baseKey,
-              { name: 'AES-GCM', length: 256 },
-              false,
-              ['decrypt']
-            );
-          })
-          .then(function(key) {
-            return crypto.subtle.decrypt({ name: 'AES-GCM', iv: iv }, key, ciphertext);
-          })
-          .then(function(plaintext) {
-            var dec = new TextDecoder();
-            var realData = JSON.parse(dec.decode(plaintext));
-            doImport(realData);
-          })
-          .catch(function() {
-            showToast('Mot de passe incorrect ou fichier corrompu', 'error');
-            document.getElementById('importDataInput').value = '';
-          });
+        askPassword({
+          title: 'Déchiffrer la sauvegarde',
+          description: 'Ce fichier est chiffré. Entrez le mot de passe utilisé lors de la sauvegarde.',
+          requireConfirm: false,
+          confirmLabel: 'Déchiffrer'
+        }).then(function(pwd) {
+          if (!pwd) { document.getElementById('importDataInput').value = ''; return; }
+          var salt = base64ToUint8(data.salt);
+          var iv = base64ToUint8(data.iv);
+          var ciphertext = base64ToUint8(data.ciphertext);
+          var enc = new TextEncoder();
+          crypto.subtle.importKey('raw', enc.encode(pwd), { name: 'PBKDF2' }, false, ['deriveKey'])
+            .then(function(baseKey) {
+              return crypto.subtle.deriveKey(
+                { name: 'PBKDF2', salt: salt, iterations: data.iterations || 100000, hash: 'SHA-256' },
+                baseKey,
+                { name: 'AES-GCM', length: 256 },
+                false,
+                ['decrypt']
+              );
+            })
+            .then(function(key) {
+              return crypto.subtle.decrypt({ name: 'AES-GCM', iv: iv }, key, ciphertext);
+            })
+            .then(function(plaintext) {
+              var dec = new TextDecoder();
+              var realData = JSON.parse(dec.decode(plaintext));
+              doImport(realData);
+            })
+            .catch(function() {
+              showToast('Mot de passe incorrect ou fichier corrompu', 'error');
+              document.getElementById('importDataInput').value = '';
+            });
+        });
         return;
       }
       doImport(data);
@@ -4287,9 +4169,35 @@ document.getElementById('importDataInput').addEventListener('change', function(e
   reader.readAsText(file);
 });
 
-function doImport(data) {
+function validateImportData(data) {
   if (!data || typeof data !== 'object') throw new Error('Format invalide');
-  if (!data.interventions && !data.devisList) throw new Error('Aucune donnée trouvée');
+  if (!Array.isArray(data.interventions) && !Array.isArray(data.devisList)) {
+    throw new Error('Aucune donnée valide trouvée');
+  }
+  var checkInt = function(item, label) {
+    if (!item || typeof item !== 'object') throw new Error(label + ' invalide');
+    if (typeof item.id !== 'string') throw new Error(label + ' sans id');
+    if (item.pieces && !Array.isArray(item.pieces)) throw new Error(label + ' pieces invalide');
+    if (item.frais && !Array.isArray(item.frais)) throw new Error(label + ' frais invalide');
+    if (item.photos && !Array.isArray(item.photos)) throw new Error(label + ' photos invalide');
+  };
+  if (Array.isArray(data.interventions)) {
+    data.interventions.forEach(function(i) { checkInt(i, 'intervention'); });
+  }
+  if (Array.isArray(data.devisList)) {
+    data.devisList.forEach(function(d) { checkInt(d, 'devis'); });
+  }
+  return true;
+}
+
+function doImport(data) {
+  try {
+    validateImportData(data);
+  } catch (err) {
+    showToast('Fichier invalide : ' + err.message, 'error');
+    document.getElementById('importDataInput').value = '';
+    return;
+  }
   var nbInt = (data.interventions || []).length;
   var nbDevis = (data.devisList || []).length;
   var msg = '⚠ ATTENTION : Cette opération va REMPLACER toutes vos données.\n\n'
@@ -4308,14 +4216,16 @@ function doImport(data) {
       });
       interventions = data.interventions || [];
       devisList = data.devisList || [];
-      clients = data.clients || [];
-      stock = data.stock || {};
+      clients = Array.isArray(data.clients) ? data.clients : [];
+      stock = (data.stock && typeof data.stock === 'object') ? data.stock : {};
       factureCounter = data.factureCounter || 1;
       devisCounter = data.devisCounter || 1;
       avoirCounter = data.avoirCounter || 1;
-      if (data.settings) {
-        for (var key in data.settings) {
-          if (settings.hasOwnProperty(key)) settings[key] = data.settings[key];
+      if (data.settings && typeof data.settings === 'object') {
+        var s = Object.assign({}, data.settings);
+        sanitizeSettings(s);
+        for (var key in s) {
+          if (settings.hasOwnProperty(key)) settings[key] = s[key];
         }
       }
       interventions.forEach(function(int) {
@@ -4500,6 +4410,7 @@ function renderRecap() {
   document.getElementById('recapMonthLabel').textContent = formatMois(recapDate);
   var filtered = interventions.filter(function(int) {
     var d = new Date(int.date + 'T00:00:00');
+    if (isNaN(d.getTime())) return false;
     return d.getMonth() === month && d.getFullYear() === year;
   });
   var totalHT = 0, totalTTC = 0, totalNet = 0, totalHeures = 0, payees = 0, impayees = 0;
@@ -4583,6 +4494,7 @@ function renderTvaResult() {
   var filtered = interventions.filter(function(int) {
     if (!int.date) return false;
     var d = new Date(int.date + 'T00:00:00');
+    if (isNaN(d.getTime())) return false;
     return d >= range.start && d <= range.end;
   });
   var caHT = 0, tvaCollectee = 0, caTTC = 0, avoirsHT = 0;
@@ -4640,6 +4552,7 @@ document.getElementById('tvaExportBtn').addEventListener('click', function() {
   var filtered = interventions.filter(function(int) {
     if (!int.date) return false;
     var d = new Date(int.date + 'T00:00:00');
+    if (isNaN(d.getTime())) return false;
     return d >= range.start && d <= range.end && !int.isAvoir;
   });
   var lines = [];
@@ -4686,6 +4599,7 @@ function openCertificateModal(id) {
   document.getElementById('certObservations').value = int.certObservations || '';
   document.getElementById('certDate').value = int.date || new Date().toISOString().slice(0, 10);
   var nextYear = new Date(int.date || Date.now());
+  if (isNaN(nextYear.getTime())) nextYear = new Date();
   nextYear.setFullYear(nextYear.getFullYear() + 1);
   document.getElementById('certProchain').value = nextYear.toISOString().slice(0, 10);
   document.getElementById('certificateModal').classList.add('show');
@@ -4829,11 +4743,13 @@ function generateCertificatePDF(int) {
     doc.text('Prochain entretien recommandé :', margin + 5, y);
     doc.setFont('helvetica', 'normal');
     doc.text(formatDate(cert.prochain || ''), margin + 75, y);
-        y += 20;
+    y += 20;
 
-    // --- Signature du technicien uniquement ---
+    if (y > ph - 60) { doc.addPage(); y = margin; }
+
     if (int.signatureTech) {
-      try { doc.addImage(int.signatureTech, 'PNG', margin + 5, y, 60, 25); } catch(e) { console.warn('Erreur sig tech', e); }
+      try { doc.addImage(int.signatureTech, 'PNG', margin + 5, y, 60, 25); }
+      catch(e) { console.warn('Erreur sig tech', e); }
       doc.setFontSize(8);
       doc.setTextColor('#666666');
       doc.text('Signature du technicien', margin + 5, y + 30);
@@ -4852,7 +4768,6 @@ function generateCertificatePDF(int) {
       doc.text('(Aucune signature enregistrée — signez depuis la fiche intervention)', margin + 5, y + 10);
     }
 
-    // --- Nom de l'entreprise pour renforcer la valeur du certificat ---
     doc.setFontSize(9);
     doc.setTextColor('#333333');
     doc.setFont('helvetica', 'bold');
@@ -4864,6 +4779,7 @@ function generateCertificatePDF(int) {
     showToast('Certificat PDF téléchargé', 'success');
   }).catch(function() { showToast('Impossible de générer le PDF', 'error'); });
 }
+
 /* ==========================================================================
    BACKUP REMINDER / STORAGE
    ========================================================================== */
@@ -4871,6 +4787,10 @@ function checkBackupReminder() {
   var alertEl = document.getElementById('alertBackup');
   var alertText = document.getElementById('alertBackupText');
   var seuil = settings.seuilSauvegarde || 15;
+  if (interventions.length === 0 && devisList.length === 0) {
+    alertEl.classList.remove('show');
+    return;
+  }
   if (!backupMeta.lastExportAt) {
     var derniereAlerte = backupMeta.lastReminderAt ? new Date(backupMeta.lastReminderAt) : null;
     if (derniereAlerte) {
@@ -4983,6 +4903,8 @@ if ('BroadcastChannel' in window) {
     broadcastChannel = new BroadcastChannel('pipepline_ch_sync');
     broadcastChannel.onmessage = function(e) {
       if (e.data && e.data.type === 'data-updated') {
+        var modalOpen = document.querySelector('.modal-overlay.show');
+        if (modalOpen || storageDirty) return;
         loadFromStorage().then(function() { renderAll(); });
       }
     };
@@ -4990,7 +4912,7 @@ if ('BroadcastChannel' in window) {
 }
 
 /* ==========================================================================
-   SWIPE ENTRE ONGLETS
+   SWIPE ENTRE ONGLETS (filtré pour ne pas gêner les scrolls horizontaux)
    ========================================================================== */
 (function setupSwipe() {
   var tabs = ['today', 'planning', 'interventions', 'factures', 'devis', 'recap'];
@@ -5000,6 +4922,7 @@ if ('BroadcastChannel' in window) {
   if (!target) return;
   target.addEventListener('touchstart', function(e) {
     if (e.touches.length !== 1) return;
+    if (e.target.closest('.dashboard-strip, .quick-filters, .sort-bar, .photos-strip, .action-sheet, .planning-grid, .pieces-container-scroll, .frais-container-scroll, .signature-canvas-wrapper')) return;
     startX = e.touches[0].clientX;
     startY = e.touches[0].clientY;
     startTime = Date.now();
@@ -5073,15 +4996,10 @@ document.getElementById('settingsBtn').addEventListener('click', function() {
   var statusEl = document.getElementById('offlineStatus');
   if (statusEl) {
     var jspdfReady = !!(window.jspdf && window.jspdf.jsPDF);
-    var qrReady = !!(window.SwissQRBill && window.SwissQRBill.QRBill);
-    if (jspdfReady && qrReady) {
-      statusEl.innerHTML = '✅ <strong>Prêt hors ligne</strong> — jsPDF + SwissQRBill chargés.';
+    if (jspdfReady) {
+      statusEl.innerHTML = '✅ <strong>Prêt hors ligne</strong> — jsPDF chargé.';
       statusEl.style.background = '#e8f5e9';
       statusEl.style.color = '#1b5e20';
-    } else if (jspdfReady) {
-      statusEl.innerHTML = '⏳ <strong>Partiel</strong> — jsPDF OK, SwissQRBill pas encore chargé. Testez un PDF QR.';
-      statusEl.style.background = '#fff3e0';
-      statusEl.style.color = '#7a3d00';
     } else {
       statusEl.innerHTML = '⏳ <strong>Chargement à la demande</strong> — testez un PDF pour vérifier.';
       statusEl.style.background = 'var(--bg-surface)';
@@ -5126,11 +5044,11 @@ function updateIbanStatus() {
   if (!iban) { status.style.display = 'none'; return; }
   status.style.display = 'block';
   if (isValidSwissIBAN(iban)) {
-    status.innerHTML = '✅ IBAN suisse valide — QR-facture activée sur les PDF';
+    status.innerHTML = '✅ IBAN suisse valide';
     status.style.background = '#e8f5e9';
     status.style.color = '#1b5e20';
   } else {
-    status.innerHTML = '⚠ IBAN invalide ou non suisse — QR-facture désactivée (PDF simple utilisé)';
+    status.innerHTML = '⚠ IBAN invalide ou non suisse';
     status.style.background = '#ffebee';
     status.style.color = '#c62828';
   }
@@ -5139,20 +5057,22 @@ document.getElementById('setIban').addEventListener('input', debounce(updateIban
 document.getElementById('cancelSettings').addEventListener('click', function() {
   document.getElementById('settingsModal').classList.remove('show');
 });
+
 document.getElementById('saveSettings').addEventListener('click', function() {
   var newTheme = document.getElementById('setTheme').value;
   applyTheme(newTheme);
   var newPinActive = document.getElementById('setPinActive').checked;
   var newPin = document.getElementById('setPin').value;
+
+  // Cas 1 : activation initiale du PIN
   if (newPinActive && !pinMeta.active) {
     if (!newPin || newPin.length < 4) { showToast('Code PIN min. 4 chiffres requis', 'warning'); return; }
     var salt = generateSalt();
-    var enc = new TextEncoder();
-    crypto.subtle.digest('SHA-256', enc.encode(newPin)).then(function(hash) {
+    computePinHashB64(newPin, salt).then(function(hashB64) {
       pinMeta = {
         active: true,
         salt: uint8ToBase64(salt),
-        pinHash: uint8ToBase64(new Uint8Array(hash)),
+        pinHash: hashB64,
         pinLength: newPin.length,
         createdAt: new Date().toISOString()
       };
@@ -5161,14 +5081,87 @@ document.getElementById('saveSettings').addEventListener('click', function() {
       saveSettingsData();
       showToast('Code PIN activé. Rechargement...', 'success');
       setTimeout(function() { location.reload(); }, 1500);
+    }).catch(function(e) {
+      console.error('[PIN activation]', e);
+      showToast('Erreur activation PIN', 'error');
     });
     return;
-  } else if (!newPinActive && pinMeta.active) {
-    pinMeta.active = false;
-    savePinMeta();
-    cryptoKey = null;
-    showToast('Code PIN désactivé', 'warning');
   }
+
+  // Cas 2 : changement de PIN (déjà actif, nouveau code saisi)
+  if (newPinActive && pinMeta.active && newPin && newPin.length >= 4) {
+    var newSalt = generateSalt();
+    computePinHashB64(newPin, newSalt).then(function(newHash) {
+      return deriveKeyFromPin(newPin, newSalt).then(function(newKey) {
+        cryptoKey = newKey;
+        return Promise.all([
+          storageSet(STORAGE_KEY, {
+            interventions: interventions,
+            devisList: devisList,
+            clients: clients,
+            factureCounter: factureCounter,
+            devisCounter: devisCounter,
+            avoirCounter: avoirCounter,
+            schemaVersion: 4,
+            appVersion: APP_VERSION,
+            savedAt: new Date().toISOString()
+          }),
+          storageSet(SETTINGS_KEY, settings),
+          storageSet(BACKUP_META_KEY, backupMeta),
+          storageSet(STOCK_KEY, stock)
+        ]).then(function() {
+          pinMeta.salt = uint8ToBase64(newSalt);
+          pinMeta.pinHash = newHash;
+          pinMeta.pinLength = newPin.length;
+          pinMeta.updatedAt = new Date().toISOString();
+          return savePinMeta();
+        }).then(function() {
+          showToast('Code PIN modifié. Rechargement...', 'success');
+          setTimeout(function() { location.reload(); }, 1500);
+        });
+      });
+    }).catch(function(e) {
+      console.error('[PIN change]', e);
+      showToast('Erreur changement PIN', 'error');
+    });
+    return;
+  }
+
+  // Cas 3 : désactivation du PIN — déchiffrer avant de perdre la clé
+  if (!newPinActive && pinMeta.active) {
+    showConfirm(
+      '⚠ Désactiver le code PIN ?\n\nLes données seront DÉCHIFFRÉES et stockées en clair sur cet appareil. Toute personne ayant accès à l\'appareil pourra les consulter.\n\nContinuer ?',
+      function(ok) {
+        if (!ok) return;
+        var oldKey = cryptoKey;
+        cryptoKey = null;
+        Promise.all([
+          idbSet(STORAGE_KEY, {
+            interventions: interventions, devisList: devisList, clients: clients,
+            factureCounter: factureCounter, devisCounter: devisCounter,
+            avoirCounter: avoirCounter, schemaVersion: 4,
+            appVersion: APP_VERSION, savedAt: new Date().toISOString()
+          }),
+          idbSet(SETTINGS_KEY, settings),
+          idbSet(BACKUP_META_KEY, backupMeta),
+          idbSet(STOCK_KEY, stock)
+        ]).then(function() {
+          pinMeta = { active: false, salt: null };
+          return savePinMeta();
+        }).then(function() {
+          showToast('Code PIN désactivé. Rechargement...', 'warning');
+          setTimeout(function() { location.reload(); }, 1500);
+        }).catch(function(e) {
+          console.error('[PIN disable]', e);
+          cryptoKey = oldKey;
+          showToast('Erreur désactivation PIN — données non modifiées', 'error');
+        });
+      }
+    );
+    return;
+  }
+
+  // Cas 4 : pas de changement PIN
   saveSettingsData();
   document.getElementById('settingsModal').classList.remove('show');
   renderAll();
@@ -5176,6 +5169,7 @@ document.getElementById('saveSettings').addEventListener('click', function() {
   haptic(15);
   showToast('Paramètres sauvegardés', 'success');
 });
+
 function saveSettingsData() {
   settings.nom = document.getElementById('setNom').value.trim() || 'PipePline';
   settings.adresse = document.getElementById('setAdresse').value.trim();
@@ -5202,6 +5196,21 @@ function saveSettingsData() {
   invalidateTotals();
   storageDirty = true;
   saveToStorage();
+}
+
+function sanitizeSettings(obj) {
+  if (!obj || typeof obj !== 'object') return;
+  var nums = ['taxe', 'tva', 'kmRate', 'acompteSeuil', 'tauxDefaut',
+              'deplacementDefaut', 'seuilAlerte', 'seuilSauvegarde', 'delaiPaiement'];
+  nums.forEach(function(k) {
+    var v = parseFloat(obj[k]);
+    if (!isFinite(v) || v < 0) delete obj[k];
+    else obj[k] = v;
+  });
+  ['nom', 'adresse', 'zip', 'city', 'siret', 'iban', 'tel', 'email',
+   'tvaIntra', 'assuranceNom', 'assuranceNum'].forEach(function(k) {
+    if (typeof obj[k] !== 'string') delete obj[k];
+  });
 }
 
 /* ==========================================================================
@@ -5232,6 +5241,10 @@ function init() {
       isAuthenticated = true;
       startApp();
     }
+  }).catch(function(err) {
+    console.error('[init PIN]', err);
+    isAuthenticated = true;
+    startApp();
   });
 }
 
@@ -5246,6 +5259,9 @@ function startApp() {
       setTimeout(function() { showToast('Données locales chargées', 'success'); }, 500);
     }
     setTimeout(showTvaBanner, 800);
+  }).catch(function(err) {
+    console.error('[startApp load]', err);
+    renderAll();
   });
 
   setTimeout(checkBackupReminder, 1500);

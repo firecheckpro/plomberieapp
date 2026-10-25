@@ -2,7 +2,7 @@
 <html lang="fr-CH">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="PipePline">
@@ -74,7 +74,7 @@
       --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
       --shadow-lg: 0 25px 60px rgba(0, 0, 0, 0.5);
     }
-    * { margin: 0; padding: 0; box-sizing: border-box; font-family: var(--font-stack); -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; }
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: var(--font-stack); -webkit-tap-highlight-color: transparent; }
     html { -webkit-text-size-adjust: 100%; -webkit-font-smoothing: antialiased; }
     body {
       background: var(--bg-app);
@@ -543,10 +543,11 @@
       box-sizing: border-box;
     }
     .form-group select {
-      background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231a5279' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+      background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
       background-repeat: no-repeat;
       background-position: right 12px center;
       background-size: 16px; padding-right: 36px;
+      color: var(--text-primary);
     }
     .form-group textarea { border-radius: var(--r-md); resize: vertical; min-height: 80px; }
     .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
@@ -700,6 +701,9 @@
       gap: 8px; z-index: 9999;
       pointer-events: none; max-width: 380px;
     }
+    @media (min-width: 769px) {
+      .toast-stack { bottom: calc(20px + var(--safe-bottom)); }
+    }
     .toast-item {
       background: var(--accent); color: white;
       padding: 12px 18px; border-radius: var(--r-md);
@@ -805,8 +809,31 @@
       transition: 0.15s; -webkit-appearance: none;
       position: relative;
     }
-    .bottom-nav-item .bn-icon { font-size: 1.1rem; }
+    .bottom-nav-item .bn-icon {
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent);
+  opacity: 0.55;
+  transition: opacity 0.15s, transform 0.15s;
+  line-height: 1;
+}
+.bottom-nav-item .bn-icon svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.bottom-nav-item.active .bn-icon {
+  opacity: 1;
+  transform: scale(1.08);
+}
     .bottom-nav-item.active { color: var(--accent); }
+    .bottom-nav-item.active .bn-icon {
+      opacity: 1;
+      transform: scale(1.08);
+    }
     .bottom-nav-item.active::before {
       content: ''; position: absolute;
       top: 0; left: 50%; transform: translateX(-50%);
@@ -1018,7 +1045,7 @@
       <div class="dash-item danger"><span class="dash-num" id="totalImpayees">0</span><span class="dash-lbl">Impayées</span></div>
       <div class="dash-sep"></div>
       <div class="dash-item"><span class="dash-num" id="caMoisMini">0.00 CHF</span><span class="dash-lbl">CA mois</span></div>
-      <button class="dash-toggle" id="dashToggle" title="Détail CA">⌄</button>
+      <button class="dash-toggle" id="dashToggle" title="Détail CA" aria-label="Détail CA">⌄</button>
     </div>
 
     <div class="ca-panel" id="caPanel">
@@ -1085,9 +1112,9 @@
       <div class="planning-header">
         <h3>Planning de la semaine</h3>
         <div class="planning-nav">
-          <button id="prevWeekBtn">◀</button>
+          <button id="prevWeekBtn" aria-label="Semaine précédente">◀</button>
           <span class="planning-month" id="planningMonthLabel">—</span>
-          <button id="nextWeekBtn">▶</button>
+          <button id="nextWeekBtn" aria-label="Semaine suivante">▶</button>
           <button id="todayWeekBtn2" class="planning-today-btn">Aujourd'hui</button>
           <button id="shareWeekBtn" class="planning-share-btn">↗ Partager</button>
         </div>
@@ -1114,8 +1141,8 @@
       </div>
       <div class="search-section">
         <div class="search-wrapper">
-          <input type="text" id="searchInput" placeholder="Rechercher un client, une tâche, un n° de facture..." />
-          <button class="search-icon" id="searchBtn">🔍</button>
+          <input type="search" id="searchInput" placeholder="Rechercher un client, une tâche, un n° de facture..." />
+          <button class="search-icon" id="searchBtn" aria-label="Rechercher">🔍</button>
         </div>
       </div>
       <div class="sort-bar" id="sortBarInterventions">
@@ -1148,8 +1175,8 @@
       </div>
       <div class="search-section">
         <div class="search-wrapper">
-          <input type="text" id="searchFactureInput" placeholder="Rechercher par n° de facture, client, date..." />
-          <button class="search-icon" id="searchFactureBtn">🔍</button>
+          <input type="search" id="searchFactureInput" placeholder="Rechercher par n° de facture, client, date..." />
+          <button class="search-icon" id="searchFactureBtn" aria-label="Rechercher">🔍</button>
         </div>
       </div>
       <div class="sort-bar">
@@ -1169,8 +1196,8 @@
       <div class="action-bar"><button class="btn-primary" id="addDevisBtn">+ Nouveau devis</button></div>
       <div class="search-section">
         <div class="search-wrapper">
-          <input type="text" id="searchDevisInput" placeholder="Rechercher un devis par n°, client..." />
-          <button class="search-icon" id="searchDevisBtn">🔍</button>
+          <input type="search" id="searchDevisInput" placeholder="Rechercher un devis par n°, client..." />
+          <button class="search-icon" id="searchDevisBtn" aria-label="Rechercher">🔍</button>
         </div>
       </div>
       <div class="sort-bar">
@@ -1217,7 +1244,7 @@
         <button data-action="duplicate"><span class="as-icon">⎘</span><span>Dupliquer</span></button>
         <button data-action="followup"><span class="as-icon">📅</span><span>Nouveau RDV</span></button>
         <button data-action="credit"><span class="as-icon">↩</span><span>Avoir</span></button>
-        <button data-action="pdf"><span class="as-icon">📄</span><span>PDF QR</span></button>
+        <button data-action="pdf"><span class="as-icon">📄</span><span>PDF</span></button>
         <button data-action="mail"><span class="as-icon">✉</span><span>Mail</span></button>
         <button data-action="share"><span class="as-icon">↗</span><span>Partager</span></button>
         <button data-action="delete" class="danger"><span class="as-icon">🗑</span><span>Supprimer</span></button>
@@ -1228,18 +1255,75 @@
 
   <!-- BOTTOM NAV -->
   <nav class="bottom-nav" id="bottomNav">
-    <div class="bottom-nav-inner">
-      <button class="bottom-nav-item active" data-tab="today"><span class="bn-icon">☀</span><span>Auj.</span></button>
-      <button class="bottom-nav-item" data-tab="planning"><span class="bn-icon">📅</span><span>Planning</span><span class="tab-new-dot"></span></button>
-      <button class="bottom-nav-item" data-tab="interventions"><span class="bn-icon">📋</span><span>Interv.</span><span class="bn-badge hidden" id="bnInterventions">0</span><span class="tab-new-dot"></span></button>
-      <button class="bottom-nav-item" data-tab="factures"><span class="bn-icon">📄</span><span>Factures</span><span class="bn-badge hidden" id="bnFactures">0</span><span class="tab-new-dot"></span></button>
-      <button class="bottom-nav-item" data-tab="devis"><span class="bn-icon">📝</span><span>Devis</span><span class="bn-badge hidden" id="bnDevis">0</span><span class="tab-new-dot"></span></button>
-      <button class="bottom-nav-item" data-tab="recap"><span class="bn-icon">📊</span><span>Récap</span></button>
-    </div>
-  </nav>
+  <div class="bottom-nav-inner">
+    <button class="bottom-nav-item active" data-tab="today">
+      <span class="bn-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="4"></circle>
+          <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path>
+        </svg>
+      </span>
+      <span>Auj.</span>
+    </button>
+    <button class="bottom-nav-item" data-tab="planning">
+      <span class="bn-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="4" width="18" height="18" rx="2"></rect>
+          <path d="M16 2v4M8 2v4M3 10h18"></path>
+        </svg>
+      </span>
+      <span>Planning</span>
+      <span class="tab-new-dot"></span>
+    </button>
+    <button class="bottom-nav-item" data-tab="interventions">
+      <span class="bn-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="8" y="2" width="8" height="4" rx="1"></rect>
+          <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+          <path d="M9 12h6M9 16h6"></path>
+        </svg>
+      </span>
+      <span>Interv.</span>
+      <span class="bn-badge hidden" id="bnInterventions">0</span>
+      <span class="tab-new-dot"></span>
+    </button>
+    <button class="bottom-nav-item" data-tab="factures">
+      <span class="bn-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+          <path d="M14 2v6h6"></path>
+          <path d="M8 13h8M8 17h5"></path>
+        </svg>
+      </span>
+      <span>Factures</span>
+      <span class="bn-badge hidden" id="bnFactures">0</span>
+      <span class="tab-new-dot"></span>
+    </button>
+    <button class="bottom-nav-item" data-tab="devis">
+      <span class="bn-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 20h9"></path>
+          <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+        </svg>
+      </span>
+      <span>Devis</span>
+      <span class="bn-badge hidden" id="bnDevis">0</span>
+      <span class="tab-new-dot"></span>
+    </button>
+    <button class="bottom-nav-item" data-tab="recap">
+      <span class="bn-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 3v18h18"></path>
+          <path d="M7 15l4-4 4 4 5-5"></path>
+        </svg>
+      </span>
+      <span>Récap</span>
+    </button>
+  </div>
+</nav>
 
   <!-- MODALE INTERVENTION -->
-  <div class="modal-overlay" id="interventionModal" role="dialog" aria-modal="true">
+  <div class="modal-overlay" id="interventionModal" role="dialog" aria-modal="true" aria-labelledby="interventionModalTitle">
     <div class="modal-box">
       <h2 id="interventionModalTitle">Nouvelle intervention</h2>
       <div class="wizard-steps">
@@ -1254,11 +1338,11 @@
             <input type="text" id="intClient" placeholder="Nom du client ou adresse" autocomplete="off" />
             <div class="autocomplete-list" id="intClientAutocomplete"></div>
           </div>
-          <div class="form-group"><label>Email du client</label><input type="email" id="intEmail" placeholder="client@email.ch" /></div>
-          <div class="form-group"><label>Téléphone du client</label><input type="tel" id="intTel" placeholder="+41 79 123 45 67" /></div>
+          <div class="form-group"><label>Email du client</label><input type="email" id="intEmail" placeholder="client@email.ch" autocomplete="email" /></div>
+          <div class="form-group"><label>Téléphone du client</label><input type="tel" id="intTel" placeholder="+41 79 123 45 67" autocomplete="tel" /></div>
           <div class="form-group">
             <label>Adresse (pour itinéraire)</label>
-            <input type="text" id="intAdresse" placeholder="Rue du Rhône 12, 1204 Genève" />
+            <input type="text" id="intAdresse" placeholder="Rue du Rhône 12, 1204 Genève" autocomplete="street-address" />
             <div style="margin-top:6px;"><button type="button" class="btn-secondary" id="verifyAddressBtn" style="padding:6px 12px; font-size:0.7rem;">📍 Vérifier l'adresse</button></div>
           </div>
           <div class="form-group">
@@ -1290,9 +1374,9 @@
               <option value="autre">📌 Autre</option>
             </select>
           </div>
-          <div class="form-group"><label>Description de la tâche</label><textarea id="intDescription" placeholder="Ex: Réparation fuite sous évier..." rows="3"></textarea></div>
+          <div class="form-group"><label>Description de la tâche</label><textarea id="intDescription" placeholder="Ex: Réparation fuite sous évier..." rows="3" required></textarea></div>
           <div class="form-row">
-            <div class="form-group"><label>Date</label><input type="date" id="intDate" /></div>
+            <div class="form-group"><label>Date</label><input type="date" id="intDate" required /></div>
             <div class="form-group"><label>Heure début</label><input type="time" id="intHeure" /></div>
           </div>
           <div class="conflict-warning" id="conflictWarning"><span id="conflictWarningText"></span></div>
@@ -1325,8 +1409,8 @@
         </div>
         <div class="wizard-pane" data-pane="3">
           <div class="form-row">
-            <div class="form-group"><label>Taux horaire (CHF/h)</label><input type="number" id="intTaux" min="0" step="5" value="90" /></div>
-            <div class="form-group"><label>Déplacement (CHF)</label><input type="number" id="intDeplacement" min="0" step="5" value="50" /></div>
+            <div class="form-group"><label>Taux horaire (CHF/h)</label><input type="number" id="intTaux" min="0" step="5" value="90" inputmode="decimal" /></div>
+            <div class="form-group"><label>Déplacement (CHF)</label><input type="number" id="intDeplacement" min="0" step="5" value="50" inputmode="decimal" /></div>
           </div>
           <div class="km-block">
             <div class="km-header">
@@ -1334,7 +1418,7 @@
               <label for="intKmActive">🚗 Frais kilométriques (barème)</label>
             </div>
             <div class="km-fields" id="intKmFields">
-              <div class="km-field"><label>Distance (km)</label><input type="number" id="intKmDistance" min="0" step="1" value="0" placeholder="0" /></div>
+              <div class="km-field"><label>Distance (km)</label><input type="number" id="intKmDistance" min="0" step="1" value="0" placeholder="0" inputmode="numeric" /></div>
               <div class="km-field">
                 <label>Aller-retour</label>
                 <select id="intKmRetour" style="padding:8px 10px; font-weight:700; color:var(--info); text-align:center; font-size:0.95rem;">
@@ -1342,7 +1426,7 @@
                   <option value="2" selected>Aller-retour</option>
                 </select>
               </div>
-              <div class="km-field"><label>Barème CHF/km</label><input type="number" id="intKmTaux" min="0" step="0.05" value="0.70" /></div>
+              <div class="km-field"><label>Barème CHF/km</label><input type="number" id="intKmTaux" min="0" step="0.05" value="0.70" inputmode="decimal" /></div>
             </div>
             <div class="km-total-badge" id="intKmTotal">0.00 CHF</div>
           </div>
@@ -1387,9 +1471,9 @@
   </div>
 
   <!-- MODALE AVOIR -->
-  <div class="modal-overlay" id="avoirModal" role="dialog" aria-modal="true">
+  <div class="modal-overlay" id="avoirModal" role="dialog" aria-modal="true" aria-labelledby="avoirModalTitle">
     <div class="modal-box" style="max-width:480px;">
-      <h2>↩ Créer un avoir</h2>
+      <h2 id="avoirModalTitle">↩ Créer un avoir</h2>
       <div class="avoir-info">Un avoir est une facture négative qui rembourse (partiellement ou totalement) une facture existante. Utile pour une annulation, un retour de pièce, ou une correction de prix.</div>
       <div class="modal-scroll-area">
         <div class="form-group">
@@ -1400,7 +1484,7 @@
           <label>Client / Adresse</label>
           <input type="text" id="avoirClient" placeholder="Nom du client" autocomplete="off" />
         </div>
-        <div class="form-group"><label>Montant à créditer (CHF)</label><input type="number" id="avoirMontant" min="0.01" step="0.01" placeholder="Ex: 120.00" /></div>
+        <div class="form-group"><label>Montant à créditer (CHF)</label><input type="number" id="avoirMontant" min="0.01" step="0.01" placeholder="Ex: 120.00" inputmode="decimal" /></div>
         <div class="form-group">
           <label>Motif de l'avoir</label>
           <select id="avoirMotif">
@@ -1423,7 +1507,7 @@
   </div>
 
   <!-- MODALE CONFIRMATION -->
-  <div class="modal-overlay" id="confirmModal" role="dialog" aria-modal="true">
+  <div class="modal-overlay" id="confirmModal" role="dialog" aria-modal="true" aria-labelledby="confirmMessage">
     <div class="modal-box" style="max-width:400px; text-align:center;">
       <p id="confirmMessage" style="font-size:1rem; color:var(--text-secondary); margin-bottom:20px; white-space:pre-line;"></p>
       <div class="modal-actions" style="justify-content:center;">
@@ -1433,10 +1517,33 @@
     </div>
   </div>
 
+  <!-- MODALE MOT DE PASSE -->
+  <div class="modal-overlay" id="passwordModal" role="dialog" aria-modal="true" aria-labelledby="passwordModalTitle">
+    <div class="modal-box" style="max-width:420px;">
+      <h2 id="passwordModalTitle">Mot de passe</h2>
+      <div class="modal-scroll-area">
+        <p id="passwordModalDesc" style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:14px; line-height:1.5;"></p>
+        <div class="form-group">
+          <label>Mot de passe</label>
+          <input type="password" id="passwordInput" autocomplete="new-password" minlength="8" placeholder="Min. 8 caractères" />
+        </div>
+        <div class="form-group" id="passwordConfirmGroup">
+          <label>Confirmer le mot de passe</label>
+          <input type="password" id="passwordConfirm" autocomplete="new-password" placeholder="Retapez le mot de passe" />
+        </div>
+        <div id="passwordError" style="color:var(--danger); font-size:0.75rem; font-weight:600; min-height:18px; margin-bottom:8px;"></div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-cancel" id="passwordCancel">Annuler</button>
+        <button class="btn-confirm" id="passwordConfirmBtn">Valider</button>
+      </div>
+    </div>
+  </div>
+
   <!-- PARTAGE PLANNING -->
-  <div class="modal-overlay" id="sharePlanningModal" role="dialog" aria-modal="true">
+  <div class="modal-overlay" id="sharePlanningModal" role="dialog" aria-modal="true" aria-labelledby="sharePlanningModalTitle">
     <div class="modal-box" style="max-width:480px;">
-      <h2>↗ Partager le planning</h2>
+      <h2 id="sharePlanningModalTitle">↗ Partager le planning</h2>
       <div class="share-planning-info">Envoyez votre planning de la semaine à un collègue ou à votre secrétariat par SMS, email ou via l'application de partage.</div>
       <div class="modal-scroll-area">
         <div class="form-group"><label>Semaine à partager</label><input type="text" id="shareWeekLabel" readonly style="background:var(--bg-surface); font-weight:600;" /></div>
@@ -1462,8 +1569,8 @@
     </div>
   </div>
 
-  <!-- PLANNING -->
-  <div class="modal-overlay" id="planningModal" role="dialog" aria-modal="true">
+  <!-- PLANNING MODALE -->
+  <div class="modal-overlay" id="planningModal" role="dialog" aria-modal="true" aria-labelledby="planningModalTitle">
     <div class="modal-box" style="max-width:480px;">
       <h2 id="planningModalTitle">Ajouter au planning</h2>
       <div class="modal-scroll-area">
@@ -1496,8 +1603,8 @@
         </div>
         <div class="form-group autocomplete-wrapper"><label>Client / Adresse</label><input type="text" id="planClient" placeholder="Nom ou adresse" autocomplete="off" /><div class="autocomplete-list" id="planClientAutocomplete"></div></div>
         <div class="form-row">
-          <div class="form-group"><label>Téléphone</label><input type="tel" id="planTel" placeholder="+41 79 123 45 67" /></div>
-          <div class="form-group"><label>Adresse (itinéraire)</label><input type="text" id="planAdresse" placeholder="Rue du Rhône 12, 1204 Genève" /></div>
+          <div class="form-group"><label>Téléphone</label><input type="tel" id="planTel" placeholder="+41 79 123 45 67" autocomplete="tel" /></div>
+          <div class="form-group"><label>Adresse (itinéraire)</label><input type="text" id="planAdresse" placeholder="Rue du Rhône 12, 1204 Genève" autocomplete="street-address" /></div>
         </div>
         <div class="form-group"><label>Description de la tâche</label><textarea id="planDescription" placeholder="Ex: Fuite sous évier..." style="min-height:70px;"></textarea></div>
       </div>
@@ -1509,18 +1616,18 @@
   </div>
 
   <!-- DEVIS -->
-  <div class="modal-overlay" id="devisModal" role="dialog" aria-modal="true">
+  <div class="modal-overlay" id="devisModal" role="dialog" aria-modal="true" aria-labelledby="devisModalTitle">
     <div class="modal-box">
       <h2 id="devisModalTitle">Nouveau devis</h2>
       <div class="modal-scroll-area">
         <div class="form-group autocomplete-wrapper"><label>Client / Adresse</label><input type="text" id="devisClient" placeholder="Nom du client ou adresse" autocomplete="off" /><div class="autocomplete-list" id="devisClientAutocomplete"></div></div>
-        <div class="form-group"><label>Email du client</label><input type="email" id="devisEmail" placeholder="client@email.ch" /></div>
-        <div class="form-group"><label>Téléphone du client</label><input type="tel" id="devisTel" placeholder="+41 79 123 45 67" /></div>
-        <div class="form-group"><label>Adresse (pour itinéraire)</label><input type="text" id="devisAdresse" placeholder="Rue du Rhône 12, 1204 Genève" /></div>
+        <div class="form-group"><label>Email du client</label><input type="email" id="devisEmail" placeholder="client@email.ch" autocomplete="email" /></div>
+        <div class="form-group"><label>Téléphone du client</label><input type="tel" id="devisTel" placeholder="+41 79 123 45 67" autocomplete="tel" /></div>
+        <div class="form-group"><label>Adresse (pour itinéraire)</label><input type="text" id="devisAdresse" placeholder="Rue du Rhône 12, 1204 Genève" autocomplete="street-address" /></div>
         <div class="form-group"><label>Description des travaux</label><textarea id="devisDescription" placeholder="Détail des travaux à réaliser..."></textarea></div>
         <div class="form-row">
           <div class="form-group"><label>Date du devis</label><input type="date" id="devisDate" /></div>
-          <div class="form-group"><label>Validité (jours)</label><input type="number" id="devisValidite" value="30" min="1" /></div>
+          <div class="form-group"><label>Validité (jours)</label><input type="number" id="devisValidite" value="30" min="1" inputmode="numeric" /></div>
         </div>
         <div class="form-group">
           <label>Durée estimée</label>
@@ -1532,8 +1639,8 @@
           <div class="duree-total-badge" id="devisDureeTotalBadge">Total : 0 min</div>
         </div>
         <div class="form-row">
-          <div class="form-group"><label>Taux horaire (CHF/h)</label><input type="number" id="devisTaux" min="0" step="5" value="90" /></div>
-          <div class="form-group"><label>Déplacement (CHF)</label><input type="number" id="devisDeplacement" min="0" step="5" value="50" /></div>
+          <div class="form-group"><label>Taux horaire (CHF/h)</label><input type="number" id="devisTaux" min="0" step="5" value="90" inputmode="decimal" /></div>
+          <div class="form-group"><label>Déplacement (CHF)</label><input type="number" id="devisDeplacement" min="0" step="5" value="50" inputmode="decimal" /></div>
         </div>
         <div class="form-group"><label>Notes</label><input type="text" id="devisNotes" placeholder="Conditions particulières..." /></div>
         <div class="pieces-section">
@@ -1551,9 +1658,9 @@
   </div>
 
   <!-- CONVERTIR DEVIS -->
-  <div class="modal-overlay" id="convertDevisModal" role="dialog" aria-modal="true">
+  <div class="modal-overlay" id="convertDevisModal" role="dialog" aria-modal="true" aria-labelledby="convertDevisModalTitle">
     <div class="modal-box" style="max-width:480px;">
-      <h2>Convertir en facture</h2>
+      <h2 id="convertDevisModalTitle">Convertir en facture</h2>
       <div class="modal-scroll-area">
         <div class="form-group"><label>Client</label><input type="text" id="convertClientDisplay" readonly style="background:var(--bg-surface); font-weight:600;" /></div>
         <div class="form-group"><label>Total du devis</label><input type="text" id="convertTotalDisplay" readonly style="background:var(--bg-surface); font-weight:700; color:var(--info);" /></div>
@@ -1563,7 +1670,7 @@
             <label for="convertAcompteActive">Facturer un acompte maintenant</label>
           </div>
           <div class="acompte-fields" id="convertAcompteFields">
-            <div class="acompte-field"><label>Acompte (%)</label><input type="number" id="convertAcomptePct" min="1" max="99" step="5" value="30" /></div>
+            <div class="acompte-field"><label>Acompte (%)</label><input type="number" id="convertAcomptePct" min="1" max="99" step="5" value="30" inputmode="numeric" /></div>
             <div class="acompte-field"><label>Montant acompte</label><input type="text" id="convertAcompteMontant" readonly style="background:var(--bg-surface); color:var(--info); font-weight:700;" /></div>
             <div class="acompte-field"><label>Reste à payer</label><input type="text" id="convertResteMontant" readonly style="background:var(--bg-surface); color:var(--danger); font-weight:700;" /></div>
           </div>
@@ -1584,9 +1691,9 @@
   </div>
 
   <!-- SIGNATURE -->
-  <div class="modal-overlay" id="signatureModal" role="dialog" aria-modal="true">
+  <div class="modal-overlay" id="signatureModal" role="dialog" aria-modal="true" aria-labelledby="signatureModalTitle">
     <div class="modal-box" style="max-width:520px;">
-      <h2>Signatures</h2>
+      <h2 id="signatureModalTitle">Signatures</h2>
       <div class="modal-scroll-area">
         <div class="signature-container">
           <h4>Signature du client</h4>
@@ -1613,9 +1720,9 @@
   </div>
 
   <!-- STOCK -->
-  <div class="modal-overlay" id="stockModal" role="dialog" aria-modal="true">
+  <div class="modal-overlay" id="stockModal" role="dialog" aria-modal="true" aria-labelledby="stockModalTitle">
     <div class="modal-box" style="max-width:600px;">
-      <h2>📦 Gestion du stock</h2>
+      <h2 id="stockModalTitle">📦 Gestion du stock</h2>
       <div class="modal-scroll-area">
         <div class="stock-stats">
           <div class="stock-stat"><div class="ss-num" id="stockStatTotal">0</div><div class="ss-lbl">Articles</div></div>
@@ -1623,7 +1730,7 @@
           <div class="stock-stat"><div class="ss-num danger" id="stockStatOut">0</div><div class="ss-lbl">Rupture</div></div>
         </div>
         <div class="stock-toolbar">
-          <input type="text" class="stock-search" id="stockSearchInput" placeholder="Rechercher un article..." autocomplete="off" />
+          <input type="search" class="stock-search" id="stockSearchInput" placeholder="Rechercher un article..." autocomplete="off" />
           <select class="stock-sort" id="stockSortSelect">
             <option value="name_asc">A → Z</option>
             <option value="name_desc">Z → A</option>
@@ -1637,8 +1744,8 @@
           <h4>+ Ajouter / Mettre à jour un article</h4>
           <div class="stock-add-grid">
             <input type="text" id="stockName" placeholder="Nom de l'article (ex: Joint)" autocomplete="off" />
-            <input type="number" id="stockQte" placeholder="Qté" min="0" value="0" />
-            <input type="number" id="stockSeuil" placeholder="Seuil d'alerte" min="0" value="1" />
+            <input type="number" id="stockQte" placeholder="Qté" min="0" value="0" inputmode="numeric" />
+            <input type="number" id="stockSeuil" placeholder="Seuil d'alerte" min="0" value="1" inputmode="numeric" />
           </div>
           <button class="btn-primary" id="addStockBtn" style="width:100%; justify-content:center;">+ Enregistrer</button>
         </div>
@@ -1648,15 +1755,15 @@
   </div>
 
   <!-- FACTURE -->
-  <div class="modal-overlay" id="factureModal" role="dialog" aria-modal="true">
+  <div class="modal-overlay" id="factureModal" role="dialog" aria-modal="true" aria-labelledby="factureModalTitle">
     <div class="modal-box">
-      <h2>Facture <span id="factureNumeroDisplay" style="font-family:var(--mono-stack); font-size:0.9rem; color:var(--accent);"></span></h2>
+      <h2 id="factureModalTitle">Facture <span id="factureNumeroDisplay" style="font-family:var(--mono-stack); font-size:0.9rem; color:var(--accent);"></span></h2>
       <div class="modal-scroll-area" id="factureContentWrap"><div id="factureContent"></div></div>
       <div class="modal-actions" style="justify-content:space-between; flex-wrap:wrap;">
         <div style="display:flex; gap:6px; flex-wrap:wrap;">
           <button class="btn-pay" id="markPaidBtn">✓ Payée</button>
           <button class="btn-share" id="shareFactureBtn">Partager</button>
-          <button class="btn-secondary" id="downloadPdfBtn">📄 PDF QR</button>
+          <button class="btn-secondary" id="downloadPdfBtn">📄 PDF</button>
           <button class="btn-secondary" id="printFactureBtn">Imprimer</button>
           <button class="btn-secondary" id="sendMailBtn">Mail</button>
           <button class="btn-secondary" id="signFactureBtn">Signer</button>
@@ -1668,9 +1775,9 @@
   </div>
 
   <!-- DEVIS DETAIL -->
-  <div class="modal-overlay" id="devisDetailModal" role="dialog" aria-modal="true">
+  <div class="modal-overlay" id="devisDetailModal" role="dialog" aria-modal="true" aria-labelledby="devisDetailModalTitle">
     <div class="modal-box">
-      <h2>Devis <span id="devisNumeroDisplay" style="font-family:var(--mono-stack); font-size:0.9rem; color:var(--info);"></span></h2>
+      <h2 id="devisDetailModalTitle">Devis <span id="devisNumeroDisplay" style="font-family:var(--mono-stack); font-size:0.9rem; color:var(--info);"></span></h2>
       <div class="modal-scroll-area"><div id="devisDetailContent"></div></div>
       <div class="modal-actions" style="justify-content:space-between; flex-wrap:wrap;">
         <div style="display:flex; gap:6px; flex-wrap:wrap;">
@@ -1688,11 +1795,11 @@
   </div>
 
   <!-- MAIL -->
-  <div class="modal-overlay" id="mailModal" role="dialog" aria-modal="true">
+  <div class="modal-overlay" id="mailModal" role="dialog" aria-modal="true" aria-labelledby="mailModalTitle">
     <div class="modal-box" style="max-width:480px;">
-      <h2>Envoyer</h2>
+      <h2 id="mailModalTitle">Envoyer</h2>
       <div class="modal-scroll-area">
-        <div class="form-group"><label>Destinataire</label><input type="email" id="mailTo" placeholder="client@email.ch" /></div>
+        <div class="form-group"><label>Destinataire</label><input type="email" id="mailTo" placeholder="client@email.ch" autocomplete="email" /></div>
         <div class="form-group"><label>Objet</label><input type="text" id="mailSubject" readonly /></div>
         <div class="form-group"><label>Message</label><textarea id="mailBody" readonly style="border-radius:var(--r-sm); min-height:140px;"></textarea></div>
       </div>
@@ -1704,9 +1811,9 @@
   </div>
 
   <!-- TVA -->
-  <div class="modal-overlay" id="tvaModal" role="dialog" aria-modal="true">
+  <div class="modal-overlay" id="tvaModal" role="dialog" aria-modal="true" aria-labelledby="tvaModalTitle">
     <div class="modal-box" style="max-width:560px;">
-      <h2>🧾 Décompte TVA</h2>
+      <h2 id="tvaModalTitle">🧾 Décompte TVA</h2>
       <div class="modal-scroll-area">
         <div class="form-row">
           <div class="form-group"><label>Année</label><select id="tvaYearSelect"></select></div>
@@ -1733,9 +1840,9 @@
   </div>
 
   <!-- CERTIFICAT CHAUDIÈRE -->
-  <div class="modal-overlay" id="certificateModal" role="dialog" aria-modal="true">
+  <div class="modal-overlay" id="certificateModal" role="dialog" aria-modal="true" aria-labelledby="certificateModalTitle">
     <div class="modal-box" style="max-width:520px;">
-      <h2>🔥 Certificat d'entretien chaudière</h2>
+      <h2 id="certificateModalTitle">🔥 Certificat d'entretien chaudière</h2>
       <div style="padding:12px; background:#fff8e1; border-radius:var(--r-sm); border-left:4px solid var(--warning); font-size:0.8rem; color:#7a3d00; line-height:1.5; margin-bottom:12px;">
         Document à remplir lors de l'entretien annuel. Conforme aux exigences cantonales (VD, GE, NE, JU...).
       </div>
@@ -1743,7 +1850,7 @@
         <div class="form-group"><label>Marque / Modèle</label><input type="text" id="certMarque" placeholder="Ex: Viessmann Vitodens 200-W" /></div>
         <div class="form-row">
           <div class="form-group"><label>N° de série</label><input type="text" id="certSerie" placeholder="SN-XXXXX" /></div>
-          <div class="form-group"><label>Année d'installation</label><input type="number" id="certAnnee" min="1950" max="2100" /></div>
+          <div class="form-group"><label>Année d'installation</label><input type="number" id="certAnnee" min="1950" max="2100" inputmode="numeric" /></div>
         </div>
         <div class="form-row">
           <div class="form-group"><label>Type de combustible</label>
@@ -1756,15 +1863,15 @@
               <option value="pac">Pompe à chaleur</option>
             </select>
           </div>
-          <div class="form-group"><label>Puissance (kW)</label><input type="number" id="certPuissance" step="0.1" min="0" /></div>
+          <div class="form-group"><label>Puissance (kW)</label><input type="number" id="certPuissance" step="0.1" min="0" inputmode="decimal" /></div>
         </div>
         <div class="form-row">
-          <div class="form-group"><label>Taux de CO (ppm)</label><input type="number" id="certCO" step="1" min="0" placeholder="Ex: 15" /></div>
-          <div class="form-group"><label>CO₂ (%)</label><input type="number" id="certCO2" step="0.1" min="0" max="20" /></div>
+          <div class="form-group"><label>Taux de CO (ppm)</label><input type="number" id="certCO" step="1" min="0" placeholder="Ex: 15" inputmode="numeric" /></div>
+          <div class="form-group"><label>CO₂ (%)</label><input type="number" id="certCO2" step="0.1" min="0" max="20" inputmode="decimal" /></div>
         </div>
         <div class="form-row">
-          <div class="form-group"><label>Température fumées (°C)</label><input type="number" id="certTempFumees" step="1" min="0" /></div>
-          <div class="form-group"><label>Rendement (%)</label><input type="number" id="certRendement" step="0.1" min="0" max="120" /></div>
+          <div class="form-group"><label>Température fumées (°C)</label><input type="number" id="certTempFumees" step="1" min="0" inputmode="numeric" /></div>
+          <div class="form-group"><label>Rendement (%)</label><input type="number" id="certRendement" step="0.1" min="0" max="120" inputmode="decimal" /></div>
         </div>
         <div class="form-group"><label>Interventions effectuées</label><textarea id="certTravaux" placeholder="Ex: Nettoyage brûleur, remplacement joint, réglage combustion..." rows="3"></textarea></div>
         <div class="form-group"><label>Observations / recommandations</label><textarea id="certObservations" placeholder="Ex: Prévoir remplacement circulateur sous 6 mois" rows="2"></textarea></div>
@@ -1781,9 +1888,9 @@
   </div>
 
   <!-- PARAMÈTRES -->
-  <div class="modal-overlay" id="settingsModal" role="dialog" aria-modal="true">
+  <div class="modal-overlay" id="settingsModal" role="dialog" aria-modal="true" aria-labelledby="settingsModalTitle">
     <div class="modal-box" style="max-width:460px;">
-      <h2>Paramètres</h2>
+      <h2 id="settingsModalTitle">Paramètres</h2>
       <div class="modal-scroll-area">
         <div class="form-group">
           <label>État du mode hors ligne</label>
@@ -1807,7 +1914,7 @@
             <div id="pinSetupBlock" style="display:none;">
               <label style="font-size:0.65rem; color:var(--text-faint); text-transform:uppercase; margin-bottom:4px; display:block;">Code PIN (4-8 chiffres)</label>
               <input type="password" id="setPin" inputmode="numeric" pattern="[0-9]*" maxlength="8" placeholder="••••" style="letter-spacing:8px; text-align:center; font-size:1.2rem; font-weight:700;" />
-              <div style="font-size:0.6rem; color:var(--text-faint); margin-top:4px;">Chiffre aussi les données locales (AES-256).</div>
+              <div style="font-size:0.6rem; color:var(--text-faint); margin-top:4px;">Chiffre aussi les données locales (AES-256 via PBKDF2).</div>
             </div>
             <div style="display:flex; align-items:center; gap:10px;">
               <input type="checkbox" id="setEncryptExport" style="width:auto; accent-color:var(--accent);" />
@@ -1816,13 +1923,13 @@
           </div>
         </div>
         <div class="form-group"><label>Nom de l'entreprise</label><input type="text" id="setNom" value="PipePline" /></div>
-        <div class="form-group"><label>Adresse</label><input type="text" id="setAdresse" placeholder="Rue du Rhône 12" /></div>
+        <div class="form-group"><label>Adresse</label><input type="text" id="setAdresse" placeholder="Rue du Rhône 12" autocomplete="street-address" /></div>
         <div class="form-row">
-          <div class="form-group"><label>NPA</label><input type="text" id="setZip" placeholder="1204" /></div>
-          <div class="form-group"><label>Ville</label><input type="text" id="setCity" placeholder="Genève" /></div>
+          <div class="form-group"><label>NPA</label><input type="text" id="setZip" placeholder="1204" autocomplete="postal-code" inputmode="numeric" /></div>
+          <div class="form-group"><label>Ville</label><input type="text" id="setCity" placeholder="Genève" autocomplete="address-level2" /></div>
         </div>
         <div class="form-group"><label>N° IDE / UID (Suisse)</label><input type="text" id="setSiret" placeholder="CHE-123.456.789" /></div>
-        <div class="form-group"><label>IBAN (pour QR-facture)</label><input type="text" id="setIban" placeholder="CH93 0076 2011 6238 5295 7" /></div>
+        <div class="form-group"><label>IBAN (pour QR-facture)</label><input type="text" id="setIban" placeholder="CH93 0076 2011 6238 5295 7" autocomplete="off" /></div>
         <div class="form-group" id="ibanStatus" style="font-size:0.7rem; padding:8px 12px; border-radius:var(--r-sm); background:var(--bg-surface); display:none;"></div>
         <div class="form-group">
           <label>Assujetti à la TVA suisse ?</label>
@@ -1832,29 +1939,29 @@
           </div>
         </div>
         <div class="form-group"><label>N° TVA suisse (TVA / MWST)</label><input type="text" id="setTvaIntra" placeholder="CHE-123.456.789 TVA" /></div>
-        <div class="form-group"><label>TVA (%) — saisie libre</label><input type="number" id="setTva" value="8.1" step="0.1" min="0" max="30" /></div>
+        <div class="form-group"><label>TVA (%) — saisie libre</label><input type="number" id="setTva" value="8.1" step="0.1" min="0" max="30" inputmode="decimal" /></div>
         <div class="form-group">
           <label>🚗 Barème kilométrique (CHF/km)</label>
-          <input type="number" id="setKmRate" value="0.70" step="0.05" min="0" />
+          <input type="number" id="setKmRate" value="0.70" step="0.05" min="0" inputmode="decimal" />
           <div style="font-size:0.65rem; color:var(--text-faint); margin-top:4px;">Barème officiel suisse 2024 : 0.70 CHF/km</div>
         </div>
         <div class="form-group">
           <label>Seuil facture d'acompte automatique (CHF)</label>
-          <input type="number" id="setAcompteSeuil" value="5000" step="100" min="0" />
+          <input type="number" id="setAcompteSeuil" value="5000" step="100" min="0" inputmode="decimal" />
         </div>
         <div style="margin:12px 0 14px; padding:10px 12px; background:var(--accent-light); border-radius:var(--r-sm); border-left:4px solid var(--accent);">
           <div style="font-size:0.7rem; font-weight:700; color:var(--accent); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:10px;">Mentions légales (factures suisses)</div>
           <div class="form-group" style="margin-bottom:10px;"><label>Assurance RC professionnelle - Assureur</label><input type="text" id="setAssuranceNom" placeholder="AXA Assurances" /></div>
           <div class="form-group" style="margin-bottom:10px;"><label>N° police d'assurance</label><input type="text" id="setAssuranceNum" placeholder="POL-123456789" /></div>
-          <div class="form-group" style="margin-bottom:0;"><label>Délai de paiement (jours)</label><input type="number" id="setDelaiPaiement" value="30" min="0" max="120" step="1" /></div>
+          <div class="form-group" style="margin-bottom:0;"><label>Délai de paiement (jours)</label><input type="number" id="setDelaiPaiement" value="30" min="0" max="120" step="1" inputmode="numeric" /></div>
         </div>
-        <div class="form-group"><label>Téléphone</label><input type="text" id="setTel" placeholder="+41 22 123 45 67" /></div>
-        <div class="form-group"><label>Email</label><input type="email" id="setEmail" placeholder="contact@pipepline.ch" /></div>
-        <div class="form-group"><label>Taux d'imposition auto-entreprise (%)</label><input type="number" id="setTaxe" value="21.2" step="0.1" min="0" max="50" /></div>
-        <div class="form-group"><label>Taux horaire par défaut (CHF/h)</label><input type="number" id="setTauxDefaut" value="90" step="5" min="0" /></div>
-        <div class="form-group"><label>Frais de déplacement par défaut (CHF)</label><input type="number" id="setDeplacementDefaut" value="50" step="5" min="0" /></div>
-        <div class="form-group"><label>Seuil d'alerte impayés (jours)</label><input type="number" id="setSeuilAlerte" value="30" step="1" min="1" /></div>
-        <div class="form-group"><label>Rappel de sauvegarde (jours)</label><input type="number" id="setSeuilSauvegarde" value="15" step="1" min="1" /></div>
+        <div class="form-group"><label>Téléphone</label><input type="text" id="setTel" placeholder="+41 22 123 45 67" autocomplete="tel" /></div>
+        <div class="form-group"><label>Email</label><input type="email" id="setEmail" placeholder="contact@pipepline.ch" autocomplete="email" /></div>
+        <div class="form-group"><label>Taux d'imposition auto-entreprise (%)</label><input type="number" id="setTaxe" value="21.2" step="0.1" min="0" max="50" inputmode="decimal" /></div>
+        <div class="form-group"><label>Taux horaire par défaut (CHF/h)</label><input type="number" id="setTauxDefaut" value="90" step="5" min="0" inputmode="decimal" /></div>
+        <div class="form-group"><label>Frais de déplacement par défaut (CHF)</label><input type="number" id="setDeplacementDefaut" value="50" step="5" min="0" inputmode="decimal" /></div>
+        <div class="form-group"><label>Seuil d'alerte impayés (jours)</label><input type="number" id="setSeuilAlerte" value="30" step="1" min="1" inputmode="numeric" /></div>
+        <div class="form-group"><label>Rappel de sauvegarde (jours)</label><input type="number" id="setSeuilSauvegarde" value="15" step="1" min="1" inputmode="numeric" /></div>
       </div>
       <div class="modal-actions">
         <button class="btn-cancel" id="cancelSettings">Annuler</button>
