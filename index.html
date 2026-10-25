@@ -800,24 +800,27 @@
     .acompte-fields .acompte-field label { font-size: 0.6rem; text-align: center; color: var(--text-faint); text-transform: uppercase; margin-bottom: 4px; display: block; font-weight: 600; }
     .acompte-fields .acompte-field input { text-align: center; padding: 8px 10px; font-weight: 700; color: var(--info); font-size: 16px; }
     .bottom-nav {
-      display: none;
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      background: var(--bg-card);
-      border-top: 1px solid var(--border-1);
-      z-index: 500;
-      padding: 4px 4px calc(4px + env(safe-area-inset-bottom, 0px));
-      box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08);
-      transform: translateZ(0);
-      -webkit-transform: translateZ(0);
-      will-change: transform;
-      -webkit-backface-visibility: hidden;
-      backface-visibility: hidden;
-      overscroll-behavior: contain;
-      padding-bottom: max(4px, calc(4px + env(safe-area-inset-bottom, 0px)));
-    }
+  display: none;
+  position: fixed;
+  /* Force le recalage : bottom en px explicite, pas seulement en env() */
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--bg-card);
+  border-top: 1px solid var(--border-1);
+  z-index: 500;
+  /* On n'utilise PLUS le padding-bottom avec env() sur mobile,
+     il est appliqué via un padding interne + hauteur fixe */
+  padding: 4px 4px 4px;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08);
+  /* Force la couche GPU iOS */
+  transform: translate3d(0, 0, 0);
+  -webkit-transform: translate3d(0, 0, 0);
+  will-change: transform;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  overscroll-behavior: contain;
+}
     .bottom-nav-inner { display: flex; justify-content: space-around; align-items: center; max-width: 600px; margin: 0 auto; }
     .bottom-nav-item {
       flex: 1; display: flex; flex-direction: column;
@@ -867,25 +870,24 @@
     }
     .bottom-nav-item .bn-badge.hidden { display: none; }
     @media (max-width: 768px) {
-      .bottom-nav { display: block; }
-      body { padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px)); }
-      .app-container { padding: 12px 10px 20px; border-radius: var(--r-lg); }
-      .app-header h1 { font-size: 1.1rem; }
-      .app-header .app-logo { width: 36px; height: 36px; border-radius: var(--r-xs); }
-      .main-tabs { display: none; }
-      .intervention-card { padding: 12px 14px; }
-      .int-client { font-size: 0.9rem; }
-      .modal-box { padding: 18px 16px; max-height: 92vh; }
-      .modal-box h2 { font-size: 1.05rem; }
-    }
-    @media (max-width: 768px) {
-      .bottom-nav {
-        bottom: 0;
-        padding-bottom: calc(4px + env(safe-area-inset-bottom, 0px));
-        transform: translate3d(0, 0, 0);
-        -webkit-transform: translate3d(0, 0, 0);
-      }
-    }
+  .bottom-nav {
+    display: block;
+    /* HNAUTEUR FIXE + safe-area EN PX (pas en env() dans le padding) */
+    min-height: 56px;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    bottom: 0;
+  }
+  body { padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px)); }
+  .app-container { padding: 12px 10px 20px; border-radius: var(--r-lg); }
+  .app-header h1 { font-size: 1.1rem; }
+  .app-header .app-logo { width: 36px; height: 36px; border-radius: var(--r-xs); }
+  .main-tabs { display: none; }
+  .intervention-card { padding: 12px 14px; }
+  .int-client { font-size: 0.9rem; }
+  .modal-box { padding: 18px 16px; max-height: 92vh; }
+  .modal-box h2 { font-size: 1.05rem; }
+}
+    
     @media (max-width: 480px) {
       .action-bar { flex-direction: column; align-items: stretch; }
       .action-bar button { justify-content: center; }
@@ -1066,7 +1068,7 @@
     <div class="app-header">
       <div class="header-left">
         <img src="logo.png" alt="Logo" class="app-logo" onerror="this.style.display='none'" />
-        <h1>PipePline <span class="app-version">V2.5</span></h1>
+        <h1>PipePline <span class="app-version">V2.6</span></h1>
       </div>
       <div style="display:flex; flex-wrap:wrap; gap:6px; align-items:center;">
         <div class="save-indicator" id="saveIndicator">

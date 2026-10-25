@@ -5,6 +5,59 @@
    ========================================================================== */
 'use strict';
 /* ==========================================================================
+   FIX BOTTOM-NAV iOS : recalage après stabilisation du viewport
+   ========================================================================== */
+(function fixBottomNavPosition() {
+  function recalcNav() {
+    var nav = document.getElementById('bottomNav');
+    if (!nav) return;
+    // Force iOS à recalculer la position fixed
+    nav.style.transform = 'translate3d(0,0,0)';
+    void nav.offsetHeight; // force reflow
+    nav.style.bottom = '0px';
+  }
+
+  // 1. Après le premier paint (le plus important : iOS anime la barre d'adresse)
+  window.addEventListener('load', function() {
+    recalcNav();
+    // iOS peut mettre jusqu'à 500ms à stabiliser — on recale 3 fois
+    setTimeout(recalcNav, 100);
+    setTimeout(recalcNav, 300);
+    setTimeout(recalcNav, 800);
+  });
+
+  // 2. Au premier scroll (la barre iOS se replie → recalcul)
+  var scrolled = false;
+  window.addEventListener('scroll', function() {
+    if (scrolled) return;
+    scrolled = true;
+    recalcNav();
+  }, { passive: true });
+
+  // 3. Au passage en PWA plein écran (standalone)
+  if (window.matchMedia('(display-mode: standalone)').matches) {
+    recalcNav();
+  }
+
+  // 4. Changement d'orientation
+  window.addEventListener('orientationchange', function() {
+    setTimeout(recalcNav, 200);
+  });
+
+  // 5. Quand Safari finit son animation de barre (iOS 15+)
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', recalcNav);
+    window.visualViewport.addEventListener('scroll', recalcNav);
+  }
+
+  // 6. Quand on clique sur un onglet (c'était ton "déclencheur" naturel)
+  document.addEventListener('click', function(e) {
+    if (e.target.closest('.bottom-nav-item') || e.target.closest('.main-tab')) {
+      recalcNav();
+    }
+  }, { passive: true });
+})();
+/* ==========================================================================
    ANTI-ZOOM (iOS Safari ignore user-scalable=no)
    ========================================================================== */
 (function antiZoom() {
