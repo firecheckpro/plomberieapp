@@ -10,7 +10,7 @@
   <meta name="theme-color" content="#1a5279" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#0f1a24" media="(prefers-color-scheme: dark)">
   <meta name="description" content="Application de gestion pour plombier - 100% hors ligne et privée">
-  <title>PipePline V2.5 - Gestion hors ligne</title>
+  <title>PipePline V2.7 - Gestion hors ligne</title>
   <link rel="icon" type="image/png" href="logo.png">
   <link rel="apple-touch-icon" href="logo.png">
   <script>
@@ -800,27 +800,23 @@
     .acompte-fields .acompte-field label { font-size: 0.6rem; text-align: center; color: var(--text-faint); text-transform: uppercase; margin-bottom: 4px; display: block; font-weight: 600; }
     .acompte-fields .acompte-field input { text-align: center; padding: 8px 10px; font-weight: 700; color: var(--info); font-size: 16px; }
     .bottom-nav {
-  display: none;
-  position: fixed;
-  /* Force le recalage : bottom en px explicite, pas seulement en env() */
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background: var(--bg-card);
-  border-top: 1px solid var(--border-1);
-  z-index: 500;
-  /* On n'utilise PLUS le padding-bottom avec env() sur mobile,
-     il est appliqué via un padding interne + hauteur fixe */
-  padding: 4px 4px 4px;
-  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08);
-  /* Force la couche GPU iOS */
-  transform: translate3d(0, 0, 0);
-  -webkit-transform: translate3d(0, 0, 0);
-  will-change: transform;
-  -webkit-backface-visibility: hidden;
-  backface-visibility: hidden;
-  overscroll-behavior: contain;
-}
+      display: none;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: var(--bg-card);
+      border-top: 1px solid var(--border-1);
+      z-index: 500;
+      padding: 4px 4px 4px;
+      box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08);
+      transform: translate3d(0, 0, 0);
+      -webkit-transform: translate3d(0, 0, 0);
+      will-change: transform;
+      -webkit-backface-visibility: hidden;
+      backface-visibility: hidden;
+      overscroll-behavior: contain;
+    }
     .bottom-nav-inner { display: flex; justify-content: space-around; align-items: center; max-width: 600px; margin: 0 auto; }
     .bottom-nav-item {
       flex: 1; display: flex; flex-direction: column;
@@ -870,24 +866,25 @@
     }
     .bottom-nav-item .bn-badge.hidden { display: none; }
     @media (max-width: 768px) {
-  .bottom-nav {
-    display: block;
-    /* HNAUTEUR FIXE + safe-area EN PX (pas en env() dans le padding) */
-    min-height: 56px;
-    padding-bottom: env(safe-area-inset-bottom, 0px);
-    bottom: 0;
-  }
-  body { padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px)); }
-  .app-container { padding: 12px 10px 20px; border-radius: var(--r-lg); }
-  .app-header h1 { font-size: 1.1rem; }
-  .app-header .app-logo { width: 36px; height: 36px; border-radius: var(--r-xs); }
-  .main-tabs { display: none; }
-  .intervention-card { padding: 12px 14px; }
-  .int-client { font-size: 0.9rem; }
-  .modal-box { padding: 18px 16px; max-height: 92vh; }
-  .modal-box h2 { font-size: 1.05rem; }
-}
-    
+      .bottom-nav {
+        display: block;
+        min-height: 56px;
+        padding: 4px 4px env(safe-area-inset-bottom, 0px) 4px;
+        bottom: 0;
+        height: auto;
+      }
+      body {
+        padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+      }
+      .app-container { padding: 12px 10px 20px; border-radius: var(--r-lg); }
+      .app-header h1 { font-size: 1.1rem; }
+      .app-header .app-logo { width: 36px; height: 36px; border-radius: var(--r-xs); }
+      .main-tabs { display: none; }
+      .intervention-card { padding: 12px 14px; }
+      .int-client { font-size: 0.9rem; }
+      .modal-box { padding: 18px 16px; max-height: 92vh; }
+      .modal-box h2 { font-size: 1.05rem; }
+    }
     @media (max-width: 480px) {
       .action-bar { flex-direction: column; align-items: stretch; }
       .action-bar button { justify-content: center; }
@@ -907,19 +904,6 @@
     .conflict-warning.show { display: flex; }
     @supports (padding: max(0px)) {
       .modal-box { padding-bottom: max(24px, calc(24px + var(--safe-bottom))); }
-    }
-    @supports (-webkit-touch-callout: none) {
-      html, body {
-        overscroll-behavior-y: none;
-      }
-      .bottom-nav {
-        position: fixed;
-        bottom: 0;
-        transform: translate3d(0, 0, 0);
-      }
-      .app-container {
-        overscroll-behavior: contain;
-      }
     }
     @media screen and (max-width: 768px) {
       input, select, textarea {
@@ -1038,6 +1022,15 @@
     .pin-keypad button.pin-clear { background: #ffebee; color: var(--danger); font-size: 1rem; }
     .pin-keypad button.pin-validate { background: var(--success); color: white; font-size: 1rem; }
     .pin-error { color: var(--danger); font-size: 0.75rem; font-weight: 600; min-height: 18px; margin-bottom: 10px; }
+    @supports (-webkit-touch-callout: none) {
+      .bottom-nav {
+        position: fixed !important;
+        bottom: 0 !important;
+        transform: translate3d(0, 0, 0) !important;
+        -webkit-transform: translate3d(0, 0, 0) !important;
+        will-change: transform !important;
+      }
+    }
   </style>
 </head>
 <body>
@@ -1068,7 +1061,7 @@
     <div class="app-header">
       <div class="header-left">
         <img src="logo.png" alt="Logo" class="app-logo" onerror="this.style.display='none'" />
-        <h1>PipePline <span class="app-version">V2.6</span></h1>
+        <h1>PipePline <span class="app-version">V2.7</span></h1>
       </div>
       <div style="display:flex; flex-wrap:wrap; gap:6px; align-items:center;">
         <div class="save-indicator" id="saveIndicator">
