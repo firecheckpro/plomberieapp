@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="PipePline">
   <meta name="theme-color" content="#1a5279" media="(prefers-color-scheme: light)">
@@ -80,7 +81,8 @@
       background: var(--bg-app);
       display: flex; justify-content: center;
       padding: calc(12px + var(--safe-top)) calc(8px + var(--safe-right)) calc(30px + var(--safe-bottom)) calc(8px + var(--safe-left));
-      min-height: 100vh; min-height: -webkit-fill-available;
+      min-height: 100vh;
+      min-height: 100dvh;
       overscroll-behavior-y: none;
       color: var(--text-primary);
       transition: background 0.2s, color 0.2s;
@@ -790,13 +792,23 @@
     .acompte-fields .acompte-field label { font-size: 0.6rem; text-align: center; color: var(--text-faint); text-transform: uppercase; margin-bottom: 4px; display: block; font-weight: 600; }
     .acompte-fields .acompte-field input { text-align: center; padding: 8px 10px; font-weight: 700; color: var(--info); font-size: 0.95rem; }
     .bottom-nav {
-      display: none; position: fixed;
-      bottom: 0; left: 0; right: 0;
+      display: none;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
       background: var(--bg-card);
       border-top: 1px solid var(--border-1);
       z-index: 500;
-      padding: 4px 4px calc(4px + var(--safe-bottom));
+      padding: 4px 4px calc(4px + env(safe-area-inset-bottom, 0px));
       box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08);
+      transform: translateZ(0);
+      -webkit-transform: translateZ(0);
+      will-change: transform;
+      -webkit-backface-visibility: hidden;
+      backface-visibility: hidden;
+      overscroll-behavior: contain;
+      padding-bottom: max(4px, calc(4px + env(safe-area-inset-bottom, 0px)));
     }
     .bottom-nav-inner { display: flex; justify-content: space-around; align-items: center; max-width: 600px; margin: 0 auto; }
     .bottom-nav-item {
@@ -810,25 +822,21 @@
       position: relative;
     }
     .bottom-nav-item .bn-icon {
-  width: 22px;
-  height: 22px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--accent);
-  opacity: 0.55;
-  transition: opacity 0.15s, transform 0.15s;
-  line-height: 1;
-}
-.bottom-nav-item .bn-icon svg {
-  width: 100%;
-  height: 100%;
-  display: block;
-}
-.bottom-nav-item.active .bn-icon {
-  opacity: 1;
-  transform: scale(1.08);
-}
+      width: 22px;
+      height: 22px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--accent);
+      opacity: 0.55;
+      transition: opacity 0.15s, transform 0.15s;
+      line-height: 1;
+    }
+    .bottom-nav-item .bn-icon svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
     .bottom-nav-item.active { color: var(--accent); }
     .bottom-nav-item.active .bn-icon {
       opacity: 1;
@@ -852,7 +860,7 @@
     .bottom-nav-item .bn-badge.hidden { display: none; }
     @media (max-width: 768px) {
       .bottom-nav { display: block; }
-      body { padding-bottom: calc(70px + var(--safe-bottom)); }
+      body { padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px)); }
       .app-container { padding: 12px 10px 20px; border-radius: var(--r-lg); }
       .app-header h1 { font-size: 1.1rem; }
       .app-header .app-logo { width: 36px; height: 36px; border-radius: var(--r-xs); }
@@ -861,6 +869,14 @@
       .int-client { font-size: 0.9rem; }
       .modal-box { padding: 18px 16px; max-height: 92vh; }
       .modal-box h2 { font-size: 1.05rem; }
+    }
+    @media (max-width: 768px) {
+      .bottom-nav {
+        bottom: 0;
+        padding-bottom: calc(4px + env(safe-area-inset-bottom, 0px));
+        transform: translate3d(0, 0, 0);
+        -webkit-transform: translate3d(0, 0, 0);
+      }
     }
     @media (max-width: 480px) {
       .action-bar { flex-direction: column; align-items: stretch; }
@@ -881,6 +897,19 @@
     .conflict-warning.show { display: flex; }
     @supports (padding: max(0px)) {
       .modal-box { padding-bottom: max(24px, calc(24px + var(--safe-bottom))); }
+    }
+    @supports (-webkit-touch-callout: none) {
+      html, body {
+        overscroll-behavior-y: none;
+      }
+      .bottom-nav {
+        position: fixed;
+        bottom: 0;
+        transform: translate3d(0, 0, 0);
+      }
+      .app-container {
+        overscroll-behavior: contain;
+      }
     }
     .stock-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 14px; }
     .stock-stat { background: var(--bg-surface); border: 1px solid var(--border-1); border-radius: var(--r-sm); padding: 10px 8px; text-align: center; }
@@ -1253,74 +1282,74 @@
     </div>
   </div>
 
-  <!-- BOTTOM NAV -->
+  <!-- BOTTOM NAV (icônes SVG unies) -->
   <nav class="bottom-nav" id="bottomNav">
-  <div class="bottom-nav-inner">
-    <button class="bottom-nav-item active" data-tab="today">
-      <span class="bn-icon" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="4"></circle>
-          <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path>
-        </svg>
-      </span>
-      <span>Auj.</span>
-    </button>
-    <button class="bottom-nav-item" data-tab="planning">
-      <span class="bn-icon" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="3" y="4" width="18" height="18" rx="2"></rect>
-          <path d="M16 2v4M8 2v4M3 10h18"></path>
-        </svg>
-      </span>
-      <span>Planning</span>
-      <span class="tab-new-dot"></span>
-    </button>
-    <button class="bottom-nav-item" data-tab="interventions">
-      <span class="bn-icon" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="8" y="2" width="8" height="4" rx="1"></rect>
-          <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
-          <path d="M9 12h6M9 16h6"></path>
-        </svg>
-      </span>
-      <span>Interv.</span>
-      <span class="bn-badge hidden" id="bnInterventions">0</span>
-      <span class="tab-new-dot"></span>
-    </button>
-    <button class="bottom-nav-item" data-tab="factures">
-      <span class="bn-icon" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-          <path d="M14 2v6h6"></path>
-          <path d="M8 13h8M8 17h5"></path>
-        </svg>
-      </span>
-      <span>Factures</span>
-      <span class="bn-badge hidden" id="bnFactures">0</span>
-      <span class="tab-new-dot"></span>
-    </button>
-    <button class="bottom-nav-item" data-tab="devis">
-      <span class="bn-icon" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M12 20h9"></path>
-          <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
-        </svg>
-      </span>
-      <span>Devis</span>
-      <span class="bn-badge hidden" id="bnDevis">0</span>
-      <span class="tab-new-dot"></span>
-    </button>
-    <button class="bottom-nav-item" data-tab="recap">
-      <span class="bn-icon" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M3 3v18h18"></path>
-          <path d="M7 15l4-4 4 4 5-5"></path>
-        </svg>
-      </span>
-      <span>Récap</span>
-    </button>
-  </div>
-</nav>
+    <div class="bottom-nav-inner">
+      <button class="bottom-nav-item active" data-tab="today">
+        <span class="bn-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="4"></circle>
+            <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path>
+          </svg>
+        </span>
+        <span>Auj.</span>
+      </button>
+      <button class="bottom-nav-item" data-tab="planning">
+        <span class="bn-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="4" width="18" height="18" rx="2"></rect>
+            <path d="M16 2v4M8 2v4M3 10h18"></path>
+          </svg>
+        </span>
+        <span>Planning</span>
+        <span class="tab-new-dot"></span>
+      </button>
+      <button class="bottom-nav-item" data-tab="interventions">
+        <span class="bn-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="8" y="2" width="8" height="4" rx="1"></rect>
+            <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+            <path d="M9 12h6M9 16h6"></path>
+          </svg>
+        </span>
+        <span>Interv.</span>
+        <span class="bn-badge hidden" id="bnInterventions">0</span>
+        <span class="tab-new-dot"></span>
+      </button>
+      <button class="bottom-nav-item" data-tab="factures">
+        <span class="bn-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <path d="M14 2v6h6"></path>
+            <path d="M8 13h8M8 17h5"></path>
+          </svg>
+        </span>
+        <span>Factures</span>
+        <span class="bn-badge hidden" id="bnFactures">0</span>
+        <span class="tab-new-dot"></span>
+      </button>
+      <button class="bottom-nav-item" data-tab="devis">
+        <span class="bn-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 20h9"></path>
+            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+          </svg>
+        </span>
+        <span>Devis</span>
+        <span class="bn-badge hidden" id="bnDevis">0</span>
+        <span class="tab-new-dot"></span>
+      </button>
+      <button class="bottom-nav-item" data-tab="recap">
+        <span class="bn-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 3v18h18"></path>
+            <path d="M7 15l4-4 4 4 5-5"></path>
+          </svg>
+        </span>
+        <span>Récap</span>
+      </button>
+    </div>
+  </nav>
 
   <!-- MODALE INTERVENTION -->
   <div class="modal-overlay" id="interventionModal" role="dialog" aria-modal="true" aria-labelledby="interventionModalTitle">
