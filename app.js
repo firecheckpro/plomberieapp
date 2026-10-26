@@ -1,9 +1,10 @@
 /* ==========================================================================
    PipePline V2.4 CH — Application de gestion pour plombier
    100% hors ligne / privée / chiffrée
-   Fichier : app.js
+   Fichier : app.js  (CORRIGÉ)
    ========================================================================== */
 'use strict';
+
 /* ==========================================================================
    FIX BOTTOM-NAV iOS : recalage après stabilisation du viewport
    ========================================================================== */
@@ -11,80 +12,52 @@
   function recalcNav() {
     var nav = document.getElementById('bottomNav');
     if (!nav) return;
-    // Force iOS à recalculer la position fixed
     nav.style.transform = 'translate3d(0,0,0)';
-    void nav.offsetHeight; // force reflow
+    void nav.offsetHeight;
     nav.style.bottom = '0px';
   }
-
-  // 1. Après le premier paint (le plus important : iOS anime la barre d'adresse)
   window.addEventListener('load', function() {
     recalcNav();
-    // iOS peut mettre jusqu'à 500ms à stabiliser — on recale 3 fois
     setTimeout(recalcNav, 100);
     setTimeout(recalcNav, 300);
     setTimeout(recalcNav, 800);
   });
-
-  // 2. Au premier scroll (la barre iOS se replie → recalcul)
   var scrolled = false;
   window.addEventListener('scroll', function() {
     if (scrolled) return;
     scrolled = true;
     recalcNav();
   }, { passive: true });
-
-  // 3. Au passage en PWA plein écran (standalone)
-  if (window.matchMedia('(display-mode: standalone)').matches) {
-    recalcNav();
-  }
-
-  // 4. Changement d'orientation
-  window.addEventListener('orientationchange', function() {
-    setTimeout(recalcNav, 200);
-  });
-
-  // 5. Quand Safari finit son animation de barre (iOS 15+)
+  if (window.matchMedia('(display-mode: standalone)').matches) recalcNav();
+  window.addEventListener('orientationchange', function() { setTimeout(recalcNav, 200); });
   if (window.visualViewport) {
     window.visualViewport.addEventListener('resize', recalcNav);
     window.visualViewport.addEventListener('scroll', recalcNav);
   }
-
-  // 6. Quand on clique sur un onglet (c'était ton "déclencheur" naturel)
   document.addEventListener('click', function(e) {
-    if (e.target.closest('.bottom-nav-item') || e.target.closest('.main-tab')) {
-      recalcNav();
-    }
+    if (e.target.closest('.bottom-nav-item') || e.target.closest('.main-tab')) recalcNav();
   }, { passive: true });
 })();
+
 /* ==========================================================================
-   ANTI-ZOOM (iOS Safari ignore user-scalable=no)
+   ANTI-ZOOM
    ========================================================================== */
 (function antiZoom() {
-  document.addEventListener('touchstart', function(e) {
-    if (e.touches.length > 1) e.preventDefault();
-  }, { passive: false });
-  document.addEventListener('touchmove', function(e) {
-    if (e.touches.length > 1) e.preventDefault();
-  }, { passive: false });
+  document.addEventListener('touchstart', function(e) { if (e.touches.length > 1) e.preventDefault(); }, { passive: false });
+  document.addEventListener('touchmove', function(e) { if (e.touches.length > 1) e.preventDefault(); }, { passive: false });
   var lastTouchEnd = 0;
-  document.addEventListener('touchend', function(e) {
+  document.addEventListener('touchend', function() {
     var now = Date.now();
     if (now - lastTouchEnd <= 300) e.preventDefault();
     lastTouchEnd = now;
   }, { passive: false });
-  document.addEventListener('dblclick', function(e) {
-    e.preventDefault();
-  }, { passive: false });
-  document.addEventListener('wheel', function(e) {
-    if (e.ctrlKey) e.preventDefault();
-  }, { passive: false });
+  document.addEventListener('dblclick', function(e) { e.preventDefault(); }, { passive: false });
+  document.addEventListener('wheel', function(e) { if (e.ctrlKey) e.preventDefault(); }, { passive: false });
   document.addEventListener('keydown', function(e) {
-    if ((e.ctrlKey || e.metaKey) && (e.key === '+' || e.key === '-' || e.key === '=' || e.key === '0')) {
-      e.preventDefault();
-    }
+    if ((e.ctrlKey || e.metaKey) && (e.key === '+' || e.key === '-' || e.key === '=' || e.key === '0')) e.preventDefault();
   }, { passive: false });
 })();
+
 /* ==========================================================================
    SERVICE WORKER
    ========================================================================== */
@@ -107,6 +80,7 @@ function haptic(pattern) {
 
 /* ==========================================================================
    INDEXEDDB
+   🔧 CORRECTION : reject avec une vraie Error si e.target.error est null
    ========================================================================== */
 var IDB_NAME = 'pipepline_ch_db';
 var IDB_VERSION = 2;
@@ -125,7 +99,12 @@ function openIDB() {
       if (!db.objectStoreNames.contains(IDB_CRYPTO_STORE)) db.createObjectStore(IDB_CRYPTO_STORE);
     };
     req.onsuccess = function(e) { resolve(e.target.result); };
-    req.onerror = function(e) { reject(e.target.error); };
+    req.onerror = function(e) {
+      reject((e.target && e.target.error) || new Error('IndexedDB : ouverture échouée'));
+    };
+    req.onblocked = function() {
+      reject(new Error('IndexedDB bloqué — fermez les autres onglets PipePline'));
+    };
   });
   return idbPromise;
 }
@@ -137,7 +116,8 @@ function idbGet(key, storeName) {
       var tx = db.transaction(storeName, 'readonly');
       var req = tx.objectStore(storeName).get(key);
       req.onsuccess = function() { resolve(req.result); };
-      req.onerror = function() { reject(req.error); };
+      req.onerror = function() { reject(req.error || new Error('idbGet échoué (' + key + ')')); };
+      tx.onerror = function() { reject(tx.error || new Error('idbGet tx échouée')); };
     });
   });
 }
@@ -149,7 +129,8 @@ function idbSet(key, value, storeName) {
       var tx = db.transaction(storeName, 'readwrite');
       var req = tx.objectStore(storeName).put(value, key);
       req.onsuccess = function() { resolve(); };
-      req.onerror = function() { reject(req.error); };
+      req.onerror = function() { reject(req.error || new Error('idbSet échoué (' + key + ')')); };
+      tx.onerror = function() { reject(tx.error || new Error('idbSet tx échouée')); };
     });
   });
 }
@@ -161,13 +142,14 @@ function idbRemove(key, storeName) {
       var tx = db.transaction(storeName, 'readwrite');
       var req = tx.objectStore(storeName).delete(key);
       req.onsuccess = function() { resolve(); };
-      req.onerror = function() { reject(req.error); };
+      req.onerror = function() { reject(req.error || new Error('idbRemove échoué (' + key + ')')); };
+      tx.onerror = function() { reject(tx.error || new Error('idbRemove tx échouée')); };
     });
   });
 }
 
 /* ==========================================================================
-   CHIFFREMENT AES-GCM (dérivé du PIN via PBKDF2)
+   CHIFFREMENT AES-GCM
    ========================================================================== */
 var cryptoKey = null;
 
@@ -177,10 +159,7 @@ function deriveKeyFromPin(pin, salt) {
     .then(function(baseKey) {
       return crypto.subtle.deriveKey(
         { name: 'PBKDF2', salt: salt, iterations: 100000, hash: 'SHA-256' },
-        baseKey,
-        { name: 'AES-GCM', length: 256 },
-        false,
-        ['encrypt', 'decrypt']
+        baseKey, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']
       );
     });
 }
@@ -215,29 +194,22 @@ function decryptData(payload, key) {
       crypto.subtle.decrypt({ name: 'AES-GCM', iv: iv }, key, ciphertext)
         .then(function(plaintext) {
           var dec = new TextDecoder();
-          try {
-            resolve(JSON.parse(dec.decode(plaintext)));
-          } catch(e) {
-            reject(new Error('DECRYPT_FAILED'));
-          }
+          try { resolve(JSON.parse(dec.decode(plaintext))); }
+          catch(e) { reject(new Error('DECRYPT_FAILED')); }
         })
         .catch(reject);
     } catch(e) { reject(e); }
   });
 }
 
-function isPinRequired() {
-  return !!(pinMeta && pinMeta.active);
-}
+function isPinRequired() { return !!(pinMeta && pinMeta.active); }
 
 /* ==========================================================================
-   QUEUE DE SAUVEGARDE (sérialisation des écritures IndexedDB)
+   QUEUE DE SAUVEGARDE
    ========================================================================== */
 var saveQueue = Promise.resolve();
 function enqueueSave(fn) {
-  saveQueue = saveQueue.then(fn, fn).catch(function(e) {
-    console.error('[SaveQueue]', e);
-  });
+  saveQueue = saveQueue.then(fn, fn).catch(function(e) { console.error('[SaveQueue]', e); });
   return saveQueue;
 }
 
@@ -249,15 +221,13 @@ function storageGet(key) {
     if (result && result.__encrypted) {
       if (!cryptoKey) {
         var e = new Error('DECRYPT_FAILED');
-        e.key = key;
-        e.cause = 'no_key';
+        e.key = key; e.cause = 'no_key';
         throw e;
       }
       return decryptData(result, cryptoKey).catch(function(err) {
-        var e = new Error('DECRYPT_FAILED');
-        e.cause = err;
-        e.key = key;
-        throw e;
+        var e2 = new Error('DECRYPT_FAILED');
+        e2.cause = err; e2.key = key;
+        throw e2;
       });
     }
     return result;
@@ -328,30 +298,29 @@ function uint8ToBase64(arr) {
   return btoa(bin);
 }
 
-/* Hash de vérification du PIN via PBKDF2 (même sel que la clé AES) */
 function computePinHashB64(pin, saltUint8) {
   var enc = new TextEncoder();
   return crypto.subtle.importKey('raw', enc.encode(pin), { name: 'PBKDF2' }, false, ['deriveBits'])
     .then(function(baseKey) {
       return crypto.subtle.deriveBits(
-        { name: 'PBKDF2', salt: saltUint8, iterations: 100000, hash: 'SHA-256' },
-        baseKey,
-        256
+        { name: 'PBKDF2', salt: saltUint8, iterations: 100000, hash: 'SHA-256' }, baseKey, 256
       );
     })
-    .then(function(bits) {
-      return uint8ToBase64(new Uint8Array(bits));
-    });
+    .then(function(bits) { return uint8ToBase64(new Uint8Array(bits)); });
 }
 
 function showPinOverlay() {
-  document.getElementById('pinOverlay').classList.add('show');
+  var overlay = document.getElementById('pinOverlay');
+  if (!overlay) return;
+  overlay.classList.add('show');
   pinBuffer = '';
   renderPinDots();
-  document.getElementById('pinError').textContent = '';
+  var errEl = document.getElementById('pinError');
+  if (errEl) errEl.textContent = '';
 }
 function hidePinOverlay() {
-  document.getElementById('pinOverlay').classList.remove('show');
+  var overlay = document.getElementById('pinOverlay');
+  if (overlay) overlay.classList.remove('show');
   isAuthenticated = true;
   try { sessionStorage.setItem(SESSION_KEY, '1'); } catch(e) {}
 }
@@ -378,21 +347,27 @@ var pinValidating = false;
 
 function validatePin() {
   if (pinValidating) return;
+  var errEl = document.getElementById('pinError');
   if (pinBuffer.length < 4) {
-    document.getElementById('pinError').textContent = 'Code trop court';
+    if (errEl) errEl.textContent = 'Code trop court';
     return;
   }
   pinValidating = true;
-  var errEl = document.getElementById('pinError');
-  errEl.textContent = '';
+  if (errEl) errEl.textContent = '';
 
-  var salt = base64ToUint8(pinMeta.salt);
-  var pinAttempt = pinBuffer;
+  var salt, pinAttempt = pinBuffer;
+  try {
+    salt = base64ToUint8(pinMeta.salt);
+  } catch(e) {
+    if (errEl) errEl.textContent = 'Meta PIN corrompue — restaurez une sauvegarde';
+    pinValidating = false;
+    return;
+  }
 
   computePinHashB64(pinAttempt, salt).then(function(hashB64) {
     if (hashB64 !== pinMeta.pinHash) {
       haptic([30, 50, 30]);
-      errEl.textContent = 'Code incorrect';
+      if (errEl) errEl.textContent = 'Code incorrect';
       pinBuffer = '';
       renderPinDots();
       pinValidating = false;
@@ -410,10 +385,12 @@ function validatePin() {
   }).catch(function(err) {
     console.error('[PIN]', err);
     haptic([30, 50, 30]);
-    if (err && err.message === 'DECRYPT_FAILED') {
-      errEl.textContent = 'Données illisibles — PIN ou sauvegarde corrompue';
-    } else {
-      errEl.textContent = 'Erreur de déchiffrement';
+    if (errEl) {
+      if (err && err.message === 'DECRYPT_FAILED') {
+        errEl.textContent = 'Données illisibles — PIN ou sauvegarde corrompue';
+      } else {
+        errEl.textContent = 'Erreur de déchiffrement';
+      }
     }
     pinBuffer = '';
     renderPinDots();
@@ -422,19 +399,9 @@ function validatePin() {
     pinValidating = false;
   });
 }
-document.getElementById('pinKeypad').addEventListener('click', function(e) {
-  var btn = e.target.closest('button[data-pin]');
-  if (btn) handlePinKey(btn.dataset.pin);
-});
-document.addEventListener('keydown', function(e) {
-  if (!document.getElementById('pinOverlay').classList.contains('show')) return;
-  if (e.key >= '0' && e.key <= '9') handlePinKey(e.key);
-  else if (e.key === 'Backspace') handlePinKey('clear');
-  else if (e.key === 'Enter') handlePinKey('ok');
-});
 
 /* ==========================================================================
-   MODALE MOT DE PASSE (remplace prompt())
+   MODALE MOT DE PASSE
    ========================================================================== */
 var passwordModalResolve = null;
 
@@ -449,14 +416,13 @@ function askPassword(options) {
     var confirm = document.getElementById('passwordConfirm');
     var err = document.getElementById('passwordError');
     var btn = document.getElementById('passwordConfirmBtn');
+    if (!title || !input) { resolve(null); return; }
     title.textContent = options.title || 'Mot de passe';
     desc.textContent = options.description || '';
     group.style.display = options.requireConfirm ? 'block' : 'none';
-    input.value = '';
-    confirm.value = '';
+    input.value = ''; confirm.value = '';
     err.textContent = '';
-    input.type = 'password';
-    confirm.type = 'password';
+    input.type = 'password'; confirm.type = 'password';
     btn.textContent = options.confirmLabel || 'Valider';
     document.getElementById('passwordModal').classList.add('show');
     setTimeout(function() { input.focus(); }, 150);
@@ -469,40 +435,6 @@ function _closePasswordModal(result) {
   passwordModalResolve = null;
   if (r) r(result);
 }
-
-document.getElementById('passwordCancel').addEventListener('click', function() {
-  haptic(8);
-  _closePasswordModal(null);
-});
-
-document.getElementById('passwordConfirmBtn').addEventListener('click', function() {
-  var input = document.getElementById('passwordInput');
-  var confirm = document.getElementById('passwordConfirm');
-  var err = document.getElementById('passwordError');
-  var requireConfirm = document.getElementById('passwordConfirmGroup').style.display !== 'none';
-  var pwd = input.value;
-  if (!pwd || pwd.length < 8) {
-    err.textContent = 'Minimum 8 caractères';
-    return;
-  }
-  if (requireConfirm && pwd !== confirm.value) {
-    err.textContent = 'Les mots de passe ne correspondent pas';
-    return;
-  }
-  haptic(15);
-  _closePasswordModal(pwd);
-});
-
-document.getElementById('passwordInput').addEventListener('keydown', function(e) {
-  if (e.key === 'Enter') {
-    var requireConfirm = document.getElementById('passwordConfirmGroup').style.display !== 'none';
-    if (requireConfirm) document.getElementById('passwordConfirm').focus();
-    else document.getElementById('passwordConfirmBtn').click();
-  }
-});
-document.getElementById('passwordConfirm').addEventListener('keydown', function(e) {
-  if (e.key === 'Enter') document.getElementById('passwordConfirmBtn').click();
-});
 
 /* ==========================================================================
    HELPERS GÉNÉRAUX
@@ -552,6 +484,7 @@ function isHoliday(dateStr) {
 function updateOfflineBadge() {
   var badge = document.getElementById('offlineBadge');
   var text = document.getElementById('offlineText');
+  if (!badge || !text) return;
   if (navigator.onLine) {
     badge.className = 'offline-badge show';
     text.textContent = 'En ligne - Données locales sécurisées';
@@ -561,12 +494,9 @@ function updateOfflineBadge() {
     text.textContent = 'Hors ligne - Fonctionne normalement';
   }
 }
-window.addEventListener('online', updateOfflineBadge);
-window.addEventListener('offline', updateOfflineBadge);
-updateOfflineBadge();
 
 /* ==========================================================================
-   PDF LIB (jsPDF uniquement — SwissQRBill retiré)
+   PDF LIB
    ========================================================================== */
 var libCache = {};
 
@@ -575,8 +505,7 @@ function loadScript(src) {
     var existing = document.querySelector('script[src="' + src + '"]');
     if (existing) { resolve(); return; }
     var s = document.createElement('script');
-    s.src = src;
-    s.async = true;
+    s.src = src; s.async = true;
     s.onload = function() { resolve(); };
     s.onerror = function() { reject(new Error('Échec chargement: ' + src)); };
     document.head.appendChild(s);
@@ -602,7 +531,7 @@ function loadJsPDF() {
 }
 
 /* ==========================================================================
-   VALIDATION IBAN SUISSE (conservé pour settings, plus utilisé pour QR)
+   VALIDATION IBAN SUISSE
    ========================================================================== */
 function isValidSwissIBAN(iban) {
   if (!iban) return false;
@@ -693,6 +622,13 @@ var openDays = {};
 var stockSearchTerm = '';
 var stockSortMode = 'name_asc';
 var tabNews = {};
+var clientSigBundle = null;
+var techSigBundle = null;
+var clientCanvas, clientCtx, techCanvas, techCtx;
+var clientDrawing = false, techDrawing = false;
+var clientLastX = 0, clientLastY = 0, techLastX = 0, techLastY = 0;
+var signatureInitialized = false;
+var interventionModal = null; // 🔧 CORRECTION : plus de lookup au chargement
 
 var settings = {
   nom: 'PipePline', adresse: '', zip: '', city: '', siret: '', iban: '', tel: '', email: '',
@@ -714,13 +650,16 @@ var currentAvoirSourceFactureId = null;
 
 /* ==========================================================================
    ESCAPE HTML
+   🔧 CORRECTION : version rapide sans createElement
    ========================================================================== */
 function escapeHtml(text) {
-  if (!text && text !== 0) return '';
-  var s = String(text);
-  var div = document.createElement('div');
-  div.textContent = s;
-  return div.innerHTML;
+  if (text === null || text === undefined) return '';
+  return String(text)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
 }
 
 /* ==========================================================================
@@ -897,10 +836,11 @@ function getKmTotal(distance, retourMultiplier, rate) {
   return d * r * t;
 }
 function updateKmTotal() {
-  var active = document.getElementById('intKmActive').checked;
-  var fields = document.getElementById('intKmFields');
-  if (active) fields.classList.add('show');
-  else fields.classList.remove('show');
+  var activeEl = document.getElementById('intKmActive');
+  var fieldsEl = document.getElementById('intKmFields');
+  if (!activeEl || !fieldsEl) return;
+  if (activeEl.checked) fieldsEl.classList.add('show');
+  else fieldsEl.classList.remove('show');
   var distance = document.getElementById('intKmDistance').value;
   var retour = document.getElementById('intKmRetour').value;
   var rate = document.getElementById('intKmTaux').value;
@@ -944,7 +884,10 @@ function getTotalHT(item) {
 }
 function getTauxTva(item) {
   if (!settings.tvaActive) return 0;
-  if (item.paysClient && item.paysClient !== 'CH' && item.paysClient !== 'autre') return 0;
+  if (item.paysClient && item.paysClient !== 'CH' && item.paysClient !== 'autre') {
+    if (item.noTvaClient && String(item.noTvaClient).trim()) return 0;
+    return settings.tva;
+  }
   return settings.tva;
 }
 function isAutoliquidation(item) {
@@ -1026,6 +969,7 @@ function getStockStatus(nom) {
 function showToast(message, type, options) {
   options = options || {};
   var stack = document.getElementById('toastStack');
+  if (!stack) { console.log('[Toast]', message); return; }
   var el = document.createElement('div');
   el.className = 'toast-item ' + (type || 'info');
   var iconChar = 'ℹ';
@@ -1052,6 +996,7 @@ function dismissToast(el) {
 }
 
 function showSkeleton(container, count) {
+  if (!container) return;
   count = count || 3;
   var html = '';
   for (var i = 0; i < count; i++) {
@@ -1061,23 +1006,17 @@ function showSkeleton(container, count) {
 }
 
 function showConfirm(message, callback) {
-  document.getElementById('confirmMessage').textContent = message;
-  document.getElementById('confirmModal').classList.add('show');
+  var msgEl = document.getElementById('confirmMessage');
+  var modalEl = document.getElementById('confirmModal');
+  if (!msgEl || !modalEl) { if (callback) callback(confirm(message)); return; }
+  msgEl.textContent = message;
+  modalEl.classList.add('show');
   confirmCallback = callback;
   setTimeout(function() {
     var yes = document.getElementById('confirmYes');
     if (yes) yes.focus();
   }, 100);
 }
-document.getElementById('confirmYes').addEventListener('click', function() {
-  document.getElementById('confirmModal').classList.remove('show');
-  haptic(15);
-  if (confirmCallback) { confirmCallback(true); confirmCallback = null; }
-});
-document.getElementById('confirmNo').addEventListener('click', function() {
-  document.getElementById('confirmModal').classList.remove('show');
-  if (confirmCallback) { confirmCallback(false); confirmCallback = null; }
-});
 
 function debounce(fn, delay) {
   var timer;
@@ -1171,6 +1110,7 @@ function markAsDirty() {
 function updateSaveIndicator(saved) {
   var dot = document.getElementById('saveDot');
   var text = document.getElementById('saveStatusText');
+  if (!dot || !text) return;
   if (saved) {
     dot.className = 'save-dot';
     text.textContent = 'Sauvegardé';
@@ -1250,6 +1190,7 @@ function setupAutocomplete(inputId, listId, onSelect) {
 function showTvaBanner() {
   var banner = document.getElementById('alertTva');
   var text = document.getElementById('alertTvaText');
+  if (!banner || !text) return;
   if (!settings.tvaActive) text.innerHTML = '<strong>TVA non applicable</strong> — CA annuel < ' + formatCHF(TVA_SEUIL_CHF) + '. Vos factures porteront la mention « TVA non applicable (art. 10 al. 2 LTVA) ».';
   else text.innerHTML = '<strong>Assujetti à la TVA suisse</strong> — Taux : ' + settings.tva + ' %. N° TVA : ' + escapeHtml(settings.tvaIntra || 'à renseigner') + '. Clients UE : autoliquidation (0 %).';
   banner.classList.remove('hiding');
@@ -1259,18 +1200,14 @@ function showTvaBanner() {
 }
 function hideTvaBanner() {
   var banner = document.getElementById('alertTva');
+  if (!banner) return;
   banner.classList.add('hiding');
   banner.classList.remove('show');
   setTimeout(function() { banner.classList.remove('hiding'); }, 500);
 }
-document.getElementById('alertTvaClose').addEventListener('click', function(e) {
-  e.stopPropagation();
-  if (tvaBannerTimeout) clearTimeout(tvaBannerTimeout);
-  hideTvaBanner();
-});
 function updateTvaBannerContent() {
   var banner = document.getElementById('alertTva');
-  if (!banner.classList.contains('show')) return;
+  if (!banner || !banner.classList.contains('show')) return;
   var text = document.getElementById('alertTvaText');
   if (!settings.tvaActive) text.innerHTML = '<strong>TVA non applicable</strong> — CA annuel < ' + formatCHF(TVA_SEUIL_CHF) + '. Vos factures porteront la mention « TVA non applicable (art. 10 al. 2 LTVA) ».';
   else text.innerHTML = '<strong>Assujetti à la TVA suisse</strong> — Taux : ' + settings.tva + ' %. N° TVA : ' + escapeHtml(settings.tvaIntra || 'à renseigner') + '. Clients UE : autoliquidation (0 %).';
@@ -1279,6 +1216,7 @@ function updateTvaBannerContent() {
 function checkRecurringClients() {
   var alertEl = document.getElementById('alertRecurring');
   var alertText = document.getElementById('alertRecurringText');
+  if (!alertEl || !alertText) return;
   var upcoming = [];
   var now = new Date();
   interventions.forEach(function(int) {
@@ -1303,13 +1241,6 @@ function checkRecurringClients() {
     alertEl.classList.add('show');
   } else alertEl.classList.remove('show');
 }
-document.getElementById('alertRecurring').addEventListener('click', function() {
-  switchTab('interventions');
-  openMonths = {};
-  openDays = {};
-  markTabAsNew('interventions');
-  showToast('Rappels entretien disponibles dans les interventions', 'purple');
-});
 
 /* ==========================================================================
    STATS / BADGES / FILTRES
@@ -1342,19 +1273,20 @@ function renderStats() {
       if (intDate.getFullYear() === currentYear) caAnnuel += ttc;
     }
   }
-  document.getElementById('totalInterventions').textContent = total;
-  document.getElementById('totalImpayees').textContent = impayees;
-  document.getElementById('caMoisMini').textContent = formatCHF(caMois);
-  document.getElementById('tabInterventionsCount').textContent = total;
-  document.getElementById('tabFacturesCount').textContent = total;
-  document.getElementById('tabDevisCount').textContent = devisList.length;
-  document.getElementById('caMois').textContent = formatCHF(caMois);
-  document.getElementById('caNetMois').textContent = formatCHF(caNetMois);
-  document.getElementById('caAnnuel').textContent = formatCHF(caAnnuel);
-  document.getElementById('resteEncaisser').textContent = formatCHF(resteEncaisser);
-  document.getElementById('caMoisLabel').textContent = formatMois(now);
-  document.getElementById('caAnnuelLabel').textContent = currentYear;
-  document.getElementById('caNetMoisSub').textContent = '~' + settings.taxe + '%';
+  var el;
+  if (el = document.getElementById('totalInterventions')) el.textContent = total;
+  if (el = document.getElementById('totalImpayees')) el.textContent = impayees;
+  if (el = document.getElementById('caMoisMini')) el.textContent = formatCHF(caMois);
+  if (el = document.getElementById('tabInterventionsCount')) el.textContent = total;
+  if (el = document.getElementById('tabFacturesCount')) el.textContent = total;
+  if (el = document.getElementById('tabDevisCount')) el.textContent = devisList.length;
+  if (el = document.getElementById('caMois')) el.textContent = formatCHF(caMois);
+  if (el = document.getElementById('caNetMois')) el.textContent = formatCHF(caNetMois);
+  if (el = document.getElementById('caAnnuel')) el.textContent = formatCHF(caAnnuel);
+  if (el = document.getElementById('resteEncaisser')) el.textContent = formatCHF(resteEncaisser);
+  if (el = document.getElementById('caMoisLabel')) el.textContent = formatMois(now);
+  if (el = document.getElementById('caAnnuelLabel')) el.textContent = currentYear;
+  if (el = document.getElementById('caNetMoisSub')) el.textContent = '~' + settings.taxe + '%';
 
   updateBottomNavBadges();
   updateQuickFilterCounts();
@@ -1363,6 +1295,7 @@ function renderStats() {
 
   var alertEl = document.getElementById('alertOverdue');
   var alertText = document.getElementById('alertOverdueText');
+  if (!alertEl || !alertText) return;
   if (overdue > 0) {
     alertEl.classList.add('show');
     alertText.innerHTML = '<strong>' + overdue + '</strong> facture' + (overdue > 1 ? 's' : '') + ' impayée' + (overdue > 1 ? 's' : '') + ' depuis plus de ' + settings.seuilAlerte + ' jours — Total : <strong>' + formatCHF(overdueTotal) + '</strong>';
@@ -1374,12 +1307,18 @@ function updateBottomNavBadges() {
   var bnInt = document.getElementById('bnInterventions');
   var bnFac = document.getElementById('bnFactures');
   var bnDev = document.getElementById('bnDevis');
-  if (impayees > 0) { bnInt.textContent = impayees; bnInt.classList.remove('hidden'); }
-  else bnInt.classList.add('hidden');
-  if (interventions.length > 0) { bnFac.textContent = interventions.length; bnFac.classList.remove('hidden'); }
-  else bnFac.classList.add('hidden');
-  if (devisList.length > 0) { bnDev.textContent = devisList.length; bnDev.classList.remove('hidden'); }
-  else bnDev.classList.add('hidden');
+  if (bnInt) {
+    if (impayees > 0) { bnInt.textContent = impayees; bnInt.classList.remove('hidden'); }
+    else bnInt.classList.add('hidden');
+  }
+  if (bnFac) {
+    if (interventions.length > 0) { bnFac.textContent = interventions.length; bnFac.classList.remove('hidden'); }
+    else bnFac.classList.add('hidden');
+  }
+  if (bnDev) {
+    if (devisList.length > 0) { bnDev.textContent = devisList.length; bnDev.classList.remove('hidden'); }
+    else bnDev.classList.add('hidden');
+  }
 }
 
 function updateQuickFilterCounts() {
@@ -1439,7 +1378,8 @@ function renderToday() {
   var todayStr = new Date().toISOString().slice(0, 10);
   var todayDate = new Date();
   var label = todayDate.toLocaleDateString('fr-CH', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-  document.getElementById('todayDateLabel').textContent = label.charAt(0).toUpperCase() + label.slice(1);
+  var labelEl = document.getElementById('todayDateLabel');
+  if (labelEl) labelEl.textContent = label.charAt(0).toUpperCase() + label.slice(1);
 
   var todayItems = interventions.filter(function(i) { return i.date === todayStr && !i.isAvoir; });
   todayItems.sort(function(a, b) { return (a.heure || '99:99').localeCompare(b.heure || '99:99'); });
@@ -1450,13 +1390,16 @@ function renderToday() {
   var unpaidCount = todayItems.filter(function(i) { return !i.paye; }).length;
 
   var summary = document.getElementById('todaySummary');
-  summary.innerHTML =
-    '<span class="today-pill">' + todayItems.length + ' RDV</span>'
-    + '<span class="today-pill">' + workH + 'h / ' + WORK_HOURS_PER_DAY + 'h</span>'
-    + '<span class="today-pill">' + formatCHF(caJour) + '</span>'
-    + (unpaidCount > 0 ? '<span class="today-pill warn">⚠ ' + unpaidCount + ' à encaisser</span>' : '<span class="today-pill ok">✓ tout payé</span>');
+  if (summary) {
+    summary.innerHTML =
+      '<span class="today-pill">' + todayItems.length + ' RDV</span>'
+      + '<span class="today-pill">' + workH + 'h / ' + WORK_HOURS_PER_DAY + 'h</span>'
+      + '<span class="today-pill">' + formatCHF(caJour) + '</span>'
+      + (unpaidCount > 0 ? '<span class="today-pill warn">⚠ ' + unpaidCount + ' à encaisser</span>' : '<span class="today-pill ok">✓ tout payé</span>');
+  }
 
   var timeline = document.getElementById('todayTimeline');
+  if (!timeline) return;
   if (todayItems.length === 0) {
     timeline.innerHTML = '<div class="today-empty">Aucun rendez-vous aujourd\'hui.<br>Profitez-en pour faire vos devis ou relancer les impayés !</div>';
     return;
@@ -1504,6 +1447,7 @@ function renderToday() {
    ========================================================================== */
 function renderInterventions() {
   var container = document.getElementById('interventionsGroups');
+  if (!container) return;
   var term = searchTerm.trim().toLowerCase();
   var filtered = interventions.slice();
   if (term) {
@@ -1589,7 +1533,7 @@ function renderInterventionsGrouped(container, filtered) {
     var days = groupedByMonth[mKey];
     Object.keys(days).forEach(function(dKey) {
       var dayKeyFull = mKey + '_' + dKey;
-      var content = container.querySelector('[data-day-content="' + CSS.escape(dayKeyFull) + '"]');
+      var content = container.querySelector('[data-day-content="' + (window.CSS && CSS.escape ? CSS.escape(dayKeyFull) : dayKeyFull) + '"]');
       if (content) {
         var frag = document.createDocumentFragment();
         days[dKey].forEach(function(int) { frag.appendChild(buildInterventionCard(int)); });
@@ -1732,9 +1676,10 @@ function openActionSheet(id) {
   var int = interventions.find(function(i) { return i.id === id; });
   if (!int) return;
   haptic(10);
+  var sheet = document.getElementById('actionSheet');
+  if (!sheet) return;
   document.getElementById('actionSheetTitle').textContent = int.client || 'Client';
   document.getElementById('actionSheetSub').textContent = (int.numeroFacture || '') + ' • ' + formatCHF(getTotalTTC(int));
-  var sheet = document.getElementById('actionSheet');
   sheet.dataset.id = id;
   var progressBtn = sheet.querySelector('[data-action="progress"]');
   if (int.paye || int.statut === 'termine' || int.isAvoir) progressBtn.classList.add('hidden');
@@ -1756,18 +1701,6 @@ function openActionSheet(id) {
   else certBtn.classList.add('hidden');
   sheet.classList.add('show');
 }
-
-document.getElementById('actionSheet').addEventListener('click', function(e) {
-  if (e.target === this) { this.classList.remove('show'); return; }
-  var btn = e.target.closest('[data-action]');
-  if (btn) {
-    var id = this.dataset.id;
-    var action = btn.dataset.action;
-    this.classList.remove('show');
-    handleAction(action, id);
-  }
-  if (e.target.classList.contains('action-sheet-cancel')) this.classList.remove('show');
-});
 
 function handleAction(action, id) {
   haptic(10);
@@ -1877,23 +1810,25 @@ function getDayWorkMinutes(dateStr) {
 
 function renderPlanning() {
   var grid = document.getElementById('planningGrid');
+  if (!grid) return;
   var days = getWeekDays(planningDate);
   var today = new Date();
   today.setHours(0, 0, 0, 0);
-  document.getElementById('planningMonthLabel').textContent = formatMois(days[0]);
+  var mLabel = document.getElementById('planningMonthLabel');
+  if (mLabel) mLabel.textContent = formatMois(days[0]);
   grid.innerHTML = '';
   var dayNames = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
   days.forEach(function(day, i) {
     var dayStr = toDateStr(day);
     var events = interventions.filter(function(int) { return int.date === dayStr && !int.isAvoir; });
-    var isToday = day.getTime() === today.getTime();
+    var isTodayVal = day.getTime() === today.getTime();
     var isSelected = day.toDateString() === selectedPlanningDate.toDateString();
     var workMinutes = getDayWorkMinutes(dayStr);
     var workHours = Math.round(workMinutes / 60 * 10) / 10;
     var isOver = workMinutes > WORK_HOURS_PER_DAY * 60;
     var holidayName = isHoliday(dayStr);
     var el = document.createElement('div');
-    el.className = 'planning-day' + (isToday ? ' today' : '') + (isSelected ? ' selected' : '') + (events.length > 0 ? ' has-events' : '') + (holidayName ? ' holiday' : '');
+    el.className = 'planning-day' + (isTodayVal ? ' today' : '') + (isSelected ? ' selected' : '') + (events.length > 0 ? ' has-events' : '') + (holidayName ? ' holiday' : '');
     el.title = holidayName || '';
     el.innerHTML = '<div class="planning-day-name">' + dayNames[i] + '</div>'
       + '<div class="planning-day-num">' + day.getDate() + '</div>'
@@ -1903,6 +1838,7 @@ function renderPlanning() {
     grid.appendChild(el);
   });
   var eventsContainer = document.getElementById('planningEvents');
+  if (!eventsContainer) return;
   var selStr = toDateStr(selectedPlanningDate);
   var selEvents = interventions.filter(function(int) { return int.date === selStr && !int.isAvoir; });
   selEvents.sort(function(a, b) { return (a.heure || '99:99').localeCompare(b.heure || '99:99'); });
@@ -1912,7 +1848,8 @@ function renderPlanning() {
   var label = selectedPlanningDate.toLocaleDateString('fr-CH', { weekday: 'long', day: 'numeric', month: 'long' });
   if (workMin > 0) label += ' — ' + workH + 'h / ' + WORK_HOURS_PER_DAY + 'h';
   if (holiday) label += ' 🎉 ' + holiday;
-  document.getElementById('planningDayLabel').textContent = label;
+  var dayLabel = document.getElementById('planningDayLabel');
+  if (dayLabel) dayLabel.textContent = label;
   eventsContainer.innerHTML = '';
   if (selEvents.length === 0) eventsContainer.innerHTML = '<div class="empty-state" style="padding:20px;">Aucune intervention ce jour</div>';
   else {
@@ -1993,50 +1930,27 @@ function buildPlanningText(format) {
 function openSharePlanningModal() {
   haptic(10);
   var days = getWeekDays(planningDate);
-  document.getElementById('shareWeekLabel').value = formatMois(days[0]) + ' (semaine du ' + formatDate(toDateStr(days[0])) + ')';
+  var weekLabel = document.getElementById('shareWeekLabel');
+  if (weekLabel) weekLabel.value = formatMois(days[0]) + ' (semaine du ' + formatDate(toDateStr(days[0])) + ')';
   updateSharePreview();
-  document.getElementById('sharePlanningModal').classList.add('show');
+  var modal = document.getElementById('sharePlanningModal');
+  if (modal) modal.classList.add('show');
 }
 function updateSharePreview() {
-  var format = document.getElementById('shareFormat').value;
-  document.getElementById('sharePreview').value = buildPlanningText(format);
+  var formatEl = document.getElementById('shareFormat');
+  var previewEl = document.getElementById('sharePreview');
+  if (!formatEl || !previewEl) return;
+  previewEl.value = buildPlanningText(formatEl.value);
 }
-document.getElementById('shareFormat').addEventListener('change', updateSharePreview);
-document.getElementById('shareWeekBtn').addEventListener('click', openSharePlanningModal);
-document.getElementById('closeSharePlanning').addEventListener('click', function() { document.getElementById('sharePlanningModal').classList.remove('show'); });
-document.getElementById('shareSmsBtn').addEventListener('click', function() {
-  var text = document.getElementById('sharePreview').value;
-  window.location.href = 'sms:?body=' + encodeURIComponent(text);
-});
-document.getElementById('shareMailBtn').addEventListener('click', function() {
-  var text = document.getElementById('sharePreview').value;
-  var days = getWeekDays(planningDate);
-  var subject = 'Planning semaine ' + formatMois(days[0]);
-  window.location.href = 'mailto:?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(text);
-});
-document.getElementById('shareNativeBtn').addEventListener('click', function() {
-  var text = document.getElementById('sharePreview').value;
-  if (navigator.share) navigator.share({ title: 'Planning PipePline', text: text }).catch(function() {});
-  else showToast('Partage natif non supporté', 'warning');
-});
-document.getElementById('shareCopyBtn').addEventListener('click', function() {
-  var text = document.getElementById('sharePreview').value;
-  if (navigator.clipboard) navigator.clipboard.writeText(text).then(function() { showToast('Planning copié', 'success'); });
-  else {
-    var ta = document.getElementById('sharePreview');
-    ta.select();
-    document.execCommand('copy');
-    showToast('Planning copié', 'success');
-  }
-});
 
 /* ==========================================================================
-   PLANNING MODALE (ajout RDV)
+   PLANNING MODALE
    ========================================================================== */
 function updatePlanDureeCalc() {
   var debut = document.getElementById('planHeureDebut').value;
   var fin = document.getElementById('planHeureFin').value;
   var el = document.getElementById('planDureeCalc');
+  if (!el) return;
   if (debut && fin) {
     var diff = diffHeures(debut, fin);
     el.value = diff > 0 ? formatDuree(diff) : '—';
@@ -2049,6 +1963,7 @@ function checkPlanConflict() {
   var heureFin = document.getElementById('planHeureFin').value;
   var warn = document.getElementById('planConflictWarning');
   var warnText = document.getElementById('planConflictWarningText');
+  if (!warn || !warnText) return;
   if (!date || !heureDebut) { warn.classList.remove('show'); return; }
   var conflicts = findConflicts(date, heureDebut, heureFin, editingPlanningId);
   if (conflicts.length > 0) {
@@ -2085,97 +2000,14 @@ function openPlanningModal(editId) {
   document.getElementById('planningModal').classList.add('show');
   setTimeout(function() { document.getElementById('planClient').focus(); }, 100);
 }
-document.getElementById('addFromPlanningBtn').addEventListener('click', function() { haptic(10); openPlanningModal(); });
-document.getElementById('cancelPlanning').addEventListener('click', function() {
-  document.getElementById('planningModal').classList.remove('show');
-  editingPlanningId = null;
-});
-['planHeureDebut', 'planHeureFin', 'planDate'].forEach(function(id) {
-  var el = document.getElementById(id);
-  if (el) { el.addEventListener('change', updatePlanDureeCalc); el.addEventListener('input', updatePlanDureeCalc); }
-});
-document.getElementById('planPreset7h').addEventListener('click', function() { setPlanningHeures('08:00', Math.round(8.4 * 60)); });
-document.getElementById('planPresetDemi').addEventListener('click', function() { setPlanningHeures('08:00', Math.round(4.2 * 60)); });
-document.getElementById('planPreset1h').addEventListener('click', function() { setPlanningHeures('08:00', 60); });
-document.getElementById('planPreset2h').addEventListener('click', function() { setPlanningHeures('08:00', 120); });
-document.getElementById('planPresetClear').addEventListener('click', function() {
-  document.getElementById('planHeureDebut').value = '';
-  document.getElementById('planHeureFin').value = '';
-  updatePlanDureeCalc();
-});
-document.getElementById('confirmPlanning').addEventListener('click', function() {
-  var type = document.getElementById('planTypeSelect').value;
-  var date = document.getElementById('planDate').value;
-  var heureDebut = document.getElementById('planHeureDebut').value;
-  var heureFin = document.getElementById('planHeureFin').value;
-  var client = document.getElementById('planClient').value.trim();
-  var tel = document.getElementById('planTel').value.trim();
-  var adresse = document.getElementById('planAdresse').value.trim();
-  var description = document.getElementById('planDescription').value.trim();
-  if (!client) { showToast('Client / Adresse requis', 'warning'); return; }
-  if (!description) { showToast('Description requise', 'warning'); return; }
-  if (!date) { showToast('Date requise', 'warning'); return; }
-  if (!heureDebut) { showToast('Heure de début requise', 'warning'); return; }
-  var duree = 0;
-  if (heureFin) {
-    duree = diffHeures(heureDebut, heureFin);
-    if (duree <= 0) { showToast('L\'heure de fin doit être après l\'heure de début', 'warning'); return; }
-  }
-  haptic(15);
-  if (editingPlanningId) {
-    var int = interventions.find(function(i) { return i.id === editingPlanningId; });
-    if (int) {
-      int.type = type; int.date = date; int.heure = heureDebut; int.heureFin = heureFin;
-      int.client = client; int.tel = tel; int.adresse = adresse; int.description = description;
-      if (duree > 0) int.duree = duree;
-      invalidateTotals(int.id);
-    }
-    editingPlanningId = null;
-    showToast('RDV mis à jour', 'success');
-  } else {
-    var newInt = {
-      id: 'int_' + Date.now(),
-      numeroFacture: genererNumeroFacture(),
-      client: client, email: '', tel: tel, adresse: adresse,
-      description: description, type: type,
-      date: date, heure: heureDebut, heureFin: heureFin, duree: duree,
-      taux: settings.tauxDefaut, deplacement: settings.deplacementDefaut,
-      pieces: [], frais: [], photos: [], notes: '', paye: false, statut: 'planifie',
-      paysClient: 'CH',
-      datePaiement: null, signatureClient: null, signatureTech: null,
-      createdAt: new Date().toISOString()
-    };
-    interventions.push(newInt);
-    showToast('Ajouté au planning', 'success');
-  }
-  document.getElementById('planningModal').classList.remove('show');
-  markAsDirty();
-  renderAll();
-});
 
 /* ==========================================================================
    INTERVENTION MODALE (wizard)
    ========================================================================== */
-var interventionModal = document.getElementById('interventionModal');
-
-function editIntervention(id) {
-  var int = interventions.find(function(i) { return i.id === id; });
-  if (!int) return;
-  openInterventionModal({
-    editId: int.id, client: int.client, email: int.email,
-    tel: int.tel, adresse: int.adresse,
-    description: int.description, type: int.type, date: int.date,
-    heure: int.heure, heureFin: int.heureFin, duree: int.duree, taux: int.taux,
-    deplacement: int.deplacement, notes: int.notes, paye: int.paye,
-    statut: int.statut, pieces: int.pieces, frais: int.frais, photos: int.photos,
-    paysClient: int.paysClient, noTvaClient: int.noTvaClient,
-    kmActive: int.kmActive, kmDistance: int.kmDistance, kmRetour: int.kmRetour, kmTaux: int.kmTaux,
-    recurring: int.recurring
-  });
-}
-
 function setWizardStep(step) {
   currentWizardStep = step;
+  if (!interventionModal) interventionModal = document.getElementById('interventionModal');
+  if (!interventionModal) return;
   interventionModal.querySelectorAll('.wizard-pane').forEach(function(p) {
     p.classList.toggle('active', parseInt(p.dataset.pane) === step);
   });
@@ -2197,15 +2029,18 @@ function setWizardStep(step) {
 }
 
 function updatePaysClientUI() {
-  var pays = document.getElementById('intPays').value;
+  var paysEl = document.getElementById('intPays');
   var group = document.getElementById('intNoTvaClientGroup');
+  if (!paysEl || !group) return;
+  var pays = paysEl.value;
   if (settings.tvaActive && pays !== 'CH' && pays !== 'autre') group.style.display = 'block';
   else group.style.display = 'none';
 }
-document.getElementById('intPays').addEventListener('change', updatePaysClientUI);
 
 function openInterventionModal(prefill) {
   prefill = prefill || {};
+  if (!interventionModal) interventionModal = document.getElementById('interventionModal');
+  if (!interventionModal) { showToast('Modale intervention introuvable', 'error'); return; }
   tempPieces = (prefill.pieces || []).map(function(p) { return { nom: p.nom, prix: p.prix, qte: p.qte || 1 }; });
   tempFrais = (prefill.frais || []).map(function(f) { return { libelle: f.libelle, montant: f.montant }; });
   tempPhotos = (prefill.photos || []).slice();
@@ -2218,8 +2053,10 @@ function openInterventionModal(prefill) {
   document.getElementById('intEmail').value = prefill.email || '';
   document.getElementById('intTel').value = prefill.tel || '';
   document.getElementById('intAdresse').value = prefill.adresse || '';
-  document.getElementById('intPays').value = prefill.paysClient || 'CH';
-  document.getElementById('intNoTvaClient').value = prefill.noTvaClient || '';
+  var paysEl = document.getElementById('intPays');
+  if (paysEl) paysEl.value = prefill.paysClient || 'CH';
+  var noTvaEl = document.getElementById('intNoTvaClient');
+  if (noTvaEl) noTvaEl.value = prefill.noTvaClient || '';
   updatePaysClientUI();
   document.getElementById('intDescription').value = prefill.description || '';
   document.getElementById('intDate').value = prefill.date || new Date().toISOString().slice(0, 10);
@@ -2242,7 +2079,8 @@ function openInterventionModal(prefill) {
   document.getElementById('intKmTaux').value = prefill.kmTaux || settings.kmRate;
   updateKmTotal();
   interventionModal.dataset.editId = prefill.editId || '';
-  var isStockDecremented = prefill.editId && interventions.find(function(i) { return i.id === prefill.editId; })?.stockDecremented;
+  var found = prefill.editId ? interventions.find(function(i) { return i.id === prefill.editId; }) : null;
+  var isStockDecremented = found && found.stockDecremented;
   document.getElementById('addPieceBtn').disabled = !!isStockDecremented;
   if (isStockDecremented) document.getElementById('addPieceBtn').title = 'Stock déjà décrémenté';
   checkIntConflict();
@@ -2251,12 +2089,15 @@ function openInterventionModal(prefill) {
 }
 
 function checkIntConflict() {
-  var date = document.getElementById('intDate').value;
-  var heure = document.getElementById('intHeure').value;
-  var heureFin = document.getElementById('intHeureFin').value;
-  var editId = interventionModal.dataset.editId;
+  var dateEl = document.getElementById('intDate');
+  var heureEl = document.getElementById('intHeure');
+  var heureFinEl = document.getElementById('intHeureFin');
+  if (!dateEl || !heureEl || !heureFinEl) return;
+  var date = dateEl.value, heure = heureEl.value, heureFin = heureFinEl.value;
+  var editId = interventionModal ? interventionModal.dataset.editId : '';
   var warn = document.getElementById('conflictWarning');
   var warnText = document.getElementById('conflictWarningText');
+  if (!warn || !warnText) return;
   if (!date || !heure) { warn.classList.remove('show'); return; }
   var conflicts = findConflicts(date, heure, heureFin, editId);
   if (conflicts.length > 0) {
@@ -2264,123 +2105,6 @@ function checkIntConflict() {
     warn.classList.add('show');
   } else warn.classList.remove('show');
 }
-['intDate', 'intHeure', 'intHeureFin'].forEach(function(id) {
-  document.getElementById(id).addEventListener('change', checkIntConflict);
-  document.getElementById(id).addEventListener('input', checkIntConflict);
-});
-
-document.getElementById('intKmActive').addEventListener('change', updateKmTotal);
-document.getElementById('intKmDistance').addEventListener('input', updateKmTotal);
-document.getElementById('intKmRetour').addEventListener('change', updateKmTotal);
-document.getElementById('intKmTaux').addEventListener('input', updateKmTotal);
-
-document.getElementById('addInterventionBtn').addEventListener('click', function() { haptic(10); openInterventionModal(); });
-document.getElementById('todayAddBtn').addEventListener('click', function() { haptic(10); openInterventionModal(); });
-document.getElementById('addFactureBtn').addEventListener('click', function() { haptic(10); switchTab('interventions'); openInterventionModal(); });
-document.getElementById('cancelIntervention').addEventListener('click', function() {
-  interventionModal.classList.remove('show');
-  interventionModal.dataset.editId = '';
-});
-document.getElementById('wizardNext').addEventListener('click', function() {
-  if (currentWizardStep === 1) {
-    var client = document.getElementById('intClient').value.trim();
-    if (!client) { showToast('Nom du client requis', 'warning'); return; }
-  }
-  if (currentWizardStep === 2) {
-    var desc = document.getElementById('intDescription').value.trim();
-    if (!desc) { showToast('Description requise', 'warning'); return; }
-    var duree = dureeVersMinutes(document.getElementById('intDureeJours').value, document.getElementById('intDureeHeures').value, document.getElementById('intDureeMinutes').value);
-    if (duree <= 0) { showToast('Durée requise', 'warning'); return; }
-  }
-  setWizardStep(Math.min(3, currentWizardStep + 1));
-});
-document.getElementById('wizardPrev').addEventListener('click', function() { setWizardStep(Math.max(1, currentWizardStep - 1)); });
-
-document.getElementById('confirmIntervention').addEventListener('click', function() {
-  var editId = interventionModal.dataset.editId;
-  var client = document.getElementById('intClient').value.trim();
-  var email = document.getElementById('intEmail').value.trim();
-  var tel = document.getElementById('intTel').value.trim();
-  var adresse = document.getElementById('intAdresse').value.trim();
-  var paysClient = document.getElementById('intPays').value;
-  var noTvaClient = document.getElementById('intNoTvaClient').value.trim();
-  var description = document.getElementById('intDescription').value.trim();
-  var type = document.getElementById('intTypeSelect').value;
-  var date = document.getElementById('intDate').value;
-  var heure = document.getElementById('intHeure').value;
-  var heureFin = document.getElementById('intHeureFin').value;
-  var statut = document.getElementById('intStatutSelect').value;
-  var duree = dureeVersMinutes(document.getElementById('intDureeJours').value, document.getElementById('intDureeHeures').value, document.getElementById('intDureeMinutes').value);
-  var taux = parseFloat(document.getElementById('intTaux').value) || settings.tauxDefaut;
-  var deplacement = parseFloat(document.getElementById('intDeplacement').value) || 0;
-  var notes = document.getElementById('intNotes').value.trim();
-  var paye = document.getElementById('intPaye').checked;
-  var recurring = document.getElementById('intRecurring').checked;
-  var kmActive = document.getElementById('intKmActive').checked;
-  var kmDistance = parseFloat(document.getElementById('intKmDistance').value) || 0;
-  var kmRetour = parseInt(document.getElementById('intKmRetour').value) || 1;
-  var kmTaux = parseFloat(document.getElementById('intKmTaux').value) || settings.kmRate;
-  if (!client) { showToast('Nom du client requis', 'warning'); setWizardStep(1); return; }
-  if (!description) { showToast('Description requise', 'warning'); setWizardStep(2); return; }
-  if (!date) { showToast('Date requise', 'warning'); setWizardStep(2); return; }
-  if (duree <= 0) { showToast('Durée requise', 'warning'); setWizardStep(2); return; }
-  var pieces = tempPieces.filter(function(p) { return p.nom && p.nom.trim() && parseFloat(p.prix) > 0; });
-  var frais = tempFrais.filter(function(f) { return f.libelle && f.libelle.trim() && parseFloat(f.montant) > 0; });
-  var photos = tempPhotos.slice();
-  haptic(15);
-  if (editId) {
-    var int = interventions.find(function(i) { return i.id === editId; });
-    if (int) {
-      var oldPieces = int.pieces || [];
-      int.client = client; int.email = email; int.tel = tel; int.adresse = adresse;
-      int.paysClient = paysClient; int.noTvaClient = noTvaClient;
-      int.description = description;
-      int.type = type; int.date = date; int.heure = heure; int.heureFin = heureFin;
-      int.duree = duree; int.taux = taux; int.deplacement = deplacement;
-      int.notes = notes; int.pieces = pieces; int.frais = frais; int.photos = photos; int.statut = statut;
-      int.recurring = recurring;
-      int.kmActive = kmActive; int.kmDistance = kmDistance; int.kmRetour = kmRetour; int.kmTaux = kmTaux;
-      if (int.stockDecremented) {
-        restoreStock(oldPieces);
-        decrementStock(pieces);
-      }
-      if (paye && !int.paye) {
-        int.paye = true;
-        int.datePaiement = new Date().toISOString().slice(0, 10);
-      } else if (!paye && int.paye) {
-        int.paye = false;
-        int.datePaiement = null;
-      }
-      invalidateTotals(int.id);
-    }
-    showToast('Intervention modifiée', 'success');
-  } else {
-    var newInt = {
-      id: 'int_' + Date.now(),
-      numeroFacture: genererNumeroFacture(),
-      client: client, email: email, tel: tel, adresse: adresse,
-      paysClient: paysClient, noTvaClient: noTvaClient,
-      description: description, type: type,
-      date: date, heure: heure, heureFin: heureFin, duree: duree,
-      taux: taux, deplacement: deplacement,
-      pieces: pieces, frais: frais, photos: photos, notes: notes, paye: paye, statut: statut,
-      recurring: recurring,
-      kmActive: kmActive, kmDistance: kmDistance, kmRetour: kmRetour, kmTaux: kmTaux,
-      datePaiement: paye ? new Date().toISOString().slice(0, 10) : null,
-      signatureClient: null, signatureTech: null, createdAt: new Date().toISOString()
-    };
-    interventions.push(newInt);
-    if (email && !clients.find(function(c) { return c.email === email; })) {
-      clients.push({ nom: client, email: email, tel: tel, adresse: adresse });
-    }
-    showToast('Facture ' + newInt.numeroFacture + ' créée', 'success');
-    markTabAsNew('interventions');
-  }
-  interventionModal.classList.remove('show');
-  interventionModal.dataset.editId = '';
-  markAsDirty();
-  renderAll();
-});
 
 /* ==========================================================================
    PIÈCES / FRAIS / PHOTOS
@@ -2418,13 +2142,9 @@ function renderPieces() {
   updatePiecesTotal();
 }
 function updatePiecesTotal() {
-  document.getElementById('piecesTotal').textContent = formatCHF(getPiecesTotal(tempPieces));
+  var el = document.getElementById('piecesTotal');
+  if (el) el.textContent = formatCHF(getPiecesTotal(tempPieces));
 }
-document.getElementById('addPieceBtn').addEventListener('click', function() {
-  haptic(8);
-  tempPieces.push({ nom: '', prix: '', qte: 1 });
-  renderPieces();
-});
 
 function renderFrais() {
   var container = document.getElementById('fraisContainer');
@@ -2451,13 +2171,9 @@ function renderFrais() {
   updateFraisTotal();
 }
 function updateFraisTotal() {
-  document.getElementById('fraisTotal').textContent = formatCHF(getFraisTotal(tempFrais));
+  var el = document.getElementById('fraisTotal');
+  if (el) el.textContent = formatCHF(getFraisTotal(tempFrais));
 }
-document.getElementById('addFraisBtn').addEventListener('click', function() {
-  haptic(8);
-  tempFrais.push({ libelle: '', montant: '' });
-  renderFrais();
-});
 
 function renderDevisPieces() {
   var container = document.getElementById('devisPiecesContainer');
@@ -2485,13 +2201,9 @@ function renderDevisPieces() {
   updateDevisPiecesTotal();
 }
 function updateDevisPiecesTotal() {
-  document.getElementById('devisPiecesTotal').textContent = formatCHF(getPiecesTotal(tempDevisPieces));
+  var el = document.getElementById('devisPiecesTotal');
+  if (el) el.textContent = formatCHF(getPiecesTotal(tempDevisPieces));
 }
-document.getElementById('addDevisPieceBtn').addEventListener('click', function() {
-  haptic(8);
-  tempDevisPieces.push({ nom: '', prix: '', qte: 1 });
-  renderDevisPieces();
-});
 
 function updateDureeTotal(prefix) {
   var j = document.getElementById(prefix + 'DureeJours');
@@ -2510,25 +2222,13 @@ function applyDureePreset(prefix, heures) {
   document.getElementById(prefix + 'DureeMinutes').value = obj.minutes;
   updateDureeTotal(prefix);
 }
-['int', 'devis'].forEach(function(prefix) {
-  ['DureeJours', 'DureeHeures', 'DureeMinutes'].forEach(function(field) {
-    var el = document.getElementById(prefix + field);
-    if (el) el.addEventListener('input', function() { updateDureeTotal(prefix); });
-  });
-});
-document.querySelectorAll('.duree-presets button[data-prefix]').forEach(function(btn) {
-  btn.addEventListener('click', function() { applyDureePreset(this.dataset.prefix, parseFloat(this.dataset.hours)); });
-});
 
 function compressPhotoFile(file, maxW, quality) {
   maxW = maxW || 800;
   quality = quality || 0.7;
   return new Promise(function(resolve, reject) {
     if (!file || file.size === 0) { reject(new Error('Fichier vide')); return; }
-    if (file.size > MAX_PHOTO_BYTES) {
-      reject(new Error('Photo trop volumineuse (>20 Mo)'));
-      return;
-    }
+    if (file.size > MAX_PHOTO_BYTES) { reject(new Error('Photo trop volumineuse (>20 Mo)')); return; }
     var reader = new FileReader();
     reader.onload = function(e) {
       var img = new Image();
@@ -2593,22 +2293,7 @@ function renderPhotos() {
     img.addEventListener('click', function() { openPhotoViewer(tempPhotos, parseInt(this.dataset.idx)); });
   });
 }
-document.getElementById('addPhotoBtn').addEventListener('click', function() { haptic(10); document.getElementById('photoInput').click(); });
-document.getElementById('photoInput').addEventListener('change', function(e) {
-  var files = Array.from(e.target.files || []);
-  if (!files.length) return;
-  var slots = MAX_PHOTOS - tempPhotos.length;
-  if (slots <= 0) { showToast('Maximum ' + MAX_PHOTOS + ' photos', 'warning'); e.target.value = ''; return; }
-  var batch = files.slice(0, slots);
-  processPhotoFiles(batch).then(function(results) {
-    tempPhotos = tempPhotos.concat(results);
-    renderPhotos();
-    haptic(15);
-    if (results.length > 0) showToast(results.length + ' photo(s) ajoutée(s)', 'success');
-    else showToast('Aucune photo valide', 'warning');
-  });
-  e.target.value = '';
-});
+
 function openPhotoViewer(photos, startIdx) {
   var overlay = document.createElement('div');
   overlay.style.cssText = 'position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.92); z-index:100000; display:flex; align-items:center; justify-content:center; padding:20px;';
@@ -2667,56 +2352,6 @@ function openDevisModal() {
   document.getElementById('confirmDevis').textContent = '✓ Créer le devis';
   document.getElementById('devisModal').classList.add('show');
 }
-document.getElementById('addDevisBtn').addEventListener('click', function() { haptic(10); openDevisModal(); });
-document.getElementById('cancelDevis').addEventListener('click', function() {
-  document.getElementById('devisModal').classList.remove('show');
-  editingDevisId = null;
-});
-document.getElementById('confirmDevis').addEventListener('click', function() {
-  var client = document.getElementById('devisClient').value.trim();
-  var email = document.getElementById('devisEmail').value.trim();
-  var tel = document.getElementById('devisTel').value.trim();
-  var adresse = document.getElementById('devisAdresse').value.trim();
-  var description = document.getElementById('devisDescription').value.trim();
-  var date = document.getElementById('devisDate').value;
-  var validite = parseInt(document.getElementById('devisValidite').value) || 30;
-  var duree = dureeVersMinutes(document.getElementById('devisDureeJours').value, document.getElementById('devisDureeHeures').value, document.getElementById('devisDureeMinutes').value);
-  var taux = parseFloat(document.getElementById('devisTaux').value) || settings.tauxDefaut;
-  var deplacement = parseFloat(document.getElementById('devisDeplacement').value) || 0;
-  var notes = document.getElementById('devisNotes').value.trim();
-  if (!client || !description || !date) { showToast('Champs obligatoires manquants', 'warning'); return; }
-  var pieces = tempDevisPieces.filter(function(p) { return p.nom && p.nom.trim() && parseFloat(p.prix) > 0; });
-  haptic(15);
-  if (editingDevisId) {
-    var d = devisList.find(function(x) { return x.id === editingDevisId; });
-    if (d) {
-      d.client = client; d.email = email; d.tel = tel; d.adresse = adresse;
-      d.description = description; d.date = date; d.validite = validite;
-      d.duree = duree; d.taux = taux; d.deplacement = deplacement;
-      d.pieces = pieces; d.notes = notes;
-      invalidateTotals(d.id);
-    }
-    editingDevisId = null;
-    showToast('Devis modifié', 'success');
-  } else {
-    var newDevis = {
-      id: 'dev_' + Date.now(),
-      numeroDevis: genererNumeroDevis(),
-      client: client, email: email, tel: tel, adresse: adresse,
-      description: description, date: date,
-      validite: validite, duree: duree, taux: taux, deplacement: deplacement,
-      pieces: pieces, notes: notes, statut: 'en_attente',
-      paysClient: 'CH',
-      signatureClient: null, signatureTech: null, createdAt: new Date().toISOString()
-    };
-    devisList.push(newDevis);
-    showToast('Devis ' + newDevis.numeroDevis + ' créé', 'success');
-    markTabAsNew('devis');
-  }
-  document.getElementById('devisModal').classList.remove('show');
-  markAsDirty();
-  renderAll();
-});
 
 function editDevis(id) {
   var d = devisList.find(function(x) { return x.id === id; });
@@ -2789,22 +2424,6 @@ function openDevisDetail(id) {
   document.getElementById('convertDevisBtn').style.display = d.statut === 'accepte' ? 'inline-flex' : 'none';
   document.getElementById('devisDetailModal').classList.add('show');
 }
-document.getElementById('closeDevisDetail').addEventListener('click', function() { document.getElementById('devisDetailModal').classList.remove('show'); });
-document.getElementById('acceptDevisBtn').addEventListener('click', function() {
-  haptic(15);
-  var d = devisList.find(function(x) { return x.id === currentDevisId; });
-  if (d) { d.statut = 'accepte'; markAsDirty(); renderAll(); openDevisDetail(currentDevisId); showToast('Devis accepté', 'success'); }
-});
-document.getElementById('refuseDevisBtn').addEventListener('click', function() {
-  haptic(15);
-  var d = devisList.find(function(x) { return x.id === currentDevisId; });
-  if (d) { d.statut = 'refuse'; markAsDirty(); renderAll(); openDevisDetail(currentDevisId); showToast('Devis refusé', 'warning'); }
-});
-document.getElementById('editDevisBtn').addEventListener('click', function() {
-  if (!currentDevisId) return;
-  document.getElementById('devisDetailModal').classList.remove('show');
-  editDevis(currentDevisId);
-});
 
 /* ==========================================================================
    CONVERSION DEVIS → FACTURE
@@ -2826,120 +2445,6 @@ function updateConvertAcompte() {
   if (actif) info.innerHTML = 'Deux factures seront créées :<br>• <strong>Acompte ' + pct + '%</strong> = ' + formatCHF(acompte) + ' (impayée)<br>• <strong>Solde</strong> = ' + formatCHF(reste) + ' (sera facturé plus tard)';
   else info.textContent = 'Sans acompte, une seule facture sera créée au montant total du devis : ' + formatCHF(ttc);
 }
-document.getElementById('convertAcompteActive').addEventListener('change', updateConvertAcompte);
-document.getElementById('convertAcomptePct').addEventListener('input', updateConvertAcompte);
-document.getElementById('convertDevisBtn').addEventListener('click', function() {
-  haptic(10);
-  var d = devisList.find(function(x) { return x.id === currentDevisId; });
-  if (!d) return;
-  convertDevisSourceId = currentDevisId;
-  document.getElementById('convertClientDisplay').value = d.client || '—';
-  document.getElementById('convertTotalDisplay').value = formatCHF(getTotalTTC(d));
-  var ttc = getTotalTTC(d);
-  var autoAcompte = ttc > (settings.acompteSeuil || 5000);
-  document.getElementById('convertAcompteActive').checked = autoAcompte;
-  document.getElementById('convertAcomptePct').value = 30;
-  var dateSolde = new Date();
-  dateSolde.setDate(dateSolde.getDate() + 30);
-  document.getElementById('convertEcheanceSolde').value = dateSolde.toISOString().slice(0, 10);
-  updateConvertAcompte();
-  if (autoAcompte) {
-    setTimeout(function() {
-      showToast('💡 Devis > ' + formatCHF(settings.acompteSeuil) + ' — Acompte 30% pré-sélectionné', 'warning');
-    }, 400);
-  }
-  document.getElementById('convertDevisModal').classList.add('show');
-});
-document.getElementById('cancelConvertDevis').addEventListener('click', function() {
-  document.getElementById('convertDevisModal').classList.remove('show');
-  convertDevisSourceId = null;
-});
-document.getElementById('confirmConvertDevis').addEventListener('click', function() {
-  var d = devisList.find(function(x) { return x.id === convertDevisSourceId; });
-  if (!d) return;
-  var ttc = getTotalTTC(d);
-  var actif = document.getElementById('convertAcompteActive').checked;
-  var pct = parseFloat(document.getElementById('convertAcomptePct').value) || 0;
-  var today = new Date().toISOString().slice(0, 10);
-  var echeanceSolde = document.getElementById('convertEcheanceSolde').value;
-  haptic(15);
-  var fraisCopy = (d.frais || []).map(function(f) { return { libelle: f.libelle, montant: f.montant }; });
-  if (actif && pct > 0 && pct < 100) {
-    var acompteMontant = ttc * pct / 100;
-    var factureAcompte = {
-      id: 'int_' + Date.now() + '_a',
-      numeroFacture: genererNumeroFacture(),
-      client: d.client, email: d.email, tel: d.tel, adresse: d.adresse,
-      paysClient: d.paysClient || 'CH',
-      description: 'Acompte ' + pct + '% — ' + (d.description || ''),
-      type: 'autre', date: today, heure: '', heureFin: '',
-      duree: 0, taux: 0, deplacement: 0,
-      pieces: [], frais: [], photos: [], notes: 'Acompte sur devis ' + d.numeroDevis,
-      paye: false, statut: 'planifie', datePaiement: null,
-      signatureClient: d.signatureClient, signatureTech: d.signatureTech,
-      fromDevis: d.numeroDevis, factureType: 'acompte',
-      montantForceHT: settings.tvaActive ? acompteMontant / (1 + settings.tva / 100) : acompteMontant,
-      createdAt: new Date().toISOString()
-    };
-    var resteMontant = ttc - acompteMontant;
-    var factureSolde = {
-      id: 'int_' + Date.now() + '_s',
-      numeroFacture: genererNumeroFacture(),
-      client: d.client, email: d.email, tel: d.tel, adresse: d.adresse,
-      paysClient: d.paysClient || 'CH',
-      description: 'Solde — ' + (d.description || ''),
-      type: 'autre', date: echeanceSolde || today, heure: '', heureFin: '',
-      duree: d.duree, taux: d.taux, deplacement: d.deplacement,
-      pieces: (d.pieces || []).slice(), frais: fraisCopy, photos: [], notes: 'Solde devis ' + d.numeroDevis + ' (acompte ' + pct + '% déduit)',
-      paye: false, statut: 'planifie', datePaiement: null,
-      signatureClient: d.signatureClient, signatureTech: d.signatureTech,
-      fromDevis: d.numeroDevis, factureType: 'solde',
-      montantForceHT: settings.tvaActive ? resteMontant / (1 + settings.tva / 100) : resteMontant,
-      createdAt: new Date().toISOString()
-    };
-    interventions.push(factureAcompte);
-    interventions.push(factureSolde);
-    d.statut = 'accepte';
-    d.converti = true;
-    invalidateTotals();
-    markAsDirty();
-    renderAll();
-    document.getElementById('convertDevisModal').classList.remove('show');
-    document.getElementById('devisDetailModal').classList.remove('show');
-    switchTab('interventions');
-    showToast('2 factures créées : acompte ' + formatCHF(acompteMontant) + ' + solde ' + formatCHF(resteMontant), 'success');
-  } else {
-    var newInt = {
-      id: 'int_' + Date.now(),
-      numeroFacture: genererNumeroFacture(),
-      client: d.client, email: d.email, tel: d.tel, adresse: d.adresse,
-      paysClient: d.paysClient || 'CH',
-      description: d.description, type: 'autre',
-      date: echeanceSolde || today,
-      heure: '', heureFin: '', duree: d.duree, taux: d.taux, deplacement: d.deplacement,
-      pieces: (d.pieces || []).slice(), frais: fraisCopy, photos: [], notes: d.notes, paye: false,
-      statut: 'planifie', datePaiement: null,
-      signatureClient: d.signatureClient, signatureTech: d.signatureTech,
-      fromDevis: d.numeroDevis, createdAt: new Date().toISOString()
-    };
-    interventions.push(newInt);
-    d.statut = 'accepte';
-    d.converti = true;
-    invalidateTotals();
-    markAsDirty();
-    renderAll();
-    document.getElementById('convertDevisModal').classList.remove('show');
-    document.getElementById('devisDetailModal').classList.remove('show');
-    switchTab('interventions');
-    openFacture(newInt.id);
-    showToast('Devis converti en facture ' + newInt.numeroFacture, 'success');
-  }
-  markTabAsNew('factures');
-  convertDevisSourceId = null;
-});
-document.getElementById('downloadDevisPdfBtn').addEventListener('click', function() { if (currentDevisId) generateDevisPDF(currentDevisId); });
-document.getElementById('sendDevisMailBtn').addEventListener('click', function() { if (currentDevisId) openMailModal(currentDevisId, 'devis'); });
-document.getElementById('shareDevisBtn').addEventListener('click', function() { if (currentDevisId) shareDevis(currentDevisId); });
 
 /* ==========================================================================
    AVOIR
@@ -2973,78 +2478,13 @@ function openAvoirModal(sourceFactureId) {
   document.getElementById('avoirDate').value = new Date().toISOString().slice(0, 10);
   document.getElementById('avoirModal').classList.add('show');
 }
-document.getElementById('avoirFactureRef').addEventListener('change', function() {
-  var id = this.value;
-  if (!id) return;
-  var src = interventions.find(function(i) { return i.id === id; });
-  if (src) {
-    document.getElementById('avoirClient').value = src.client || '';
-    document.getElementById('avoirMontant').value = Math.abs(getTotalTTC(src)).toFixed(2);
-    document.getElementById('avoirDescription').value = 'Avoir sur facture ' + (src.numeroFacture || '');
-  }
-});
-document.getElementById('cancelAvoir').addEventListener('click', function() {
-  document.getElementById('avoirModal').classList.remove('show');
-  currentAvoirSourceFactureId = null;
-});
-document.getElementById('addAvoirBtn').addEventListener('click', function() { haptic(10); openAvoirModal(); });
-document.getElementById('confirmAvoir').addEventListener('click', function() {
-  var client = document.getElementById('avoirClient').value.trim();
-  var montant = parseFloat(document.getElementById('avoirMontant').value);
-  var motif = document.getElementById('avoirMotif').value;
-  var description = document.getElementById('avoirDescription').value.trim();
-  var date = document.getElementById('avoirDate').value;
-  var sourceId = document.getElementById('avoirFactureRef').value;
-  if (!client) { showToast('Client requis', 'warning'); return; }
-  if (!montant || montant <= 0) { showToast('Montant positif requis', 'warning'); return; }
-  if (!date) { showToast('Date requise', 'warning'); return; }
-  var motifLabels = {
-    annulation: 'Annulation totale',
-    retour_piece: 'Retour de pièce',
-    correction_prix: 'Correction de prix',
-    geste_commercial: 'Geste commercial',
-    erreur_facturation: 'Erreur de facturation',
-    autre: 'Autre'
-  };
-  var srcFacture = sourceId ? interventions.find(function(i) { return i.id === sourceId; }) : null;
-  var newAvoir = {
-    id: 'avr_' + Date.now(),
-    numeroFacture: genererNumeroAvoir(),
-    isAvoir: true,
-    client: client,
-    email: srcFacture ? srcFacture.email : '',
-    tel: srcFacture ? srcFacture.tel : '',
-    adresse: srcFacture ? srcFacture.adresse : '',
-    description: '↩ AVOIR — ' + (motifLabels[motif] || motif) + (description ? ' — ' + description : ''),
-    type: 'credit',
-    date: date,
-    heure: '', heureFin: '', duree: 0, taux: 0, deplacement: 0,
-    pieces: [], frais: [], photos: [], notes: description,
-    paye: true, statut: 'termine',
-    datePaiement: date,
-    signatureClient: null, signatureTech: null,
-    paysClient: 'CH',
-    avoirMotif: motif,
-    avoirSourceFacture: srcFacture ? srcFacture.numeroFacture : null,
-    montantForceHT: -Math.abs(montant),
-    createdAt: new Date().toISOString()
-  };
-  interventions.push(newAvoir);
-  invalidateTotals();
-  markAsDirty();
-  renderAll();
-  document.getElementById('avoirModal').classList.remove('show');
-  currentAvoirSourceFactureId = null;
-  markTabAsNew('factures');
-  haptic(15);
-  showToast('Avoir ' + newAvoir.numeroFacture + ' créé (' + formatCHF(montant) + ')', 'purple');
-});
 
 /* ==========================================================================
    RENDU FACTURES
    ========================================================================== */
 function renderFactures() {
   var container = document.getElementById('factureList');
+  if (!container) return;
   var term = searchFactureTerm.trim().toLowerCase();
   var filtered = interventions.filter(function(int) {
     if (!term) return true;
@@ -3122,6 +2562,7 @@ function renderFactures() {
    ========================================================================== */
 function renderDevis() {
   var container = document.getElementById('devisList');
+  if (!container) return;
   var term = searchDevisTerm.trim().toLowerCase();
   var filtered = devisList.filter(function(d) {
     if (!term) return true;
@@ -3302,26 +2743,6 @@ function openFacture(id) {
   document.getElementById('sendMailBtn').style.display = int.email ? 'inline-flex' : 'none';
   document.getElementById('factureModal').classList.add('show');
 }
-document.getElementById('closeFacture').addEventListener('click', function() { document.getElementById('factureModal').classList.remove('show'); });
-document.getElementById('markPaidBtn').addEventListener('click', function() {
-  if (!currentFactureId) return;
-  markAsPaid(currentFactureId);
-  document.getElementById('factureModal').classList.remove('show');
-});
-document.getElementById('downloadPdfBtn').addEventListener('click', function() { if (currentFactureId) generateFacturePDF(currentFactureId); });
-document.getElementById('shareFactureBtn').addEventListener('click', function() { if (currentFactureId) shareFacture(currentFactureId); });
-document.getElementById('sendMailBtn').addEventListener('click', function() { if (currentFactureId) openMailModal(currentFactureId, 'facture'); });
-document.getElementById('signFactureBtn').addEventListener('click', function() {
-  if (currentFactureId) {
-    document.getElementById('factureModal').classList.remove('show');
-    openSignatureModal(currentFactureId, 'facture');
-  }
-});
-document.getElementById('editFactureBtn').addEventListener('click', function() {
-  if (!currentFactureId) return;
-  document.getElementById('factureModal').classList.remove('show');
-  editIntervention(currentFactureId);
-});
 
 function markAsPaid(id) {
   var int = interventions.find(function(i) { return i.id === id; });
@@ -3351,29 +2772,14 @@ function openMailModal(id, type) {
   document.getElementById('mailSubject').value = (item.isAvoir ? 'Avoir ' : (type === 'facture' ? 'Facture ' : 'Devis ')) + (num || '') + ' - ' + settings.nom;
   document.getElementById('mailBody').value = 'Bonjour ' + item.client + ',\n\n'
     + 'Veuillez trouver ci-joint ' + (item.isAvoir ? 'l\'avoir ' : (type === 'facture' ? 'la facture ' : 'le devis ')) + (num || '') + ' d\'un montant de ' + formatCHF(total) + '.\n\n'
+    + 'Vos données personnelles sont traitées conformément à la LPrD vaudoise. Elles sont stockées localement par ' + settings.nom + ' et ne sont transmises à aucun tiers.\n\n'
     + 'Cordialement,\n' + settings.nom + '\n' + settings.tel + '\n' + settings.email;
   document.getElementById('mailModal').classList.add('show');
 }
-document.getElementById('cancelMail').addEventListener('click', function() { document.getElementById('mailModal').classList.remove('show'); });
-document.getElementById('confirmMail').addEventListener('click', function() {
-  var to = document.getElementById('mailTo').value;
-  var subject = document.getElementById('mailSubject').value;
-  var body = document.getElementById('mailBody').value;
-  if (currentMailType === 'facture') generateFacturePDF(currentMailId, true);
-  else generateDevisPDF(currentMailId, true);
-  window.location.href = 'mailto:' + encodeURIComponent(to) + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
-  document.getElementById('mailModal').classList.remove('show');
-  showToast('Client mail ouvert. Joignez le PDF.', 'success');
-});
 
 /* ==========================================================================
-   SIGNATURES (avec hash SHA-256 + devicePixelRatio)
+   SIGNATURES
    ========================================================================== */
-var clientCanvas, clientCtx, techCanvas, techCtx;
-var clientDrawing = false, techDrawing = false;
-var clientLastX = 0, clientLastY = 0, techLastX = 0, techLastY = 0;
-var signatureInitialized = false;
-
 function initSignatureCanvases() {
   if (signatureInitialized) return;
   signatureInitialized = true;
@@ -3515,11 +2921,6 @@ function openSignatureModal(id, type) {
     }
   }, 150);
 }
-document.getElementById('clearClientSig').addEventListener('click', function() { haptic(8); clearCanvas('client'); });
-document.getElementById('clearTechSig').addEventListener('click', function() { haptic(8); clearCanvas('tech'); });
-
-var clientSigBundle = null;
-var techSigBundle = null;
 
 function _buildSigBundle(who) {
   var canvas = who === 'client' ? clientCanvas : techCanvas;
@@ -3528,32 +2929,6 @@ function _buildSigBundle(who) {
     return { data: data, hash: hash };
   });
 }
-
-document.getElementById('saveClientSig').addEventListener('click', function() {
-  if (isCanvasEmpty(clientCanvas)) { showToast('Veuillez signer avant de valider', 'warning'); return; }
-  _buildSigBundle('client').then(function(bundle) {
-    clientSigBundle = bundle;
-    clientSignatureData = bundle.data;
-    clientSignatureHash = bundle.hash;
-    haptic(15);
-    showToast('Signature client enregistrée', 'success');
-  }).catch(function() {
-    showToast('Erreur signature client', 'error');
-  });
-});
-
-document.getElementById('saveTechSig').addEventListener('click', function() {
-  if (isCanvasEmpty(techCanvas)) { showToast('Veuillez signer avant de valider', 'warning'); return; }
-  _buildSigBundle('tech').then(function(bundle) {
-    techSigBundle = bundle;
-    techSignatureData = bundle.data;
-    techSignatureHash = bundle.hash;
-    haptic(15);
-    showToast('Signature technicien enregistrée', 'success');
-  }).catch(function() {
-    showToast('Erreur signature technicien', 'error');
-  });
-});
 
 function saveSignatures(done) {
   if (!currentSignatureTarget) { if (done) done(); return; }
@@ -3593,14 +2968,8 @@ function saveSignatures(done) {
   if (done) done();
 }
 
-document.getElementById('closeSignatureModal').addEventListener('click', function() {
-  saveSignatures(function() {
-    document.getElementById('signatureModal').classList.remove('show');
-  });
-});
-
 /* ==========================================================================
-   PDF FACTURE (SIMPLE — fallback QR désactivé)
+   PDF FACTURE
    ========================================================================== */
 function createFactureDoc(int) {
   var jsPDF = window.jspdf.jsPDF;
@@ -3615,10 +2984,14 @@ function createFactureDoc(int) {
   doc.setTextColor('#ffffff');
   doc.setFontSize(20);
   doc.setFont('helvetica', 'bold');
-  doc.text((settings.nom || 'ENTREPRISE').toUpperCase(), pageWidth / 2, 22, { align: 'center' });
+  doc.text((settings.nom || 'ENTREPRISE').toUpperCase(), pageWidth / 2, 20, { align: 'center' });
   doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
-  doc.text(int.isAvoir ? 'Artisan Plombier - AVOIR' : 'Artisan Plombier - Dépannage & Entretien', pageWidth / 2, 31, { align: 'center' });
+  doc.text(
+    (settings.adresse || '') + (settings.zip ? ', ' + settings.zip : '') + (settings.city ? ' ' + settings.city : ''),
+    pageWidth / 2, 27, { align: 'center' }
+  );
+  doc.text(int.isAvoir ? 'Artisan Plombier - AVOIR' : 'Artisan Plombier - Dépannage & Entretien', pageWidth / 2, 34, { align: 'center' });
   y = 50;
   doc.setTextColor(headerColor);
   doc.setFontSize(16);
@@ -3764,7 +3137,11 @@ function createFactureDoc(int) {
   doc.setFontSize(7);
   doc.setFont('helvetica', 'normal');
   var legal = [];
-  if (settings.siret) legal.push('IDE : ' + settings.siret);
+  if (settings.siret) {
+    var ideAvecTva = settings.siret;
+    if (settings.tvaActive && ideAvecTva.indexOf('TVA') === -1) ideAvecTva += ' TVA';
+    legal.push('IDE : ' + ideAvecTva);
+  }
   if (settings.tvaActive && settings.tvaIntra) legal.push('N° TVA : ' + settings.tvaIntra);
   if (settings.assuranceNom) legal.push('RC pro : ' + settings.assuranceNom + (settings.assuranceNum ? ' (' + settings.assuranceNum + ')' : ''));
   if (settings.delaiPaiement) legal.push('Délai de paiement : ' + settings.delaiPaiement + ' jours');
@@ -3809,9 +3186,8 @@ function createFactureDoc(int) {
 }
 
 function generateFacturePDFBlob(int) {
-  return loadJsPDF().then(function() {
-    return createFactureDoc(int).output('blob');
-  }).catch(function(e) { console.error(e); return null; });
+  return loadJsPDF().then(function() { return createFactureDoc(int).output('blob'); })
+    .catch(function(e) { console.error(e); return null; });
 }
 
 function generateFacturePDF(id, silent) {
@@ -3980,96 +3356,21 @@ function generateDevisPDF(id, silent) {
   }).catch(function() { showToast('Impossible de charger le générateur PDF', 'error'); });
 }
 
-document.getElementById('printFactureBtn').addEventListener('click', function() {
-  if (!currentFactureId) return;
-  var int = interventions.find(function(i) { return i.id === currentFactureId; });
-  if (!int) return;
-  var printSection = document.getElementById('printSection');
-  var ttc = getTotalTTC(int);
-  printSection.innerHTML = '<div style="font-family:Arial, sans-serif; max-width:800px; margin:0 auto; padding:20px;"><h1>' + escapeHtml(int.isAvoir ? 'AVOIR' : 'FACTURE') + ' ' + escapeHtml(int.numeroFacture || '') + '</h1><p><strong>Client :</strong> ' + escapeHtml(int.client) + '</p><p><strong>Total :</strong> ' + ttc.toFixed(2) + ' CHF</p></div>';
-  printSection.style.display = 'block';
-  window.print();
-  setTimeout(function() { printSection.style.display = 'none'; }, 1000);
-});
-
-/* ==========================================================================
-   RECHERCHE / FILTRES
-   ========================================================================== */
-document.getElementById('searchInput').addEventListener('input', debounce(function() { searchTerm = this.value; renderInterventions(); }, 250));
-document.getElementById('searchBtn').addEventListener('click', function() { searchTerm = document.getElementById('searchInput').value; renderInterventions(); });
-document.getElementById('searchFactureInput').addEventListener('input', debounce(function() { searchFactureTerm = this.value; renderFactures(); }, 250));
-document.getElementById('searchFactureBtn').addEventListener('click', function() { searchFactureTerm = document.getElementById('searchFactureInput').value; renderFactures(); });
-document.getElementById('searchDevisInput').addEventListener('input', debounce(function() { searchDevisTerm = this.value; renderDevis(); }, 250));
-document.getElementById('searchDevisBtn').addEventListener('click', function() { searchDevisTerm = document.getElementById('searchDevisInput').value; renderDevis(); });
-
-document.querySelectorAll('#quickFiltersInterventions .quick-filter').forEach(function(btn) {
-  btn.addEventListener('click', function() {
-    haptic(8);
-    document.querySelectorAll('#quickFiltersInterventions .quick-filter').forEach(function(b) { b.classList.remove('active'); });
-    this.classList.add('active');
-    currentQuickFilter = this.dataset.filter;
-    openMonths = {};
-    openDays = {};
-    renderInterventions();
-  });
-});
-document.querySelectorAll('#quickFiltersFactures .quick-filter').forEach(function(btn) {
-  btn.addEventListener('click', function() {
-    haptic(8);
-    document.querySelectorAll('#quickFiltersFactures .quick-filter').forEach(function(b) { b.classList.remove('active'); });
-    this.classList.add('active');
-    currentFactureFilter = this.dataset.filter;
-    renderFactures();
-  });
-});
-
-document.getElementById('sortInterventionsSelect').addEventListener('change', function() {
-  currentSortInterventions = this.value;
-  renderInterventions();
-});
-document.getElementById('sortFacturesSelect').addEventListener('change', function() {
-  currentSortFactures = this.value;
-  renderFactures();
-});
-document.getElementById('sortDevisSelect').addEventListener('change', function() {
-  currentSortDevis = this.value;
-  renderDevis();
-});
-document.getElementById('dateFilterFrom').addEventListener('change', function() { dateFilterFrom = this.value; renderInterventions(); });
-document.getElementById('dateFilterTo').addEventListener('change', function() { dateFilterTo = this.value; renderInterventions(); });
-document.getElementById('clearDateFilter').addEventListener('click', function() {
-  dateFilterFrom = '';
-  dateFilterTo = '';
-  document.getElementById('dateFilterFrom').value = '';
-  document.getElementById('dateFilterTo').value = '';
-  renderInterventions();
-});
-
 /* ==========================================================================
    EXPORT / IMPORT
    ========================================================================== */
 function exportData(encrypt) {
   var data = {
-    interventions: interventions,
-    devisList: devisList,
-    clients: clients,
-    stock: stock,
-    factureCounter: factureCounter,
-    devisCounter: devisCounter,
-    avoirCounter: avoirCounter,
-    settings: settings,
-    exportedAt: new Date().toISOString(),
-    schemaVersion: 4,
-    appVersion: APP_VERSION,
-    pays: 'CH'
+    interventions: interventions, devisList: devisList, clients: clients, stock: stock,
+    factureCounter: factureCounter, devisCounter: devisCounter, avoirCounter: avoirCounter,
+    settings: settings, exportedAt: new Date().toISOString(), schemaVersion: 4, appVersion: APP_VERSION, pays: 'CH'
   };
   var filename = 'pipepline_ch_sauvegarde_' + new Date().toISOString().slice(0, 10) + '.json';
   if (encrypt && window.crypto && window.crypto.subtle) {
     askPassword({
       title: 'Chiffrer la sauvegarde',
       description: 'Choisissez un mot de passe pour chiffrer votre sauvegarde. Vous devrez le saisir pour la restaurer.',
-      requireConfirm: true,
-      confirmLabel: 'Chiffrer & télécharger'
+      requireConfirm: true, confirmLabel: 'Chiffrer & télécharger'
     }).then(function(pwd) {
       if (!pwd) { showToast('Sauvegarde annulée', 'warning'); return; }
       var salt = generateSalt();
@@ -4079,10 +3380,7 @@ function exportData(encrypt) {
         .then(function(baseKey) {
           return crypto.subtle.deriveKey(
             { name: 'PBKDF2', salt: salt, iterations: iterations, hash: 'SHA-256' },
-            baseKey,
-            { name: 'AES-GCM', length: 256 },
-            false,
-            ['encrypt']
+            baseKey, { name: 'AES-GCM', length: 256 }, false, ['encrypt']
           );
         })
         .then(function(key) {
@@ -4090,16 +3388,8 @@ function exportData(encrypt) {
           crypto.getRandomValues(iv);
           return crypto.subtle.encrypt({ name: 'AES-GCM', iv: iv }, key, enc.encode(JSON.stringify(data)))
             .then(function(ciphertext) {
-              return {
-                v: 1,
-                encrypted: true,
-                algo: 'AES-GCM-256',
-                kdf: 'PBKDF2-SHA256',
-                iterations: iterations,
-                salt: uint8ToBase64(salt),
-                iv: uint8ToBase64(iv),
-                ciphertext: uint8ToBase64(new Uint8Array(ciphertext))
-              };
+              return { v: 1, encrypted: true, algo: 'AES-GCM-256', kdf: 'PBKDF2-SHA256', iterations: iterations,
+                salt: uint8ToBase64(salt), iv: uint8ToBase64(iv), ciphertext: uint8ToBase64(new Uint8Array(ciphertext)) };
             });
         })
         .then(function(payload) {
@@ -4132,166 +3422,24 @@ function exportData(encrypt) {
   showToast('Sauvegarde téléchargée', 'success');
 }
 
-document.getElementById('exportDataBtn').addEventListener('click', function() {
-  exportData(settings.encryptExport);
-});
-
-document.getElementById('exportCsvBtn').addEventListener('click', function() {
-  haptic(15);
-  var lines = [];
-  lines.push(['Type', 'Numero', 'Date', 'Client', 'Email', 'Telephone', 'Description', 'Total HT', 'TVA', 'Total TTC', 'Paye', 'Statut'].join(';'));
-  interventions.forEach(function(int) {
-    var ht = getTotalHT(int);
-    var tva = settings.tvaActive ? getTvaMontant(int) : 0;
-    var ttc = getTotalTTC(int);
-    lines.push([
-      int.isAvoir ? 'Avoir' : 'Facture',
-      int.numeroFacture || '',
-      int.date || '',
-      (int.client || '').replace(/[;\n]/g, ' '),
-      int.email || '',
-      int.tel || '',
-      (int.description || '').replace(/[;\n]/g, ' '),
-      ht.toFixed(2).replace('.', ','),
-      tva.toFixed(2).replace('.', ','),
-      ttc.toFixed(2).replace('.', ','),
-      int.paye ? 'Oui' : 'Non',
-      int.statut || ''
-    ].join(';'));
-  });
-  devisList.forEach(function(d) {
-    var ht = getTotalHT(d);
-    var tva = settings.tvaActive ? getTvaMontant(d) : 0;
-    var ttc = getTotalTTC(d);
-    lines.push([
-      'Devis',
-      d.numeroDevis || '',
-      d.date || '',
-      (d.client || '').replace(/[;\n]/g, ' '),
-      d.email || '',
-      d.tel || '',
-      (d.description || '').replace(/[;\n]/g, ' '),
-      ht.toFixed(2).replace('.', ','),
-      tva.toFixed(2).replace('.', ','),
-      ttc.toFixed(2).replace('.', ','),
-      '',
-      d.statut || ''
-    ].join(';'));
-  });
-  var csv = '\uFEFF' + lines.join('\r\n');
-  var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-  var link = document.createElement('a');
-  link.href = URL.createObjectURL(blob);
-  link.download = 'pipepline_ch_export_' + new Date().toISOString().slice(0, 10) + '.csv';
-  link.click();
-  showToast('Export CSV téléchargé', 'success');
-});
-
-document.getElementById('importDataBtn').addEventListener('click', function() {
-  document.getElementById('importDataInput').click();
-});
-
-document.getElementById('importDataInput').addEventListener('change', function(e) {
-  var file = e.target.files && e.target.files[0];
-  if (!file) return;
-  if (file.size > MAX_IMPORT_BYTES) {
-    showToast('Fichier trop volumineux (>50 Mo)', 'error');
-    this.value = '';
-    return;
-  }
-  var reader = new FileReader();
-  reader.onload = function(evt) {
-    try {
-      var data = JSON.parse(evt.target.result);
-      if (data && data.encrypted === true) {
-        askPassword({
-          title: 'Déchiffrer la sauvegarde',
-          description: 'Ce fichier est chiffré. Entrez le mot de passe utilisé lors de la sauvegarde.',
-          requireConfirm: false,
-          confirmLabel: 'Déchiffrer'
-        }).then(function(pwd) {
-          if (!pwd) { document.getElementById('importDataInput').value = ''; return; }
-          var salt = base64ToUint8(data.salt);
-          var iv = base64ToUint8(data.iv);
-          var ciphertext = base64ToUint8(data.ciphertext);
-          var enc = new TextEncoder();
-          crypto.subtle.importKey('raw', enc.encode(pwd), { name: 'PBKDF2' }, false, ['deriveKey'])
-            .then(function(baseKey) {
-              return crypto.subtle.deriveKey(
-                { name: 'PBKDF2', salt: salt, iterations: data.iterations || 100000, hash: 'SHA-256' },
-                baseKey,
-                { name: 'AES-GCM', length: 256 },
-                false,
-                ['decrypt']
-              );
-            })
-            .then(function(key) {
-              return crypto.subtle.decrypt({ name: 'AES-GCM', iv: iv }, key, ciphertext);
-            })
-            .then(function(plaintext) {
-              var dec = new TextDecoder();
-              var realData = JSON.parse(dec.decode(plaintext));
-              doImport(realData);
-            })
-            .catch(function() {
-              showToast('Mot de passe incorrect ou fichier corrompu', 'error');
-              document.getElementById('importDataInput').value = '';
-            });
-        });
-        return;
-      }
-      doImport(data);
-    } catch (err) {
-      showToast('Fichier invalide : ' + err.message, 'error');
-      document.getElementById('importDataInput').value = '';
-    }
-  };
-  reader.readAsText(file);
-});
-
-function validateImportData(data) {
-  if (!data || typeof data !== 'object') throw new Error('Format invalide');
-  if (!Array.isArray(data.interventions) && !Array.isArray(data.devisList)) {
-    throw new Error('Aucune donnée valide trouvée');
-  }
-  var checkInt = function(item, label) {
-    if (!item || typeof item !== 'object') throw new Error(label + ' invalide');
-    if (typeof item.id !== 'string') throw new Error(label + ' sans id');
-    if (item.pieces && !Array.isArray(item.pieces)) throw new Error(label + ' pieces invalide');
-    if (item.frais && !Array.isArray(item.frais)) throw new Error(label + ' frais invalide');
-    if (item.photos && !Array.isArray(item.photos)) throw new Error(label + ' photos invalide');
-  };
-  if (Array.isArray(data.interventions)) {
-    data.interventions.forEach(function(i) { checkInt(i, 'intervention'); });
-  }
-  if (Array.isArray(data.devisList)) {
-    data.devisList.forEach(function(d) { checkInt(d, 'devis'); });
-  }
-  return true;
-}
-
 function doImport(data) {
-  try {
-    validateImportData(data);
-  } catch (err) {
+  try { validateImportData(data); }
+  catch (err) {
     showToast('Fichier invalide : ' + err.message, 'error');
-    document.getElementById('importDataInput').value = '';
+    var inp = document.getElementById('importDataInput');
+    if (inp) inp.value = '';
     return;
   }
   var nbInt = (data.interventions || []).length;
   var nbDevis = (data.devisList || []).length;
   var msg = '⚠ ATTENTION : Cette opération va REMPLACER toutes vos données.\n\n'
     + 'Fichier : ' + nbInt + ' interventions, ' + nbDevis + ' devis.\n\nContinuer ?';
-  showConfirm(msg, function(confirm) {
-    if (!confirm) { document.getElementById('importDataInput').value = ''; return; }
+  showConfirm(msg, function(confirmOk) {
+    if (!confirmOk) { var inp = document.getElementById('importDataInput'); if (inp) inp.value = ''; return; }
     try {
       storageSet('pipepline_ch_backup_before_import', {
-        interventions: interventions,
-        devisList: devisList,
-        clients: clients,
-        factureCounter: factureCounter,
-        devisCounter: devisCounter,
-        settings: settings,
+        interventions: interventions, devisList: devisList, clients: clients,
+        factureCounter: factureCounter, devisCounter: devisCounter, settings: settings,
         backupAt: new Date().toISOString()
       });
       interventions = data.interventions || [];
@@ -4323,29 +3471,29 @@ function doImport(data) {
     } catch (err) {
       showToast('Erreur restauration : ' + err.message, 'error');
     }
-    document.getElementById('importDataInput').value = '';
+    var inp = document.getElementById('importDataInput');
+    if (inp) inp.value = '';
   });
 }
 
-document.getElementById('alertOverdue').addEventListener('click', function() { switchTab('factures'); });
+function validateImportData(data) {
+  if (!data || typeof data !== 'object') throw new Error('Format invalide');
+  if (!Array.isArray(data.interventions) && !Array.isArray(data.devisList)) throw new Error('Aucune donnée valide trouvée');
+  var checkInt = function(item, label) {
+    if (!item || typeof item !== 'object') throw new Error(label + ' invalide');
+    if (typeof item.id !== 'string') throw new Error(label + ' sans id');
+    if (item.pieces && !Array.isArray(item.pieces)) throw new Error(label + ' pieces invalide');
+    if (item.frais && !Array.isArray(item.frais)) throw new Error(label + ' frais invalide');
+    if (item.photos && !Array.isArray(item.photos)) throw new Error(label + ' photos invalide');
+  };
+  if (Array.isArray(data.interventions)) data.interventions.forEach(function(i) { checkInt(i, 'intervention'); });
+  if (Array.isArray(data.devisList)) data.devisList.forEach(function(d) { checkInt(d, 'devis'); });
+  return true;
+}
 
 /* ==========================================================================
    STOCK
    ========================================================================== */
-document.getElementById('openStockBtn').addEventListener('click', function() {
-  haptic(10);
-  stockSearchTerm = '';
-  var searchInput = document.getElementById('stockSearchInput');
-  if (searchInput) searchInput.value = '';
-  renderStockList();
-  document.getElementById('stockModal').classList.add('show');
-});
-document.getElementById('closeStock').addEventListener('click', function() {
-  document.getElementById('stockModal').classList.remove('show');
-});
-document.getElementById('stockSearchInput').addEventListener('input', debounce(function() { stockSearchTerm = this.value; renderStockList(); }, 150));
-document.getElementById('stockSortSelect').addEventListener('change', function() { stockSortMode = this.value; renderStockList(); });
-
 function renderStockStats() {
   var total = Object.keys(stock).length;
   var low = 0, out = 0;
@@ -4399,10 +3547,8 @@ function renderStockList() {
     if (qte <= 0) { state = 'out'; stateLabel = '<span class="si-badge out">Rupture</span>'; }
     else if (qte <= seuil) { state = 'low'; stateLabel = '<span class="si-badge low">Stock bas</span>'; }
     return '<div class="stock-item ' + (state === 'ok' ? '' : state) + '" data-key="' + escapeHtml(it.key) + '">'
-      + '<div class="si-info">'
-      + '<div class="si-name">' + escapeHtml(it.key) + stateLabel + '</div>'
-      + '<div class="si-cat">Seuil : ' + seuil + ' • ' + (state === 'ok' ? 'OK' : (state === 'low' ? 'à réapprovisionner' : 'rupture')) + '</div>'
-      + '</div>'
+      + '<div class="si-info"><div class="si-name">' + escapeHtml(it.key) + stateLabel + '</div>'
+      + '<div class="si-cat">Seuil : ' + seuil + ' • ' + (state === 'ok' ? 'OK' : (state === 'low' ? 'à réapprovisionner' : 'rupture')) + '</div></div>'
       + '<div class="stock-qty-control">'
       + '<button type="button" class="sq-minus" data-key="' + escapeHtml(it.key) + '">−</button>'
       + '<span class="sq-value ' + (state === 'ok' ? '' : state) + '">' + qte + '</span>'
@@ -4411,8 +3557,7 @@ function renderStockList() {
       + '<div class="si-actions">'
       + '<button type="button" class="si-btn edit-stock" data-key="' + escapeHtml(it.key) + '" title="Modifier">✎</button>'
       + '<button type="button" class="si-btn del del-stock" data-key="' + escapeHtml(it.key) + '" title="Supprimer">🗑</button>'
-      + '</div>'
-      + '</div>';
+      + '</div></div>';
   }).join('');
   container.querySelectorAll('.sq-plus').forEach(function(btn) {
     btn.addEventListener('click', function(e) {
@@ -4464,22 +3609,6 @@ function renderStockList() {
     });
   });
 }
-document.getElementById('addStockBtn').addEventListener('click', function() {
-  var name = document.getElementById('stockName').value.trim();
-  var qte = parseInt(document.getElementById('stockQte').value) || 0;
-  var seuil = parseInt(document.getElementById('stockSeuil').value) || 0;
-  if (!name) { showToast('Nom requis', 'warning'); return; }
-  var key = name.toLowerCase();
-  var existing = !!stock[key];
-  stock[key] = { qte: qte, seuil: seuil };
-  storageSet(STOCK_KEY, stock);
-  document.getElementById('stockName').value = '';
-  document.getElementById('stockQte').value = 0;
-  document.getElementById('stockSeuil').value = 1;
-  renderStockList();
-  showToast(existing ? 'Article mis à jour' : 'Article ajouté', 'success');
-  haptic(15);
-});
 
 /* ==========================================================================
    RÉCAP MENSUEL
@@ -4487,7 +3616,8 @@ document.getElementById('addStockBtn').addEventListener('click', function() {
 function renderRecap() {
   var month = recapDate.getMonth();
   var year = recapDate.getFullYear();
-  document.getElementById('recapMonthLabel').textContent = formatMois(recapDate);
+  var monthLabelEl = document.getElementById('recapMonthLabel');
+  if (monthLabelEl) monthLabelEl.textContent = formatMois(recapDate);
   var filtered = interventions.filter(function(int) {
     var d = new Date(int.date + 'T00:00:00');
     if (isNaN(d.getTime())) return false;
@@ -4502,7 +3632,8 @@ function renderRecap() {
     if (int.paye || int.isAvoir) payees++;
     else impayees++;
   });
-  document.getElementById('recapGrid').innerHTML =
+  var grid = document.getElementById('recapGrid');
+  if (grid) grid.innerHTML =
     '<div class="recap-card"><div class="recap-label">CA TTC</div><div class="recap-value">' + formatCHF(totalTTC) + '</div></div>'
     + '<div class="recap-card"><div class="recap-label">CA Net</div><div class="recap-value green">' + formatCHF(totalNet) + '</div></div>'
     + '<div class="recap-card"><div class="recap-label">Interventions</div><div class="recap-value">' + filtered.length + '</div></div>'
@@ -4510,6 +3641,7 @@ function renderRecap() {
     + '<div class="recap-card"><div class="recap-label">Payées</div><div class="recap-value green">' + payees + '</div></div>'
     + '<div class="recap-card"><div class="recap-label">Impayées</div><div class="recap-value red">' + impayees + '</div></div>';
   var detail = document.getElementById('recapDetail');
+  if (!detail) return;
   if (filtered.length === 0) detail.innerHTML = '<div class="empty-state">Aucune intervention ce mois</div>';
   else {
     var html = '<h3 style="font-size:0.9rem; color:var(--accent); margin-bottom:10px;">Détail</h3><div style="display:flex; flex-direction:column; gap:6px;">';
@@ -4521,22 +3653,12 @@ function renderRecap() {
         + '<span style="color:var(--text-muted);">' + formatDate(int.date) + '</span>'
         + '<span style="font-weight:600; color:' + (int.isAvoir ? 'var(--purple)' : 'var(--accent)') + ';">' + formatCHF(getTotalTTC(int)) + '</span>'
         + ((int.paye || int.isAvoir) ? '<span style="color:var(--success);">✓</span>' : '<span style="color:var(--danger);">⚠</span>')
-        + '</div>'
-        + '</div>';
+        + '</div></div>';
     });
     html += '</div>';
     detail.innerHTML = html;
   }
 }
-document.getElementById('prevMonthBtn').addEventListener('click', function() { haptic(8); recapDate.setMonth(recapDate.getMonth() - 1); renderRecap(); });
-document.getElementById('nextMonthBtn').addEventListener('click', function() { haptic(8); recapDate.setMonth(recapDate.getMonth() + 1); renderRecap(); });
-document.getElementById('dashToggle').addEventListener('click', function(e) {
-  e.stopPropagation();
-  haptic(8);
-  var panel = document.getElementById('caPanel');
-  panel.classList.toggle('open');
-  this.classList.toggle('open');
-});
 
 /* ==========================================================================
    DÉCOMPTE TVA
@@ -4544,6 +3666,7 @@ document.getElementById('dashToggle').addEventListener('click', function(e) {
 function openTvaModal() {
   haptic(10);
   var yearSelect = document.getElementById('tvaYearSelect');
+  if (!yearSelect) return;
   var currentYear = new Date().getFullYear();
   yearSelect.innerHTML = '';
   for (var y = currentYear; y >= currentYear - 5; y--) {
@@ -4568,8 +3691,12 @@ function getTvaPeriodRange(year, period) {
   }
 }
 function renderTvaResult() {
-  var year = parseInt(document.getElementById('tvaYearSelect').value);
-  var period = document.getElementById('tvaPeriodSelect').value;
+  var yearEl = document.getElementById('tvaYearSelect');
+  var periodEl = document.getElementById('tvaPeriodSelect');
+  var resultEl = document.getElementById('tvaResult');
+  if (!yearEl || !periodEl || !resultEl) return;
+  var year = parseInt(yearEl.value);
+  var period = periodEl.value;
   var range = getTvaPeriodRange(year, period);
   var filtered = interventions.filter(function(int) {
     if (!int.date) return false;
@@ -4580,10 +3707,7 @@ function renderTvaResult() {
   var caHT = 0, tvaCollectee = 0, caTTC = 0, avoirsHT = 0;
   var parTaux = {};
   filtered.forEach(function(int) {
-    if (int.isAvoir) {
-      avoirsHT += Math.abs(getTotalHT(int));
-      return;
-    }
+    if (int.isAvoir) { avoirsHT += Math.abs(getTotalHT(int)); return; }
     var ht = getTotalHT(int);
     var taux = getTauxTva(int);
     caHT += ht;
@@ -4618,45 +3742,8 @@ function renderTvaResult() {
   html += 'Pour la déclaration, vous devez y soustraire la <strong>TVA déductible</strong> (achats, frais généraux) que vous trouverez sur vos factures fournisseurs. ';
   html += 'Seuil d\'assujettissement : ' + formatCHF(TVA_SEUIL_CHF) + ' de CA annuel.';
   html += '</div>';
-  document.getElementById('tvaResult').innerHTML = html;
+  resultEl.innerHTML = html;
 }
-document.getElementById('tvaYearSelect').addEventListener('change', renderTvaResult);
-document.getElementById('tvaPeriodSelect').addEventListener('change', renderTvaResult);
-document.getElementById('closeTva').addEventListener('click', function() { document.getElementById('tvaModal').classList.remove('show'); });
-document.getElementById('openTvaBtn').addEventListener('click', openTvaModal);
-document.getElementById('openTvaRecapBtn').addEventListener('click', openTvaModal);
-document.getElementById('tvaExportBtn').addEventListener('click', function() {
-  var year = parseInt(document.getElementById('tvaYearSelect').value);
-  var period = document.getElementById('tvaPeriodSelect').value;
-  var range = getTvaPeriodRange(year, period);
-  var filtered = interventions.filter(function(int) {
-    if (!int.date) return false;
-    var d = new Date(int.date + 'T00:00:00');
-    if (isNaN(d.getTime())) return false;
-    return d >= range.start && d <= range.end && !int.isAvoir;
-  });
-  var lines = [];
-  lines.push(['N° facture', 'Date', 'Client', 'Pays', 'Base HT', 'Taux TVA', 'TVA', 'TTC'].join(';'));
-  filtered.forEach(function(int) {
-    lines.push([
-      int.numeroFacture || '',
-      int.date || '',
-      (int.client || '').replace(/[;\n]/g, ' '),
-      int.paysClient || 'CH',
-      getTotalHT(int).toFixed(2).replace('.', ','),
-      getTauxTva(int),
-      getTvaMontant(int).toFixed(2).replace('.', ','),
-      getTotalTTC(int).toFixed(2).replace('.', ',')
-    ].join(';'));
-  });
-  var csv = '\uFEFF' + lines.join('\r\n');
-  var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-  var link = document.createElement('a');
-  link.href = URL.createObjectURL(blob);
-  link.download = 'tva_' + year + '_' + period + '.csv';
-  link.click();
-  showToast('Décompte TVA exporté', 'success');
-});
 
 /* ==========================================================================
    CERTIFICAT CHAUDIÈRE
@@ -4684,37 +3771,6 @@ function openCertificateModal(id) {
   document.getElementById('certProchain').value = nextYear.toISOString().slice(0, 10);
   document.getElementById('certificateModal').classList.add('show');
 }
-document.getElementById('cancelCertificate').addEventListener('click', function() {
-  document.getElementById('certificateModal').classList.remove('show');
-});
-document.getElementById('generateCertificateBtn').addEventListener('click', function() {
-  var intId = document.getElementById('certificateModal').dataset.intId;
-  var int = interventions.find(function(i) { return i.id === intId; });
-  if (!int) return;
-  var certData = {
-    marque: document.getElementById('certMarque').value.trim(),
-    serie: document.getElementById('certSerie').value.trim(),
-    annee: document.getElementById('certAnnee').value,
-    combustible: document.getElementById('certCombustible').value,
-    puissance: document.getElementById('certPuissance').value,
-    CO: document.getElementById('certCO').value,
-    CO2: document.getElementById('certCO2').value,
-    tempFumees: document.getElementById('certTempFumees').value,
-    rendement: document.getElementById('certRendement').value,
-    travaux: document.getElementById('certTravaux').value.trim(),
-    observations: document.getElementById('certObservations').value.trim(),
-    date: document.getElementById('certDate').value,
-    prochain: document.getElementById('certProchain').value
-  };
-  if (!certData.marque) { showToast('Marque / modèle requis', 'warning'); return; }
-  int.certificat = certData;
-  markAsDirty();
-  renderAll();
-  document.getElementById('certificateModal').classList.remove('show');
-  haptic(15);
-  showToast('Certificat enregistré — génération PDF...', 'success');
-  generateCertificatePDF(int);
-});
 
 function generateCertificatePDF(int) {
   loadJsPDF().then(function() {
@@ -4732,7 +3788,7 @@ function generateCertificatePDF(int) {
     doc.text('CERTIFICAT D\'ENTRETIEN', pw / 2, 20, { align: 'center' });
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
-    doc.text('Chaudière — Conforme aux exigences cantonales', pw / 2, 30, { align: 'center' });
+    doc.text('Chaudière — Attestation de réglage / entretien (document non officiel)', pw / 2, 30, { align: 'center' });
     y = 50;
     doc.setTextColor('#333333');
     doc.setFontSize(10);
@@ -4866,11 +3922,9 @@ function generateCertificatePDF(int) {
 function checkBackupReminder() {
   var alertEl = document.getElementById('alertBackup');
   var alertText = document.getElementById('alertBackupText');
+  if (!alertEl || !alertText) return;
   var seuil = settings.seuilSauvegarde || 15;
-  if (interventions.length === 0 && devisList.length === 0) {
-    alertEl.classList.remove('show');
-    return;
-  }
+  if (interventions.length === 0 && devisList.length === 0) { alertEl.classList.remove('show'); return; }
   if (!backupMeta.lastExportAt) {
     var derniereAlerte = backupMeta.lastReminderAt ? new Date(backupMeta.lastReminderAt) : null;
     if (derniereAlerte) {
@@ -4894,16 +3948,9 @@ function dismissBackupReminder() {
   backupMeta.lastReminderAt = new Date().toISOString();
   storageDirty = true;
   saveToStorage();
-  document.getElementById('alertBackup').classList.remove('show');
+  var alertEl = document.getElementById('alertBackup');
+  if (alertEl) alertEl.classList.remove('show');
 }
-document.getElementById('alertBackup').addEventListener('click', function(e) {
-  if (e.target.closest('.alert-close')) return;
-  document.getElementById('exportDataBtn').click();
-});
-document.getElementById('alertBackupClose').addEventListener('click', function(e) {
-  e.stopPropagation();
-  dismissBackupReminder();
-});
 function checkStorageUsage() {
   if (!navigator.storage || !navigator.storage.estimate) return;
   var lastCheck = localStorage.getItem(STORAGE_ALERT_KEY);
@@ -4912,215 +3959,22 @@ function checkStorageUsage() {
     localStorage.setItem(STORAGE_ALERT_KEY, new Date().toISOString());
     var pct = Math.round((est.usage / est.quota) * 100);
     if (pct >= 80) {
-      document.getElementById('alertStorageText').innerHTML = 'Stockage <strong>' + pct + '%</strong> utilisé.';
-      document.getElementById('alertStorage').classList.add('show');
+      var el = document.getElementById('alertStorageText');
+      if (el) el.innerHTML = 'Stockage <strong>' + pct + '%</strong> utilisé.';
+      var alertEl = document.getElementById('alertStorage');
+      if (alertEl) alertEl.classList.add('show');
     }
   }).catch(function() {});
 }
-document.getElementById('alertStorageClose').addEventListener('click', function() {
-  document.getElementById('alertStorage').classList.remove('show');
-  localStorage.setItem(STORAGE_ALERT_KEY, new Date().toISOString());
-});
-
-/* ==========================================================================
-   AUTOCOMPLETE SETUP
-   ========================================================================== */
-setupAutocomplete('intClient', 'intClientAutocomplete', function(c) {
-  document.getElementById('intClient').value = c.nom || '';
-  if (c.email) document.getElementById('intEmail').value = c.email;
-  if (c.tel) document.getElementById('intTel').value = c.tel;
-  if (c.adresse) document.getElementById('intAdresse').value = c.adresse;
-});
-setupAutocomplete('planClient', 'planClientAutocomplete', function(c) {
-  document.getElementById('planClient').value = c.nom || '';
-  if (c.tel) document.getElementById('planTel').value = c.tel;
-  if (c.adresse) document.getElementById('planAdresse').value = c.adresse;
-});
-setupAutocomplete('devisClient', 'devisClientAutocomplete', function(c) {
-  document.getElementById('devisClient').value = c.nom || '';
-  if (c.email) document.getElementById('devisEmail').value = c.email;
-  if (c.tel) document.getElementById('devisTel').value = c.tel;
-  if (c.adresse) document.getElementById('devisAdresse').value = c.adresse;
-});
-
-document.getElementById('verifyAddressBtn').addEventListener('click', function() {
-  var adresse = document.getElementById('intAdresse').value.trim();
-  if (!adresse) { showToast('Saisissez une adresse', 'warning'); return; }
-  window.open(getMapsHref(adresse), '_blank');
-});
-
-/* ==========================================================================
-   ÉCHAPPE / RACCOURCIS
-   ========================================================================== */
-document.addEventListener('keydown', function(e) {
-  if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-    e.preventDefault();
-    storageDirty = true;
-    saveToStorage().then(function() { showToast('Sauvegardé (Ctrl+S)', 'success'); });
-  }
-  if (e.key === 'Escape') {
-    document.querySelectorAll('.modal-overlay.show').forEach(function(m) {
-      if (m.id === 'signatureModal') saveSignatures();
-      m.classList.remove('show');
-    });
-    var as = document.getElementById('actionSheet');
-    if (as.classList.contains('show')) as.classList.remove('show');
-    editingDevisId = null;
-    editingPlanningId = null;
-    convertDevisSourceId = null;
-    currentAvoirSourceFactureId = null;
-  }
-});
-
-window.addEventListener('beforeunload', function() { if (storageDirty) saveToStorage(); });
-window.addEventListener('pagehide', function() { if (storageDirty) saveToStorage(); });
-document.addEventListener('visibilitychange', function() {
-  if (document.visibilityState === 'hidden' && storageDirty) saveToStorage();
-});
-
-if ('BroadcastChannel' in window) {
-  try {
-    broadcastChannel = new BroadcastChannel('pipepline_ch_sync');
-    broadcastChannel.onmessage = function(e) {
-      if (e.data && e.data.type === 'data-updated') {
-        var modalOpen = document.querySelector('.modal-overlay.show');
-        if (modalOpen || storageDirty) return;
-        loadFromStorage().then(function() { renderAll(); });
-      }
-    };
-  } catch(e) {}
-}
-
-/* ==========================================================================
-   SWIPE ENTRE ONGLETS (filtré pour ne pas gêner les scrolls horizontaux)
-   ========================================================================== */
-(function setupSwipe() {
-  var tabs = ['today', 'planning', 'interventions', 'factures', 'devis', 'recap'];
-  var startX = 0, startY = 0, startTime = 0;
-  var minSwipe = 80, maxTime = 600, maxVertical = 60;
-  var target = document.querySelector('.app-container');
-  if (!target) return;
-  target.addEventListener('touchstart', function(e) {
-    if (e.touches.length !== 1) return;
-    if (e.target.closest('.dashboard-strip, .quick-filters, .sort-bar, .photos-strip, .action-sheet, .planning-grid, .pieces-container-scroll, .frais-container-scroll, .signature-canvas-wrapper')) return;
-    startX = e.touches[0].clientX;
-    startY = e.touches[0].clientY;
-    startTime = Date.now();
-  }, { passive: true });
-  target.addEventListener('touchend', function(e) {
-    if (e.changedTouches.length !== 1) return;
-    var dx = e.changedTouches[0].clientX - startX;
-    var dy = e.changedTouches[0].clientY - startY;
-    var dt = Date.now() - startTime;
-    if (dt > maxTime) return;
-    if (Math.abs(dy) > maxVertical) return;
-    if (Math.abs(dx) < minSwipe) return;
-    if (document.querySelector('.modal-overlay.show')) return;
-    if (document.getElementById('actionSheet').classList.contains('show')) return;
-    var current = document.querySelector('.main-tab.active');
-    if (!current) return;
-    var idx = tabs.indexOf(current.dataset.tab);
-    if (idx === -1) return;
-    if (dx < 0 && idx < tabs.length - 1) switchTab(tabs[idx + 1]);
-    else if (dx > 0 && idx > 0) switchTab(tabs[idx - 1]);
-  }, { passive: true });
-})();
-
-/* ==========================================================================
-   SWITCH TAB
-   ========================================================================== */
-function switchTab(tabName) {
-  document.querySelectorAll('.main-tab').forEach(function(t) {
-    if (t.dataset.tab === tabName) t.classList.add('active');
-    else t.classList.remove('active');
-  });
-  document.querySelectorAll('.bottom-nav-item').forEach(function(t) {
-    if (t.dataset.tab === tabName) t.classList.add('active');
-    else t.classList.remove('active');
-  });
-  document.querySelectorAll('.tab-content').forEach(function(c) {
-    if (c.id === 'tab-' + tabName) c.classList.add('active');
-    else c.classList.remove('active');
-  });
-  if (tabName === 'recap') renderRecap();
-  if (tabName === 'planning') renderPlanning();
-  if (tabName === 'today') renderToday();
-  clearTabNew(tabName);
-  haptic(8);
-}
-document.querySelectorAll('.main-tab').forEach(function(tab) {
-  tab.addEventListener('click', function() { switchTab(this.dataset.tab); });
-});
-document.querySelectorAll('.bottom-nav-item').forEach(function(tab) {
-  tab.addEventListener('click', function() { switchTab(this.dataset.tab); });
-});
-document.getElementById('todayWeekBtn').addEventListener('click', function() {
-  planningDate = new Date();
-  selectedPlanningDate = new Date();
-  switchTab('planning');
-});
-document.getElementById('todayWeekBtn2').addEventListener('click', function() {
-  planningDate = new Date();
-  selectedPlanningDate = new Date();
-  renderPlanning();
-});
-document.getElementById('prevWeekBtn').addEventListener('click', function() { haptic(8); planningDate.setDate(planningDate.getDate() - 7); renderPlanning(); });
-document.getElementById('nextWeekBtn').addEventListener('click', function() { haptic(8); planningDate.setDate(planningDate.getDate() + 7); renderPlanning(); });
-
-setInterval(function() { if (storageDirty) saveToStorage(); }, 180000);
 
 /* ==========================================================================
    PARAMÈTRES
    ========================================================================== */
-document.getElementById('settingsBtn').addEventListener('click', function() {
-  var statusEl = document.getElementById('offlineStatus');
-  if (statusEl) {
-    var jspdfReady = !!(window.jspdf && window.jspdf.jsPDF);
-    if (jspdfReady) {
-      statusEl.innerHTML = '✅ <strong>Prêt hors ligne</strong> — jsPDF chargé.';
-      statusEl.style.background = '#e8f5e9';
-      statusEl.style.color = '#1b5e20';
-    } else {
-      statusEl.innerHTML = '⏳ <strong>Chargement à la demande</strong> — testez un PDF pour vérifier.';
-      statusEl.style.background = 'var(--bg-surface)';
-      statusEl.style.color = 'var(--text-secondary)';
-    }
-  }
-  document.getElementById('setTheme').value = getCurrentTheme();
-  document.getElementById('setPinActive').checked = pinMeta.active || false;
-  document.getElementById('setPin').value = '';
-  document.getElementById('pinSetupBlock').style.display = (pinMeta.active || false) ? 'block' : 'none';
-  document.getElementById('setEncryptExport').checked = settings.encryptExport || false;
-  document.getElementById('setNom').value = settings.nom;
-  document.getElementById('setAdresse').value = settings.adresse;
-  document.getElementById('setZip').value = settings.zip || '';
-  document.getElementById('setCity').value = settings.city || '';
-  document.getElementById('setSiret').value = settings.siret;
-  document.getElementById('setIban').value = settings.iban || '';
-  updateIbanStatus();
-  document.getElementById('setTel').value = settings.tel;
-  document.getElementById('setEmail').value = settings.email;
-  document.getElementById('setTaxe').value = settings.taxe;
-  document.getElementById('setTva').value = settings.tva;
-  document.getElementById('setTvaActive').checked = settings.tvaActive;
-  document.getElementById('setKmRate').value = settings.kmRate || 0.70;
-  document.getElementById('setAcompteSeuil').value = settings.acompteSeuil || 5000;
-  document.getElementById('setTauxDefaut').value = settings.tauxDefaut;
-  document.getElementById('setDeplacementDefaut').value = settings.deplacementDefaut;
-  document.getElementById('setSeuilAlerte').value = settings.seuilAlerte || 30;
-  document.getElementById('setSeuilSauvegarde').value = settings.seuilSauvegarde || 15;
-  document.getElementById('setTvaIntra').value = settings.tvaIntra || '';
-  document.getElementById('setAssuranceNom').value = settings.assuranceNom || '';
-  document.getElementById('setAssuranceNum').value = settings.assuranceNum || '';
-  document.getElementById('setDelaiPaiement').value = settings.delaiPaiement || 30;
-  document.getElementById('settingsModal').classList.add('show');
-});
-document.getElementById('setPinActive').addEventListener('change', function() {
-  document.getElementById('pinSetupBlock').style.display = this.checked ? 'block' : 'none';
-});
 function updateIbanStatus() {
-  var iban = document.getElementById('setIban').value.trim();
+  var ibanEl = document.getElementById('setIban');
   var status = document.getElementById('ibanStatus');
+  if (!ibanEl || !status) return;
+  var iban = ibanEl.value.trim();
   if (!iban) { status.style.display = 'none'; return; }
   status.style.display = 'block';
   if (isValidSwissIBAN(iban)) {
@@ -5133,122 +3987,6 @@ function updateIbanStatus() {
     status.style.color = '#c62828';
   }
 }
-document.getElementById('setIban').addEventListener('input', debounce(updateIbanStatus, 300));
-document.getElementById('cancelSettings').addEventListener('click', function() {
-  document.getElementById('settingsModal').classList.remove('show');
-});
-
-document.getElementById('saveSettings').addEventListener('click', function() {
-  var newTheme = document.getElementById('setTheme').value;
-  applyTheme(newTheme);
-  var newPinActive = document.getElementById('setPinActive').checked;
-  var newPin = document.getElementById('setPin').value;
-
-  // Cas 1 : activation initiale du PIN
-  if (newPinActive && !pinMeta.active) {
-    if (!newPin || newPin.length < 4) { showToast('Code PIN min. 4 chiffres requis', 'warning'); return; }
-    var salt = generateSalt();
-    computePinHashB64(newPin, salt).then(function(hashB64) {
-      pinMeta = {
-        active: true,
-        salt: uint8ToBase64(salt),
-        pinHash: hashB64,
-        pinLength: newPin.length,
-        createdAt: new Date().toISOString()
-      };
-      return savePinMeta();
-    }).then(function() {
-      saveSettingsData();
-      showToast('Code PIN activé. Rechargement...', 'success');
-      setTimeout(function() { location.reload(); }, 1500);
-    }).catch(function(e) {
-      console.error('[PIN activation]', e);
-      showToast('Erreur activation PIN', 'error');
-    });
-    return;
-  }
-
-  // Cas 2 : changement de PIN (déjà actif, nouveau code saisi)
-  if (newPinActive && pinMeta.active && newPin && newPin.length >= 4) {
-    var newSalt = generateSalt();
-    computePinHashB64(newPin, newSalt).then(function(newHash) {
-      return deriveKeyFromPin(newPin, newSalt).then(function(newKey) {
-        cryptoKey = newKey;
-        return Promise.all([
-          storageSet(STORAGE_KEY, {
-            interventions: interventions,
-            devisList: devisList,
-            clients: clients,
-            factureCounter: factureCounter,
-            devisCounter: devisCounter,
-            avoirCounter: avoirCounter,
-            schemaVersion: 4,
-            appVersion: APP_VERSION,
-            savedAt: new Date().toISOString()
-          }),
-          storageSet(SETTINGS_KEY, settings),
-          storageSet(BACKUP_META_KEY, backupMeta),
-          storageSet(STOCK_KEY, stock)
-        ]).then(function() {
-          pinMeta.salt = uint8ToBase64(newSalt);
-          pinMeta.pinHash = newHash;
-          pinMeta.pinLength = newPin.length;
-          pinMeta.updatedAt = new Date().toISOString();
-          return savePinMeta();
-        }).then(function() {
-          showToast('Code PIN modifié. Rechargement...', 'success');
-          setTimeout(function() { location.reload(); }, 1500);
-        });
-      });
-    }).catch(function(e) {
-      console.error('[PIN change]', e);
-      showToast('Erreur changement PIN', 'error');
-    });
-    return;
-  }
-
-  // Cas 3 : désactivation du PIN — déchiffrer avant de perdre la clé
-  if (!newPinActive && pinMeta.active) {
-    showConfirm(
-      '⚠ Désactiver le code PIN ?\n\nLes données seront DÉCHIFFRÉES et stockées en clair sur cet appareil. Toute personne ayant accès à l\'appareil pourra les consulter.\n\nContinuer ?',
-      function(ok) {
-        if (!ok) return;
-        var oldKey = cryptoKey;
-        cryptoKey = null;
-        Promise.all([
-          idbSet(STORAGE_KEY, {
-            interventions: interventions, devisList: devisList, clients: clients,
-            factureCounter: factureCounter, devisCounter: devisCounter,
-            avoirCounter: avoirCounter, schemaVersion: 4,
-            appVersion: APP_VERSION, savedAt: new Date().toISOString()
-          }),
-          idbSet(SETTINGS_KEY, settings),
-          idbSet(BACKUP_META_KEY, backupMeta),
-          idbSet(STOCK_KEY, stock)
-        ]).then(function() {
-          pinMeta = { active: false, salt: null };
-          return savePinMeta();
-        }).then(function() {
-          showToast('Code PIN désactivé. Rechargement...', 'warning');
-          setTimeout(function() { location.reload(); }, 1500);
-        }).catch(function(e) {
-          console.error('[PIN disable]', e);
-          cryptoKey = oldKey;
-          showToast('Erreur désactivation PIN — données non modifiées', 'error');
-        });
-      }
-    );
-    return;
-  }
-
-  // Cas 4 : pas de changement PIN
-  saveSettingsData();
-  document.getElementById('settingsModal').classList.remove('show');
-  renderAll();
-  checkBackupReminder();
-  haptic(15);
-  showToast('Paramètres sauvegardés', 'success');
-});
 
 function saveSettingsData() {
   settings.nom = document.getElementById('setNom').value.trim() || 'PipePline';
@@ -5304,7 +4042,10 @@ function renderAll() {
   renderDevis();
   renderPlanning();
   renderRecap();
-  updateTabNewDots();
+  updateTabNewNewsSafe();
+}
+function updateTabNewNewsSafe() {
+  try { updateTabNewDots(); } catch(e) { console.warn('[TabNews]', e); }
 }
 
 /* ==========================================================================
@@ -5323,6 +4064,14 @@ function init() {
     }
   }).catch(function(err) {
     console.error('[init PIN]', err);
+    // 🔧 CORRECTION : si le PIN est actif mais qu'on n'arrive pas à lire sa meta,
+    // on prévient l'utilisateur au lieu de le bloquer silencieusement.
+    if (pinMeta && pinMeta.active) {
+      var errEl = document.getElementById('pinError');
+      if (errEl) errEl.textContent = 'Erreur de lecture — vérifiez le stockage';
+      showPinOverlay();
+      return;
+    }
     isAuthenticated = true;
     startApp();
   });
@@ -5349,10 +4098,1335 @@ function startApp() {
 }
 
 /* ==========================================================================
+   🔧 CORRECTION MAJEURE : tous les écouteurs d'événements sont attachés
+   après le DOMContentLoaded, dans une fonction dédiée.
+   Ainsi aucun getElementById ne peut retourner null.
+   ========================================================================== */
+function bindEventListeners() {
+  // PIN keypad
+  var pinKeypad = document.getElementById('pinKeypad');
+  if (pinKeypad) {
+    pinKeypad.addEventListener('click', function(e) {
+      var btn = e.target.closest('button[data-pin]');
+      if (btn) handlePinKey(btn.dataset.pin);
+    });
+  }
+  document.addEventListener('keydown', function(e) {
+    var pinOverlay = document.getElementById('pinOverlay');
+    if (!pinOverlay || !pinOverlay.classList.contains('show')) return;
+    if (e.key >= '0' && e.key <= '9') handlePinKey(e.key);
+    else if (e.key === 'Backspace') handlePinKey('clear');
+    else if (e.key === 'Enter') handlePinKey('ok');
+  });
+
+  // Password modal
+  var pwdCancel = document.getElementById('passwordCancel');
+  if (pwdCancel) pwdCancel.addEventListener('click', function() { haptic(8); _closePasswordModal(null); });
+  var pwdConfirm = document.getElementById('passwordConfirmBtn');
+  if (pwdConfirm) pwdConfirm.addEventListener('click', function() {
+    var input = document.getElementById('passwordInput');
+    var confirm = document.getElementById('passwordConfirm');
+    var err = document.getElementById('passwordError');
+    var group = document.getElementById('passwordConfirmGroup');
+    var requireConfirm = group && group.style.display !== 'none';
+    var pwd = input.value;
+    if (!pwd || pwd.length < 8) { err.textContent = 'Minimum 8 caractères'; return; }
+    if (requireConfirm && pwd !== confirm.value) { err.textContent = 'Les mots de passe ne correspondent pas'; return; }
+    haptic(15);
+    _closePasswordModal(pwd);
+  });
+  var pwdInput = document.getElementById('passwordInput');
+  if (pwdInput) pwdInput.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') {
+      var group = document.getElementById('passwordConfirmGroup');
+      var requireConfirm = group && group.style.display !== 'none';
+      if (requireConfirm) document.getElementById('passwordConfirm').focus();
+      else document.getElementById('passwordConfirmBtn').click();
+    }
+  });
+  var pwdConfirmInput = document.getElementById('passwordConfirm');
+  if (pwdConfirmInput) pwdConfirmInput.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') document.getElementById('passwordConfirmBtn').click();
+  });
+
+  // Online/offline
+  window.addEventListener('online', updateOfflineBadge);
+  window.addEventListener('offline', updateOfflineBadge);
+  updateOfflineBadge();
+
+  // Alert TVA close
+  var tvaClose = document.getElementById('alertTvaClose');
+  if (tvaClose) tvaClose.addEventListener('click', function(e) {
+    e.stopPropagation();
+    if (tvaBannerTimeout) clearTimeout(tvaBannerTimeout);
+    hideTvaBanner();
+  });
+
+  // Alert recurring
+  var rec = document.getElementById('alertRecurring');
+  if (rec) rec.addEventListener('click', function() {
+    switchTab('interventions');
+    openMonths = {};
+    openDays = {};
+    markTabAsNew('interventions');
+    showToast('Rappels entretien disponibles dans les interventions', 'purple');
+  });
+
+  // Alert overdue → tab factures
+  var ovd = document.getElementById('alertOverdue');
+  if (ovd) ovd.addEventListener('click', function() { switchTab('factures'); });
+
+  // Confirm modal
+  var confirmYes = document.getElementById('confirmYes');
+  if (confirmYes) confirmYes.addEventListener('click', function() {
+    document.getElementById('confirmModal').classList.remove('show');
+    haptic(15);
+    if (confirmCallback) { confirmCallback(true); confirmCallback = null; }
+  });
+  var confirmNo = document.getElementById('confirmNo');
+  if (confirmNo) confirmNo.addEventListener('click', function() {
+    document.getElementById('confirmModal').classList.remove('show');
+    if (confirmCallback) { confirmCallback(false); confirmCallback = null; }
+  });
+
+  // Action sheet
+  var actionSheet = document.getElementById('actionSheet');
+  if (actionSheet) actionSheet.addEventListener('click', function(e) {
+    if (e.target === this) { this.classList.remove('show'); return; }
+    var btn = e.target.closest('[data-action]');
+    if (btn) {
+      var id = this.dataset.id;
+      var action = btn.dataset.action;
+      this.classList.remove('show');
+      handleAction(action, id);
+    }
+    if (e.target.classList.contains('action-sheet-cancel')) this.classList.remove('show');
+  });
+
+  // Planning navigation
+  var prevWeek = document.getElementById('prevWeekBtn');
+  if (prevWeek) prevWeek.addEventListener('click', function() { haptic(8); planningDate.setDate(planningDate.getDate() - 7); renderPlanning(); });
+  var nextWeek = document.getElementById('nextWeekBtn');
+  if (nextWeek) nextWeek.addEventListener('click', function() { haptic(8); planningDate.setDate(planningDate.getDate() + 7); renderPlanning(); });
+  var todayWeekBtn2 = document.getElementById('todayWeekBtn2');
+  if (todayWeekBtn2) todayWeekBtn2.addEventListener('click', function() {
+    planningDate = new Date();
+    selectedPlanningDate = new Date();
+    renderPlanning();
+  });
+  var shareWeekBtn = document.getElementById('shareWeekBtn');
+  if (shareWeekBtn) shareWeekBtn.addEventListener('click', openSharePlanningModal);
+  var shareFormat = document.getElementById('shareFormat');
+  if (shareFormat) shareFormat.addEventListener('change', updateSharePreview);
+  var closeSharePlanning = document.getElementById('closeSharePlanning');
+  if (closeSharePlanning) closeSharePlanning.addEventListener('click', function() { document.getElementById('sharePlanningModal').classList.remove('show'); });
+  var shareSmsBtn = document.getElementById('shareSmsBtn');
+  if (shareSmsBtn) shareSmsBtn.addEventListener('click', function() {
+    var text = document.getElementById('sharePreview').value;
+    window.location.href = 'sms:?body=' + encodeURIComponent(text);
+  });
+  var shareMailBtn = document.getElementById('shareMailBtn');
+  if (shareMailBtn) shareMailBtn.addEventListener('click', function() {
+    var text = document.getElementById('sharePreview').value;
+    var days = getWeekDays(planningDate);
+    var subject = 'Planning semaine ' + formatMois(days[0]);
+    window.location.href = 'mailto:?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(text);
+  });
+  var shareNativeBtn = document.getElementById('shareNativeBtn');
+  if (shareNativeBtn) shareNativeBtn.addEventListener('click', function() {
+    var text = document.getElementById('sharePreview').value;
+    if (navigator.share) navigator.share({ title: 'Planning PipePline', text: text }).catch(function() {});
+    else showToast('Partage natif non supporté', 'warning');
+  });
+  var shareCopyBtn = document.getElementById('shareCopyBtn');
+  if (shareCopyBtn) shareCopyBtn.addEventListener('click', function() {
+    var text = document.getElementById('sharePreview').value;
+    if (navigator.clipboard) navigator.clipboard.writeText(text).then(function() { showToast('Planning copié', 'success'); });
+    else {
+      var ta = document.getElementById('sharePreview');
+      ta.select(); document.execCommand('copy');
+      showToast('Planning copié', 'success');
+    }
+  });
+
+  // Planning modal
+  var addFromPlanningBtn = document.getElementById('addFromPlanningBtn');
+  if (addFromPlanningBtn) addFromPlanningBtn.addEventListener('click', function() { haptic(10); openPlanningModal(); });
+  var cancelPlanning = document.getElementById('cancelPlanning');
+  if (cancelPlanning) cancelPlanning.addEventListener('click', function() {
+    document.getElementById('planningModal').classList.remove('show');
+    editingPlanningId = null;
+  });
+  ['planHeureDebut', 'planHeureFin', 'planDate'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) { el.addEventListener('change', updatePlanDureeCalc); el.addEventListener('input', updatePlanDureeCalc); }
+  });
+  var preset7h = document.getElementById('planPreset7h');
+  if (preset7h) preset7h.addEventListener('click', function() { setPlanningHeures('08:00', Math.round(8.4 * 60)); });
+  var presetDemi = document.getElementById('planPresetDemi');
+  if (presetDemi) presetDemi.addEventListener('click', function() { setPlanningHeures('08:00', Math.round(4.2 * 60)); });
+  var preset1h = document.getElementById('planPreset1h');
+  if (preset1h) preset1h.addEventListener('click', function() { setPlanningHeures('08:00', 60); });
+  var preset2h = document.getElementById('planPreset2h');
+  if (preset2h) preset2h.addEventListener('click', function() { setPlanningHeures('08:00', 120); });
+  var presetClear = document.getElementById('planPresetClear');
+  if (presetClear) presetClear.addEventListener('click', function() {
+    document.getElementById('planHeureDebut').value = '';
+    document.getElementById('planHeureFin').value = '';
+    updatePlanDureeCalc();
+  });
+  var confirmPlanning = document.getElementById('confirmPlanning');
+  if (confirmPlanning) confirmPlanning.addEventListener('click', function() {
+    var type = document.getElementById('planTypeSelect').value;
+    var date = document.getElementById('planDate').value;
+    var heureDebut = document.getElementById('planHeureDebut').value;
+    var heureFin = document.getElementById('planHeureFin').value;
+    var client = document.getElementById('planClient').value.trim();
+    var tel = document.getElementById('planTel').value.trim();
+    var adresse = document.getElementById('planAdresse').value.trim();
+    var description = document.getElementById('planDescription').value.trim();
+    if (!client) { showToast('Client / Adresse requis', 'warning'); return; }
+    if (!description) { showToast('Description requise', 'warning'); return; }
+    if (!date) { showToast('Date requise', 'warning'); return; }
+    if (!heureDebut) { showToast('Heure de début requise', 'warning'); return; }
+    var duree = 0;
+    if (heureFin) {
+      duree = diffHeures(heureDebut, heureFin);
+      if (duree <= 0) { showToast('L\'heure de fin doit être après l\'heure de début', 'warning'); return; }
+    }
+    haptic(15);
+    if (editingPlanningId) {
+      var int = interventions.find(function(i) { return i.id === editingPlanningId; });
+      if (int) {
+        int.type = type; int.date = date; int.heure = heureDebut; int.heureFin = heureFin;
+        int.client = client; int.tel = tel; int.adresse = adresse; int.description = description;
+        if (duree > 0) int.duree = duree;
+        invalidateTotals(int.id);
+      }
+      editingPlanningId = null;
+      showToast('RDV mis à jour', 'success');
+    } else {
+      var newInt = {
+        id: 'int_' + Date.now(), numeroFacture: genererNumeroFacture(),
+        client: client, email: '', tel: tel, adresse: adresse,
+        description: description, type: type,
+        date: date, heure: heureDebut, heureFin: heureFin, duree: duree,
+        taux: settings.tauxDefaut, deplacement: settings.deplacementDefaut,
+        pieces: [], frais: [], photos: [], notes: '', paye: false, statut: 'planifie',
+        paysClient: 'CH', datePaiement: null, signatureClient: null, signatureTech: null,
+        createdAt: new Date().toISOString()
+      };
+      interventions.push(newInt);
+      showToast('Ajouté au planning', 'success');
+    }
+    document.getElementById('planningModal').classList.remove('show');
+    markAsDirty();
+    renderAll();
+  });
+
+  // Intervention modal wizard
+  var addInterventionBtn = document.getElementById('addInterventionBtn');
+  if (addInterventionBtn) addInterventionBtn.addEventListener('click', function() { haptic(10); openInterventionModal(); });
+  var todayAddBtn = document.getElementById('todayAddBtn');
+  if (todayAddBtn) todayAddBtn.addEventListener('click', function() { haptic(10); openInterventionModal(); });
+  var addFactureBtn = document.getElementById('addFactureBtn');
+  if (addFactureBtn) addFactureBtn.addEventListener('click', function() { haptic(10); switchTab('interventions'); openInterventionModal(); });
+  var todayWeekBtn = document.getElementById('todayWeekBtn');
+  if (todayWeekBtn) todayWeekBtn.addEventListener('click', function() {
+    planningDate = new Date();
+    selectedPlanningDate = new Date();
+    switchTab('planning');
+  });
+  var cancelIntervention = document.getElementById('cancelIntervention');
+  if (cancelIntervention) cancelIntervention.addEventListener('click', function() {
+    var m = document.getElementById('interventionModal');
+    if (m) { m.classList.remove('show'); m.dataset.editId = ''; }
+  });
+  var wizardNext = document.getElementById('wizardNext');
+  if (wizardNext) wizardNext.addEventListener('click', function() {
+    if (currentWizardStep === 1) {
+      var client = document.getElementById('intClient').value.trim();
+      if (!client) { showToast('Nom du client requis', 'warning'); return; }
+    }
+    if (currentWizardStep === 2) {
+      var desc = document.getElementById('intDescription').value.trim();
+      if (!desc) { showToast('Description requise', 'warning'); return; }
+      var duree = dureeVersMinutes(document.getElementById('intDureeJours').value, document.getElementById('intDureeHeures').value, document.getElementById('intDureeMinutes').value);
+      if (duree <= 0) { showToast('Durée requise', 'warning'); return; }
+    }
+    setWizardStep(Math.min(3, currentWizardStep + 1));
+  });
+  var wizardPrev = document.getElementById('wizardPrev');
+  if (wizardPrev) wizardPrev.addEventListener('click', function() { setWizardStep(Math.max(1, currentWizardStep - 1)); });
+
+  var confirmIntervention = document.getElementById('confirmIntervention');
+  if (confirmIntervention) confirmIntervention.addEventListener('click', function() {
+    if (!interventionModal) interventionModal = document.getElementById('interventionModal');
+    var editId = interventionModal.dataset.editId;
+    var client = document.getElementById('intClient').value.trim();
+    var email = document.getElementById('intEmail').value.trim();
+    var tel = document.getElementById('intTel').value.trim();
+    var adresse = document.getElementById('intAdresse').value.trim();
+    var paysEl = document.getElementById('intPays');
+    var paysClient = paysEl ? paysEl.value : 'CH';
+    var noTvaEl = document.getElementById('intNoTvaClient');
+    var noTvaClient = noTvaEl ? noTvaEl.value.trim() : '';
+    var description = document.getElementById('intDescription').value.trim();
+    var type = document.getElementById('intTypeSelect').value;
+    var date = document.getElementById('intDate').value;
+    var heure = document.getElementById('intHeure').value;
+    var heureFin = document.getElementById('intHeureFin').value;
+    var statut = document.getElementById('intStatutSelect').value;
+    var duree = dureeVersMinutes(document.getElementById('intDureeJours').value, document.getElementById('intDureeHeures').value, document.getElementById('intDureeMinutes').value);
+    var taux = parseFloat(document.getElementById('intTaux').value) || settings.tauxDefaut;
+    var deplacement = parseFloat(document.getElementById('intDeplacement').value) || 0;
+    var notes = document.getElementById('intNotes').value.trim();
+    var paye = document.getElementById('intPaye').checked;
+    var recurring = document.getElementById('intRecurring').checked;
+    var kmActive = document.getElementById('intKmActive').checked;
+    var kmDistance = parseFloat(document.getElementById('intKmDistance').value) || 0;
+    var kmRetour = parseInt(document.getElementById('intKmRetour').value) || 1;
+    var kmTaux = parseFloat(document.getElementById('intKmTaux').value) || settings.kmRate;
+    if (!client) { showToast('Nom du client requis', 'warning'); setWizardStep(1); return; }
+    if (!description) { showToast('Description requise', 'warning'); setWizardStep(2); return; }
+    if (!date) { showToast('Date requise', 'warning'); setWizardStep(2); return; }
+    if (duree <= 0) { showToast('Durée requise', 'warning'); setWizardStep(2); return; }
+    var pieces = tempPieces.filter(function(p) { return p.nom && p.nom.trim() && parseFloat(p.prix) > 0; });
+    var frais = tempFrais.filter(function(f) { return f.libelle && f.libelle.trim() && parseFloat(f.montant) > 0; });
+    var photos = tempPhotos.slice();
+    haptic(15);
+    if (editId) {
+      var int = interventions.find(function(i) { return i.id === editId; });
+      if (int) {
+        var oldPieces = int.pieces || [];
+        int.client = client; int.email = email; int.tel = tel; int.adresse = adresse;
+        int.paysClient = paysClient; int.noTvaClient = noTvaClient;
+        int.description = description;
+        int.type = type; int.date = date; int.heure = heure; int.heureFin = heureFin;
+        int.duree = duree; int.taux = taux; int.deplacement = deplacement;
+        int.notes = notes; int.pieces = pieces; int.frais = frais; int.photos = photos; int.statut = statut;
+        int.recurring = recurring;
+        int.kmActive = kmActive; int.kmDistance = kmDistance; int.kmRetour = kmRetour; int.kmTaux = kmTaux;
+        if (int.stockDecremented) {
+          restoreStock(oldPieces);
+          decrementStock(pieces);
+        }
+        if (paye && !int.paye) {
+          int.paye = true;
+          int.datePaiement = new Date().toISOString().slice(0, 10);
+        } else if (!paye && int.paye) {
+          int.paye = false;
+          int.datePaiement = null;
+        }
+        invalidateTotals(int.id);
+      }
+      showToast('Intervention modifiée', 'success');
+    } else {
+      var newInt = {
+        id: 'int_' + Date.now(), numeroFacture: genererNumeroFacture(),
+        client: client, email: email, tel: tel, adresse: adresse,
+        paysClient: paysClient, noTvaClient: noTvaClient,
+        description: description, type: type,
+        date: date, heure: heure, heureFin: heureFin, duree: duree,
+        taux: taux, deplacement: deplacement,
+        pieces: pieces, frais: frais, photos: photos, notes: notes, paye: paye, statut: statut,
+        recurring: recurring,
+        kmActive: kmActive, kmDistance: kmDistance, kmRetour: kmRetour, kmTaux: kmTaux,
+        datePaiement: paye ? new Date().toISOString().slice(0, 10) : null,
+        signatureClient: null, signatureTech: null, createdAt: new Date().toISOString()
+      };
+      interventions.push(newInt);
+      if (email && !clients.find(function(c) { return c.email === email; })) {
+        clients.push({ nom: client, email: email, tel: tel, adresse: adresse });
+      }
+      showToast('Facture ' + newInt.numeroFacture + ' créée', 'success');
+      markTabAsNew('interventions');
+    }
+    interventionModal.classList.remove('show');
+    interventionModal.dataset.editId = '';
+    markAsDirty();
+    renderAll();
+  });
+
+  // Pièces / frais / photos
+  var addPieceBtn = document.getElementById('addPieceBtn');
+  if (addPieceBtn) addPieceBtn.addEventListener('click', function() { haptic(8); tempPieces.push({ nom: '', prix: '', qte: 1 }); renderPieces(); });
+  var addFraisBtn = document.getElementById('addFraisBtn');
+  if (addFraisBtn) addFraisBtn.addEventListener('click', function() { haptic(8); tempFrais.push({ libelle: '', montant: '' }); renderFrais(); });
+  var addDevisPieceBtn = document.getElementById('addDevisPieceBtn');
+  if (addDevisPieceBtn) addDevisPieceBtn.addEventListener('click', function() { haptic(8); tempDevisPieces.push({ nom: '', prix: '', qte: 1 }); renderDevisPieces(); });
+  var addPhotoBtn = document.getElementById('addPhotoBtn');
+  if (addPhotoBtn) addPhotoBtn.addEventListener('click', function() { haptic(10); document.getElementById('photoInput').click(); });
+  var photoInput = document.getElementById('photoInput');
+  if (photoInput) photoInput.addEventListener('change', function(e) {
+    var files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    var slots = MAX_PHOTOS - tempPhotos.length;
+    if (slots <= 0) { showToast('Maximum ' + MAX_PHOTOS + ' photos', 'warning'); e.target.value = ''; return; }
+    var batch = files.slice(0, slots);
+    processPhotoFiles(batch).then(function(results) {
+      tempPhotos = tempPhotos.concat(results);
+      renderPhotos();
+      haptic(15);
+      if (results.length > 0) showToast(results.length + ' photo(s) ajoutée(s)', 'success');
+      else showToast('Aucune photo valide', 'warning');
+    });
+    e.target.value = '';
+  });
+
+  // Durée presets
+  ['int', 'devis'].forEach(function(prefix) {
+    ['DureeJours', 'DureeHeures', 'DureeMinutes'].forEach(function(field) {
+      var el = document.getElementById(prefix + field);
+      if (el) el.addEventListener('input', function() { updateDureeTotal(prefix); });
+    });
+  });
+  document.querySelectorAll('.duree-presets button[data-prefix]').forEach(function(btn) {
+    btn.addEventListener('click', function() { applyDureePreset(this.dataset.prefix, parseFloat(this.dataset.hours)); });
+  });
+
+  // KM
+  var intKmActive = document.getElementById('intKmActive');
+  if (intKmActive) intKmActive.addEventListener('change', updateKmTotal);
+  var intKmDistance = document.getElementById('intKmDistance');
+  if (intKmDistance) intKmDistance.addEventListener('input', updateKmTotal);
+  var intKmRetour = document.getElementById('intKmRetour');
+  if (intKmRetour) intKmRetour.addEventListener('change', updateKmTotal);
+  var intKmTaux = document.getElementById('intKmTaux');
+  if (intKmTaux) intKmTaux.addEventListener('input', updateKmTotal);
+
+  // Int date/hour conflict check
+  ['intDate', 'intHeure', 'intHeureFin'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) { el.addEventListener('change', checkIntConflict); el.addEventListener('input', checkIntConflict); }
+  });
+  var intPays = document.getElementById('intPays');
+  if (intPays) intPays.addEventListener('change', updatePaysClientUI);
+
+  // Devis
+  var addDevisBtn = document.getElementById('addDevisBtn');
+  if (addDevisBtn) addDevisBtn.addEventListener('click', function() { haptic(10); openDevisModal(); });
+  var cancelDevis = document.getElementById('cancelDevis');
+  if (cancelDevis) cancelDevis.addEventListener('click', function() {
+    document.getElementById('devisModal').classList.remove('show');
+    editingDevisId = null;
+  });
+  var confirmDevis = document.getElementById('confirmDevis');
+  if (confirmDevis) confirmDevis.addEventListener('click', function() {
+    var client = document.getElementById('devisClient').value.trim();
+    var email = document.getElementById('devisEmail').value.trim();
+    var tel = document.getElementById('devisTel').value.trim();
+    var adresse = document.getElementById('devisAdresse').value.trim();
+    var description = document.getElementById('devisDescription').value.trim();
+    var date = document.getElementById('devisDate').value;
+    var validite = parseInt(document.getElementById('devisValidite').value) || 30;
+    var duree = dureeVersMinutes(document.getElementById('devisDureeJours').value, document.getElementById('devisDureeHeures').value, document.getElementById('devisDureeMinutes').value);
+    var taux = parseFloat(document.getElementById('devisTaux').value) || settings.tauxDefaut;
+    var deplacement = parseFloat(document.getElementById('devisDeplacement').value) || 0;
+    var notes = document.getElementById('devisNotes').value.trim();
+    if (!client || !description || !date) { showToast('Champs obligatoires manquants', 'warning'); return; }
+    var pieces = tempDevisPieces.filter(function(p) { return p.nom && p.nom.trim() && parseFloat(p.prix) > 0; });
+    haptic(15);
+    if (editingDevisId) {
+      var d = devisList.find(function(x) { return x.id === editingDevisId; });
+      if (d) {
+        d.client = client; d.email = email; d.tel = tel; d.adresse = adresse;
+        d.description = description; d.date = date; d.validite = validite;
+        d.duree = duree; d.taux = taux; d.deplacement = deplacement;
+        d.pieces = pieces; d.notes = notes;
+        invalidateTotals(d.id);
+      }
+      editingDevisId = null;
+      showToast('Devis modifié', 'success');
+    } else {
+      var newDevis = {
+        id: 'dev_' + Date.now(), numeroDevis: genererNumeroDevis(),
+        client: client, email: email, tel: tel, adresse: adresse,
+        description: description, date: date,
+        validite: validite, duree: duree, taux: taux, deplacement: deplacement,
+        pieces: pieces, notes: notes, statut: 'en_attente', paysClient: 'CH',
+        signatureClient: null, signatureTech: null, createdAt: new Date().toISOString()
+      };
+      devisList.push(newDevis);
+      showToast('Devis ' + newDevis.numeroDevis + ' créé', 'success');
+      markTabAsNew('devis');
+    }
+    document.getElementById('devisModal').classList.remove('show');
+    markAsDirty();
+    renderAll();
+  });
+
+  // Devis detail buttons
+  var closeDevisDetail = document.getElementById('closeDevisDetail');
+  if (closeDevisDetail) closeDevisDetail.addEventListener('click', function() { document.getElementById('devisDetailModal').classList.remove('show'); });
+  var acceptDevisBtn = document.getElementById('acceptDevisBtn');
+  if (acceptDevisBtn) acceptDevisBtn.addEventListener('click', function() {
+    haptic(15);
+    var d = devisList.find(function(x) { return x.id === currentDevisId; });
+    if (d) { d.statut = 'accepte'; markAsDirty(); renderAll(); openDevisDetail(currentDevisId); showToast('Devis accepté', 'success'); }
+  });
+  var refuseDevisBtn = document.getElementById('refuseDevisBtn');
+  if (refuseDevisBtn) refuseDevisBtn.addEventListener('click', function() {
+    haptic(15);
+    var d = devisList.find(function(x) { return x.id === currentDevisId; });
+    if (d) { d.statut = 'refuse'; markAsDirty(); renderAll(); openDevisDetail(currentDevisId); showToast('Devis refusé', 'warning'); }
+  });
+  var editDevisBtn = document.getElementById('editDevisBtn');
+  if (editDevisBtn) editDevisBtn.addEventListener('click', function() {
+    if (!currentDevisId) return;
+    document.getElementById('devisDetailModal').classList.remove('show');
+    editDevis(currentDevisId);
+  });
+
+  // Convert devis
+  var convertAcompteActive = document.getElementById('convertAcompteActive');
+  if (convertAcompteActive) convertAcompteActive.addEventListener('change', updateConvertAcompte);
+  var convertAcomptePct = document.getElementById('convertAcomptePct');
+  if (convertAcomptePct) convertAcomptePct.addEventListener('input', updateConvertAcompte);
+  var convertDevisBtn = document.getElementById('convertDevisBtn');
+  if (convertDevisBtn) convertDevisBtn.addEventListener('click', function() {
+    haptic(10);
+    var d = devisList.find(function(x) { return x.id === currentDevisId; });
+    if (!d) return;
+    convertDevisSourceId = currentDevisId;
+    document.getElementById('convertClientDisplay').value = d.client || '—';
+    document.getElementById('convertTotalDisplay').value = formatCHF(getTotalTTC(d));
+    var ttc = getTotalTTC(d);
+    var autoAcompte = ttc > (settings.acompteSeuil || 5000);
+    document.getElementById('convertAcompteActive').checked = autoAcompte;
+    document.getElementById('convertAcomptePct').value = 30;
+    var dateSolde = new Date();
+    dateSolde.setDate(dateSolde.getDate() + 30);
+    document.getElementById('convertEcheanceSolde').value = dateSolde.toISOString().slice(0, 10);
+    updateConvertAcompte();
+    if (autoAcompte) {
+      setTimeout(function() { showToast('💡 Devis > ' + formatCHF(settings.acompteSeuil) + ' — Acompte 30% pré-sélectionné', 'warning'); }, 400);
+    }
+    document.getElementById('convertDevisModal').classList.add('show');
+  });
+  var cancelConvertDevis = document.getElementById('cancelConvertDevis');
+  if (cancelConvertDevis) cancelConvertDevis.addEventListener('click', function() {
+    document.getElementById('convertDevisModal').classList.remove('show');
+    convertDevisSourceId = null;
+  });
+  var confirmConvertDevis = document.getElementById('confirmConvertDevis');
+  if (confirmConvertDevis) confirmConvertDevis.addEventListener('click', function() {
+    var d = devisList.find(function(x) { return x.id === convertDevisSourceId; });
+    if (!d) return;
+    var ttc = getTotalTTC(d);
+    var actif = document.getElementById('convertAcompteActive').checked;
+    var pct = parseFloat(document.getElementById('convertAcomptePct').value) || 0;
+    var today = new Date().toISOString().slice(0, 10);
+    var echeanceSolde = document.getElementById('convertEcheanceSolde').value;
+    haptic(15);
+    var fraisCopy = (d.frais || []).map(function(f) { return { libelle: f.libelle, montant: f.montant }; });
+    if (actif && pct > 0 && pct < 100) {
+      var acompteMontant = ttc * pct / 100;
+      var factureAcompte = {
+        id: 'int_' + Date.now() + '_a', numeroFacture: genererNumeroFacture(),
+        client: d.client, email: d.email, tel: d.tel, adresse: d.adresse, paysClient: d.paysClient || 'CH',
+        description: 'Acompte ' + pct + '% — ' + (d.description || ''),
+        type: 'autre', date: today, heure: '', heureFin: '', duree: 0, taux: 0, deplacement: 0,
+        pieces: [], frais: [], photos: [], notes: 'Acompte sur devis ' + d.numeroDevis,
+        paye: false, statut: 'planifie', datePaiement: null,
+        signatureClient: d.signatureClient, signatureTech: d.signatureTech,
+        fromDevis: d.numeroDevis, factureType: 'acompte',
+        montantForceHT: settings.tvaActive ? acompteMontant / (1 + settings.tva / 100) : acompteMontant,
+        createdAt: new Date().toISOString()
+      };
+      var resteMontant = ttc - acompteMontant;
+      var factureSolde = {
+        id: 'int_' + Date.now() + '_s', numeroFacture: genererNumeroFacture(),
+        client: d.client, email: d.email, tel: d.tel, adresse: d.adresse, paysClient: d.paysClient || 'CH',
+        description: 'Solde — ' + (d.description || ''),
+        type: 'autre', date: echeanceSolde || today, heure: '', heureFin: '',
+        duree: d.duree, taux: d.taux, deplacement: d.deplacement,
+        pieces: (d.pieces || []).slice(), frais: fraisCopy, photos: [],
+        notes: 'Solde devis ' + d.numeroDevis + ' (acompte ' + pct + '% déduit)',
+        paye: false, statut: 'planifie', datePaiement: null,
+        signatureClient: d.signatureClient, signatureTech: d.signatureTech,
+        fromDevis: d.numeroDevis, factureType: 'solde',
+        montantForceHT: settings.tvaActive ? resteMontant / (1 + settings.tva / 100) : resteMontant,
+        createdAt: new Date().toISOString()
+      };
+      interventions.push(factureAcompte);
+      interventions.push(factureSolde);
+      d.statut = 'accepte';
+      d.converti = true;
+      invalidateTotals();
+      markAsDirty();
+      renderAll();
+      document.getElementById('convertDevisModal').classList.remove('show');
+      document.getElementById('devisDetailModal').classList.remove('show');
+      switchTab('interventions');
+      showToast('2 factures créées : acompte ' + formatCHF(acompteMontant) + ' + solde ' + formatCHF(resteMontant), 'success');
+    } else {
+      var newInt = {
+        id: 'int_' + Date.now(), numeroFacture: genererNumeroFacture(),
+        client: d.client, email: d.email, tel: d.tel, adresse: d.adresse, paysClient: d.paysClient || 'CH',
+        description: d.description, type: 'autre', date: echeanceSolde || today,
+        heure: '', heureFin: '', duree: d.duree, taux: d.taux, deplacement: d.deplacement,
+        pieces: (d.pieces || []).slice(), frais: fraisCopy, photos: [], notes: d.notes, paye: false,
+        statut: 'planifie', datePaiement: null,
+        signatureClient: d.signatureClient, signatureTech: d.signatureTech,
+        fromDevis: d.numeroDevis, createdAt: new Date().toISOString()
+      };
+      interventions.push(newInt);
+      d.statut = 'accepte';
+      d.converti = true;
+      invalidateTotals();
+      markAsDirty();
+      renderAll();
+      document.getElementById('convertDevisModal').classList.remove('show');
+      document.getElementById('devisDetailModal').classList.remove('show');
+      switchTab('interventions');
+      openFacture(newInt.id);
+      showToast('Devis converti en facture ' + newInt.numeroFacture, 'success');
+    }
+    markTabAsNew('factures');
+    convertDevisSourceId = null;
+  });
+  var downloadDevisPdfBtn = document.getElementById('downloadDevisPdfBtn');
+  if (downloadDevisPdfBtn) downloadDevisPdfBtn.addEventListener('click', function() { if (currentDevisId) generateDevisPDF(currentDevisId); });
+  var sendDevisMailBtn = document.getElementById('sendDevisMailBtn');
+  if (sendDevisMailBtn) sendDevisMailBtn.addEventListener('click', function() { if (currentDevisId) openMailModal(currentDevisId, 'devis'); });
+  var shareDevisBtn = document.getElementById('shareDevisBtn');
+  if (shareDevisBtn) shareDevisBtn.addEventListener('click', function() { if (currentDevisId) shareDevis(currentDevisId); });
+
+  // Avoir
+  var addAvoirBtn = document.getElementById('addAvoirBtn');
+  if (addAvoirBtn) addAvoirBtn.addEventListener('click', function() { haptic(10); openAvoirModal(); });
+  var avoirFactureRef = document.getElementById('avoirFactureRef');
+  if (avoirFactureRef) avoirFactureRef.addEventListener('change', function() {
+    var id = this.value;
+    if (!id) return;
+    var src = interventions.find(function(i) { return i.id === id; });
+    if (src) {
+      document.getElementById('avoirClient').value = src.client || '';
+      document.getElementById('avoirMontant').value = Math.abs(getTotalTTC(src)).toFixed(2);
+      document.getElementById('avoirDescription').value = 'Avoir sur facture ' + (src.numeroFacture || '');
+    }
+  });
+  var cancelAvoir = document.getElementById('cancelAvoir');
+  if (cancelAvoir) cancelAvoir.addEventListener('click', function() {
+    document.getElementById('avoirModal').classList.remove('show');
+    currentAvoirSourceFactureId = null;
+  });
+  var confirmAvoir = document.getElementById('confirmAvoir');
+  if (confirmAvoir) confirmAvoir.addEventListener('click', function() {
+    var client = document.getElementById('avoirClient').value.trim();
+    var montant = parseFloat(document.getElementById('avoirMontant').value);
+    var motif = document.getElementById('avoirMotif').value;
+    var description = document.getElementById('avoirDescription').value.trim();
+    var date = document.getElementById('avoirDate').value;
+    var sourceId = document.getElementById('avoirFactureRef').value;
+    if (!client) { showToast('Client requis', 'warning'); return; }
+    if (!montant || montant <= 0) { showToast('Montant positif requis', 'warning'); return; }
+    if (!date) { showToast('Date requise', 'warning'); return; }
+    var motifLabels = {
+      annulation: 'Annulation totale', retour_piece: 'Retour de pièce',
+      correction_prix: 'Correction de prix', geste_commercial: 'Geste commercial',
+      erreur_facturation: 'Erreur de facturation', autre: 'Autre'
+    };
+    var srcFacture = sourceId ? interventions.find(function(i) { return i.id === sourceId; }) : null;
+    var newAvoir = {
+      id: 'avr_' + Date.now(), numeroFacture: genererNumeroAvoir(), isAvoir: true,
+      client: client,
+      email: srcFacture ? srcFacture.email : '',
+      tel: srcFacture ? srcFacture.tel : '',
+      adresse: srcFacture ? srcFacture.adresse : '',
+      description: '↩ AVOIR — ' + (motifLabels[motif] || motif) + (description ? ' — ' + description : ''),
+      type: 'credit', date: date,
+      heure: '', heureFin: '', duree: 0, taux: 0, deplacement: 0,
+      pieces: [], frais: [], photos: [], notes: description,
+      paye: true, statut: 'termine', datePaiement: date,
+      signatureClient: null, signatureTech: null, paysClient: 'CH',
+      avoirMotif: motif, avoirSourceFacture: srcFacture ? srcFacture.numeroFacture : null,
+      montantForceHT: -Math.abs(montant), createdAt: new Date().toISOString()
+    };
+    interventions.push(newAvoir);
+    invalidateTotals();
+    markAsDirty();
+    renderAll();
+    document.getElementById('avoirModal').classList.remove('show');
+    currentAvoirSourceFactureId = null;
+    markTabAsNew('factures');
+    haptic(15);
+    showToast('Avoir ' + newAvoir.numeroFacture + ' créé (' + formatCHF(montant) + ')', 'purple');
+  });
+
+  // Facture modal
+  var closeFacture = document.getElementById('closeFacture');
+  if (closeFacture) closeFacture.addEventListener('click', function() { document.getElementById('factureModal').classList.remove('show'); });
+  var markPaidBtn = document.getElementById('markPaidBtn');
+  if (markPaidBtn) markPaidBtn.addEventListener('click', function() {
+    if (!currentFactureId) return;
+    markAsPaid(currentFactureId);
+    document.getElementById('factureModal').classList.remove('show');
+  });
+  var downloadPdfBtn = document.getElementById('downloadPdfBtn');
+  if (downloadPdfBtn) downloadPdfBtn.addEventListener('click', function() { if (currentFactureId) generateFacturePDF(currentFactureId); });
+  var shareFactureBtn = document.getElementById('shareFactureBtn');
+  if (shareFactureBtn) shareFactureBtn.addEventListener('click', function() { if (currentFactureId) shareFacture(currentFactureId); });
+  var sendMailBtn = document.getElementById('sendMailBtn');
+  if (sendMailBtn) sendMailBtn.addEventListener('click', function() { if (currentFactureId) openMailModal(currentFactureId, 'facture'); });
+  var signFactureBtn = document.getElementById('signFactureBtn');
+  if (signFactureBtn) signFactureBtn.addEventListener('click', function() {
+    if (currentFactureId) {
+      document.getElementById('factureModal').classList.remove('show');
+      openSignatureModal(currentFactureId, 'facture');
+    }
+  });
+  var editFactureBtn = document.getElementById('editFactureBtn');
+  if (editFactureBtn) editFactureBtn.addEventListener('click', function() {
+    if (!currentFactureId) return;
+    document.getElementById('factureModal').classList.remove('show');
+    editIntervention(currentFactureId);
+  });
+  var printFactureBtn = document.getElementById('printFactureBtn');
+  if (printFactureBtn) printFactureBtn.addEventListener('click', function() {
+    if (!currentFactureId) return;
+    var int = interventions.find(function(i) { return i.id === currentFactureId; });
+    if (!int) return;
+    var printSection = document.getElementById('printSection');
+    var ttc = getTotalTTC(int);
+    printSection.innerHTML = '<div style="font-family:Arial, sans-serif; max-width:800px; margin:0 auto; padding:20px;"><h1>' + escapeHtml(int.isAvoir ? 'AVOIR' : 'FACTURE') + ' ' + escapeHtml(int.numeroFacture || '') + '</h1><p><strong>Client :</strong> ' + escapeHtml(int.client) + '</p><p><strong>Total :</strong> ' + ttc.toFixed(2) + ' CHF</p></div>';
+    printSection.style.display = 'block';
+    window.print();
+    setTimeout(function() { printSection.style.display = 'none'; }, 1000);
+  });
+
+  // Mail
+  var cancelMail = document.getElementById('cancelMail');
+  if (cancelMail) cancelMail.addEventListener('click', function() { document.getElementById('mailModal').classList.remove('show'); });
+  var confirmMail = document.getElementById('confirmMail');
+  if (confirmMail) confirmMail.addEventListener('click', function() {
+    var to = document.getElementById('mailTo').value;
+    var subject = document.getElementById('mailSubject').value;
+    var body = document.getElementById('mailBody').value;
+    if (currentMailType === 'facture') generateFacturePDF(currentMailId, true);
+    else generateDevisPDF(currentMailId, true);
+    window.location.href = 'mailto:' + encodeURIComponent(to) + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
+    document.getElementById('mailModal').classList.remove('show');
+    showToast('Client mail ouvert. Joignez le PDF.', 'success');
+  });
+
+  // Signatures
+  var clearClientSig = document.getElementById('clearClientSig');
+  if (clearClientSig) clearClientSig.addEventListener('click', function() { haptic(8); clearCanvas('client'); });
+  var clearTechSig = document.getElementById('clearTechSig');
+  if (clearTechSig) clearTechSig.addEventListener('click', function() { haptic(8); clearCanvas('tech'); });
+  var saveClientSig = document.getElementById('saveClientSig');
+  if (saveClientSig) saveClientSig.addEventListener('click', function() {
+    if (isCanvasEmpty(clientCanvas)) { showToast('Veuillez signer avant de valider', 'warning'); return; }
+    _buildSigBundle('client').then(function(bundle) {
+      clientSigBundle = bundle;
+      clientSignatureData = bundle.data;
+      clientSignatureHash = bundle.hash;
+      haptic(15);
+      showToast('Signature client enregistrée', 'success');
+    }).catch(function() { showToast('Erreur signature client', 'error'); });
+  });
+  var saveTechSig = document.getElementById('saveTechSig');
+  if (saveTechSig) saveTechSig.addEventListener('click', function() {
+    if (isCanvasEmpty(techCanvas)) { showToast('Veuillez signer avant de valider', 'warning'); return; }
+    _buildSigBundle('tech').then(function(bundle) {
+      techSigBundle = bundle;
+      techSignatureData = bundle.data;
+      techSignatureHash = bundle.hash;
+      haptic(15);
+      showToast('Signature technicien enregistrée', 'success');
+    }).catch(function() { showToast('Erreur signature technicien', 'error'); });
+  });
+  var closeSignatureModal = document.getElementById('closeSignatureModal');
+  if (closeSignatureModal) closeSignatureModal.addEventListener('click', function() {
+    saveSignatures(function() { document.getElementById('signatureModal').classList.remove('show'); });
+  });
+
+  // Search & filters
+  var searchInput = document.getElementById('searchInput');
+  if (searchInput) searchInput.addEventListener('input', debounce(function() { searchTerm = this.value; renderInterventions(); }, 250));
+  var searchBtn = document.getElementById('searchBtn');
+  if (searchBtn) searchBtn.addEventListener('click', function() { searchTerm = document.getElementById('searchInput').value; renderInterventions(); });
+  var searchFactureInput = document.getElementById('searchFactureInput');
+  if (searchFactureInput) searchFactureInput.addEventListener('input', debounce(function() { searchFactureTerm = this.value; renderFactures(); }, 250));
+  var searchFactureBtn = document.getElementById('searchFactureBtn');
+  if (searchFactureBtn) searchFactureBtn.addEventListener('click', function() { searchFactureTerm = document.getElementById('searchFactureInput').value; renderFactures(); });
+  var searchDevisInput = document.getElementById('searchDevisInput');
+  if (searchDevisInput) searchDevisInput.addEventListener('input', debounce(function() { searchDevisTerm = this.value; renderDevis(); }, 250));
+  var searchDevisBtn = document.getElementById('searchDevisBtn');
+  if (searchDevisBtn) searchDevisBtn.addEventListener('click', function() { searchDevisTerm = document.getElementById('searchDevisInput').value; renderDevis(); });
+
+  document.querySelectorAll('#quickFiltersInterventions .quick-filter').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      haptic(8);
+      document.querySelectorAll('#quickFiltersInterventions .quick-filter').forEach(function(b) { b.classList.remove('active'); });
+      this.classList.add('active');
+      currentQuickFilter = this.dataset.filter;
+      openMonths = {};
+      openDays = {};
+      renderInterventions();
+    });
+  });
+  document.querySelectorAll('#quickFiltersFactures .quick-filter').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      haptic(8);
+      document.querySelectorAll('#quickFiltersFactures .quick-filter').forEach(function(b) { b.classList.remove('active'); });
+      this.classList.add('active');
+      currentFactureFilter = this.dataset.filter;
+      renderFactures();
+    });
+  });
+  var sortInterventionsSelect = document.getElementById('sortInterventionsSelect');
+  if (sortInterventionsSelect) sortInterventionsSelect.addEventListener('change', function() { currentSortInterventions = this.value; renderInterventions(); });
+  var sortFacturesSelect = document.getElementById('sortFacturesSelect');
+  if (sortFacturesSelect) sortFacturesSelect.addEventListener('change', function() { currentSortFactures = this.value; renderFactures(); });
+  var sortDevisSelect = document.getElementById('sortDevisSelect');
+  if (sortDevisSelect) sortDevisSelect.addEventListener('change', function() { currentSortDevis = this.value; renderDevis(); });
+  var dateFilterFromEl = document.getElementById('dateFilterFrom');
+  if (dateFilterFromEl) dateFilterFromEl.addEventListener('change', function() { dateFilterFrom = this.value; renderInterventions(); });
+  var dateFilterToEl = document.getElementById('dateFilterTo');
+  if (dateFilterToEl) dateFilterToEl.addEventListener('change', function() { dateFilterTo = this.value; renderInterventions(); });
+  var clearDateFilter = document.getElementById('clearDateFilter');
+  if (clearDateFilter) clearDateFilter.addEventListener('click', function() {
+    dateFilterFrom = ''; dateFilterTo = '';
+    document.getElementById('dateFilterFrom').value = '';
+    document.getElementById('dateFilterTo').value = '';
+    renderInterventions();
+  });
+
+  // Export / import
+  var exportDataBtn = document.getElementById('exportDataBtn');
+  if (exportDataBtn) exportDataBtn.addEventListener('click', function() { exportData(settings.encryptExport); });
+  var exportCsvBtn = document.getElementById('exportCsvBtn');
+  if (exportCsvBtn) exportCsvBtn.addEventListener('click', function() {
+    haptic(15);
+    var lines = [];
+    lines.push(['Type', 'Numero', 'Date', 'Client', 'Email', 'Telephone', 'Description', 'Total HT', 'TVA', 'Total TTC', 'Paye', 'Statut'].join(';'));
+    interventions.forEach(function(int) {
+      var ht = getTotalHT(int);
+      var tva = settings.tvaActive ? getTvaMontant(int) : 0;
+      var ttc = getTotalTTC(int);
+      lines.push([
+        int.isAvoir ? 'Avoir' : 'Facture', int.numeroFacture || '', int.date || '',
+        (int.client || '').replace(/[;\n]/g, ' '), int.email || '', int.tel || '',
+        (int.description || '').replace(/[;\n]/g, ' '),
+        ht.toFixed(2).replace('.', ','), tva.toFixed(2).replace('.', ','), ttc.toFixed(2).replace('.', ','),
+        int.paye ? 'Oui' : 'Non', int.statut || ''
+      ].join(';'));
+    });
+    devisList.forEach(function(d) {
+      var ht = getTotalHT(d);
+      var tva = settings.tvaActive ? getTvaMontant(d) : 0;
+      var ttc = getTotalTTC(d);
+      lines.push([
+        'Devis', d.numeroDevis || '', d.date || '',
+        (d.client || '').replace(/[;\n]/g, ' '), d.email || '', d.tel || '',
+        (d.description || '').replace(/[;\n]/g, ' '),
+        ht.toFixed(2).replace('.', ','), tva.toFixed(2).replace('.', ','), ttc.toFixed(2).replace('.', ','),
+        '', d.statut || ''
+      ].join(';'));
+    });
+    var csv = '\uFEFF' + lines.join('\r\n');
+    var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    var link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = 'pipepline_ch_export_' + new Date().toISOString().slice(0, 10) + '.csv';
+    link.click();
+    showToast('Export CSV téléchargé', 'success');
+  });
+  var importDataBtn = document.getElementById('importDataBtn');
+  if (importDataBtn) importDataBtn.addEventListener('click', function() { document.getElementById('importDataInput').click(); });
+  var importDataInput = document.getElementById('importDataInput');
+  if (importDataInput) importDataInput.addEventListener('change', function(e) {
+    var file = e.target.files && e.target.files[0];
+    if (!file) return;
+    if (file.size > MAX_IMPORT_BYTES) {
+      showToast('Fichier trop volumineux (>50 Mo)', 'error');
+      this.value = '';
+      return;
+    }
+    var reader = new FileReader();
+    reader.onload = function(evt) {
+      try {
+        var data = JSON.parse(evt.target.result);
+        if (data && data.encrypted === true) {
+          askPassword({
+            title: 'Déchiffrer la sauvegarde',
+            description: 'Ce fichier est chiffré. Entrez le mot de passe utilisé lors de la sauvegarde.',
+            requireConfirm: false, confirmLabel: 'Déchiffrer'
+          }).then(function(pwd) {
+            if (!pwd) { document.getElementById('importDataInput').value = ''; return; }
+            var salt = base64ToUint8(data.salt);
+            var iv = base64ToUint8(data.iv);
+            var ciphertext = base64ToUint8(data.ciphertext);
+            var enc = new TextEncoder();
+            crypto.subtle.importKey('raw', enc.encode(pwd), { name: 'PBKDF2' }, false, ['deriveKey'])
+              .then(function(baseKey) {
+                return crypto.subtle.deriveKey(
+                  { name: 'PBKDF2', salt: salt, iterations: data.iterations || 100000, hash: 'SHA-256' },
+                  baseKey, { name: 'AES-GCM', length: 256 }, false, ['decrypt']
+                );
+              })
+              .then(function(key) { return crypto.subtle.decrypt({ name: 'AES-GCM', iv: iv }, key, ciphertext); })
+              .then(function(plaintext) {
+                var dec = new TextDecoder();
+                var realData = JSON.parse(dec.decode(plaintext));
+                doImport(realData);
+              })
+              .catch(function() {
+                showToast('Mot de passe incorrect ou fichier corrompu', 'error');
+                document.getElementById('importDataInput').value = '';
+              });
+          });
+          return;
+        }
+        doImport(data);
+      } catch (err) {
+        showToast('Fichier invalide : ' + err.message, 'error');
+        document.getElementById('importDataInput').value = '';
+      }
+    };
+    reader.readAsText(file);
+  });
+
+  // Backup alert
+  var alertBackup = document.getElementById('alertBackup');
+  if (alertBackup) alertBackup.addEventListener('click', function(e) {
+    if (e.target.closest('.alert-close')) return;
+    document.getElementById('exportDataBtn').click();
+  });
+  var alertBackupClose = document.getElementById('alertBackupClose');
+  if (alertBackupClose) alertBackupClose.addEventListener('click', function(e) { e.stopPropagation(); dismissBackupReminder(); });
+  var alertStorageClose = document.getElementById('alertStorageClose');
+  if (alertStorageClose) alertStorageClose.addEventListener('click', function() {
+    document.getElementById('alertStorage').classList.remove('show');
+    localStorage.setItem(STORAGE_ALERT_KEY, new Date().toISOString());
+  });
+
+  // Stock
+  var openStockBtn = document.getElementById('openStockBtn');
+  if (openStockBtn) openStockBtn.addEventListener('click', function() {
+    haptic(10);
+    stockSearchTerm = '';
+    var si = document.getElementById('stockSearchInput');
+    if (si) si.value = '';
+    renderStockList();
+    document.getElementById('stockModal').classList.add('show');
+  });
+  var closeStock = document.getElementById('closeStock');
+  if (closeStock) closeStock.addEventListener('click', function() { document.getElementById('stockModal').classList.remove('show'); });
+  var stockSearchInput = document.getElementById('stockSearchInput');
+  if (stockSearchInput) stockSearchInput.addEventListener('input', debounce(function() { stockSearchTerm = this.value; renderStockList(); }, 150));
+  var stockSortSelect = document.getElementById('stockSortSelect');
+  if (stockSortSelect) stockSortSelect.addEventListener('change', function() { stockSortMode = this.value; renderStockList(); });
+  var addStockBtn = document.getElementById('addStockBtn');
+  if (addStockBtn) addStockBtn.addEventListener('click', function() {
+    var name = document.getElementById('stockName').value.trim();
+    var qte = parseInt(document.getElementById('stockQte').value) || 0;
+    var seuil = parseInt(document.getElementById('stockSeuil').value) || 0;
+    if (!name) { showToast('Nom requis', 'warning'); return; }
+    var key = name.toLowerCase();
+    var existing = !!stock[key];
+    stock[key] = { qte: qte, seuil: seuil };
+    storageSet(STOCK_KEY, stock);
+    document.getElementById('stockName').value = '';
+    document.getElementById('stockQte').value = 0;
+    document.getElementById('stockSeuil').value = 1;
+    renderStockList();
+    showToast(existing ? 'Article mis à jour' : 'Article ajouté', 'success');
+    haptic(15);
+  });
+
+  // Recap navigation
+  var prevMonthBtn = document.getElementById('prevMonthBtn');
+  if (prevMonthBtn) prevMonthBtn.addEventListener('click', function() { haptic(8); recapDate.setMonth(recapDate.getMonth() - 1); renderRecap(); });
+  var nextMonthBtn = document.getElementById('nextMonthBtn');
+  if (nextMonthBtn) nextMonthBtn.addEventListener('click', function() { haptic(8); recapDate.setMonth(recapDate.getMonth() + 1); renderRecap(); });
+  var dashToggle = document.getElementById('dashToggle');
+  if (dashToggle) dashToggle.addEventListener('click', function(e) {
+    e.stopPropagation(); haptic(8);
+    var panel = document.getElementById('caPanel');
+    panel.classList.toggle('open');
+    this.classList.toggle('open');
+  });
+
+  // TVA
+  var tvaYearSelect = document.getElementById('tvaYearSelect');
+  if (tvaYearSelect) tvaYearSelect.addEventListener('change', renderTvaResult);
+  var tvaPeriodSelect = document.getElementById('tvaPeriodSelect');
+  if (tvaPeriodSelect) tvaPeriodSelect.addEventListener('change', renderTvaResult);
+  var closeTva = document.getElementById('closeTva');
+  if (closeTva) closeTva.addEventListener('click', function() { document.getElementById('tvaModal').classList.remove('show'); });
+  var openTvaBtn = document.getElementById('openTvaBtn');
+  if (openTvaBtn) openTvaBtn.addEventListener('click', openTvaModal);
+  var openTvaRecapBtn = document.getElementById('openTvaRecapBtn');
+  if (openTvaRecapBtn) openTvaRecapBtn.addEventListener('click', openTvaModal);
+  var tvaExportBtn = document.getElementById('tvaExportBtn');
+  if (tvaExportBtn) tvaExportBtn.addEventListener('click', function() {
+    var year = parseInt(document.getElementById('tvaYearSelect').value);
+    var period = document.getElementById('tvaPeriodSelect').value;
+    var range = getTvaPeriodRange(year, period);
+    var filtered = interventions.filter(function(int) {
+      if (!int.date) return false;
+      var d = new Date(int.date + 'T00:00:00');
+      if (isNaN(d.getTime())) return false;
+      return d >= range.start && d <= range.end && !int.isAvoir;
+    });
+    var lines = [];
+    lines.push(['N° facture', 'Date', 'Client', 'Pays', 'Base HT', 'Taux TVA', 'TVA', 'TTC'].join(';'));
+    filtered.forEach(function(int) {
+      lines.push([
+        int.numeroFacture || '', int.date || '',
+        (int.client || '').replace(/[;\n]/g, ' '), int.paysClient || 'CH',
+        getTotalHT(int).toFixed(2).replace('.', ','), getTauxTva(int),
+        getTvaMontant(int).toFixed(2).replace('.', ','), getTotalTTC(int).toFixed(2).replace('.', ',')
+      ].join(';'));
+    });
+    var csv = '\uFEFF' + lines.join('\r\n');
+    var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    var link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = 'tva_' + year + '_' + period + '.csv';
+    link.click();
+    showToast('Décompte TVA exporté', 'success');
+  });
+
+  // Certificat
+  var cancelCertificate = document.getElementById('cancelCertificate');
+  if (cancelCertificate) cancelCertificate.addEventListener('click', function() { document.getElementById('certificateModal').classList.remove('show'); });
+  var generateCertificateBtn = document.getElementById('generateCertificateBtn');
+  if (generateCertificateBtn) generateCertificateBtn.addEventListener('click', function() {
+    var intId = document.getElementById('certificateModal').dataset.intId;
+    var int = interventions.find(function(i) { return i.id === intId; });
+    if (!int) return;
+    var certData = {
+      marque: document.getElementById('certMarque').value.trim(),
+      serie: document.getElementById('certSerie').value.trim(),
+      annee: document.getElementById('certAnnee').value,
+      combustible: document.getElementById('certCombustible').value,
+      puissance: document.getElementById('certPuissance').value,
+      CO: document.getElementById('certCO').value,
+      CO2: document.getElementById('certCO2').value,
+      tempFumees: document.getElementById('certTempFumees').value,
+      rendement: document.getElementById('certRendement').value,
+      travaux: document.getElementById('certTravaux').value.trim(),
+      observations: document.getElementById('certObservations').value.trim(),
+      date: document.getElementById('certDate').value,
+      prochain: document.getElementById('certProchain').value
+    };
+    if (!certData.marque) { showToast('Marque / modèle requis', 'warning'); return; }
+    int.certificat = certData;
+    markAsDirty();
+    renderAll();
+    document.getElementById('certificateModal').classList.remove('show');
+    haptic(15);
+    showToast('Certificat enregistré — génération PDF...', 'success');
+    generateCertificatePDF(int);
+  });
+
+  // Autocomplete
+  setupAutocomplete('intClient', 'intClientAutocomplete', function(c) {
+    document.getElementById('intClient').value = c.nom || '';
+    if (c.email) document.getElementById('intEmail').value = c.email;
+    if (c.tel) document.getElementById('intTel').value = c.tel;
+    if (c.adresse) document.getElementById('intAdresse').value = c.adresse;
+  });
+  setupAutocomplete('planClient', 'planClientAutocomplete', function(c) {
+    document.getElementById('planClient').value = c.nom || '';
+    if (c.tel) document.getElementById('planTel').value = c.tel;
+    if (c.adresse) document.getElementById('planAdresse').value = c.adresse;
+  });
+  setupAutocomplete('devisClient', 'devisClientAutocomplete', function(c) {
+    document.getElementById('devisClient').value = c.nom || '';
+    if (c.email) document.getElementById('devisEmail').value = c.email;
+    if (c.tel) document.getElementById('devisTel').value = c.tel;
+    if (c.adresse) document.getElementById('devisAdresse').value = c.adresse;
+  });
+  var verifyAddressBtn = document.getElementById('verifyAddressBtn');
+  if (verifyAddressBtn) verifyAddressBtn.addEventListener('click', function() {
+    var adresse = document.getElementById('intAdresse').value.trim();
+    if (!adresse) { showToast('Saisissez une adresse', 'warning'); return; }
+    window.open(getMapsHref(adresse), '_blank');
+  });
+
+  // Settings
+  var settingsBtn = document.getElementById('settingsBtn');
+  if (settingsBtn) settingsBtn.addEventListener('click', function() {
+    var statusEl = document.getElementById('offlineStatus');
+    if (statusEl) {
+      var jspdfReady = !!(window.jspdf && window.jspdf.jsPDF);
+      if (jspdfReady) {
+        statusEl.innerHTML = '✅ <strong>Prêt hors ligne</strong> — jsPDF chargé.';
+        statusEl.style.background = '#e8f5e9';
+        statusEl.style.color = '#1b5e20';
+      } else {
+        statusEl.innerHTML = '⏳ <strong>Chargement à la demande</strong> — testez un PDF pour vérifier.';
+        statusEl.style.background = 'var(--bg-surface)';
+        statusEl.style.color = 'var(--text-secondary)';
+      }
+    }
+    document.getElementById('setTheme').value = getCurrentTheme();
+    document.getElementById('setPinActive').checked = pinMeta.active || false;
+    document.getElementById('setPin').value = '';
+    document.getElementById('pinSetupBlock').style.display = (pinMeta.active || false) ? 'block' : 'none';
+    document.getElementById('setEncryptExport').checked = settings.encryptExport || false;
+    document.getElementById('setNom').value = settings.nom;
+    document.getElementById('setAdresse').value = settings.adresse;
+    document.getElementById('setZip').value = settings.zip || '';
+    document.getElementById('setCity').value = settings.city || '';
+    document.getElementById('setSiret').value = settings.siret;
+    document.getElementById('setIban').value = settings.iban || '';
+    updateIbanStatus();
+    document.getElementById('setTel').value = settings.tel;
+    document.getElementById('setEmail').value = settings.email;
+    document.getElementById('setTaxe').value = settings.taxe;
+    document.getElementById('setTva').value = settings.tva;
+    document.getElementById('setTvaActive').checked = settings.tvaActive;
+    document.getElementById('setKmRate').value = settings.kmRate || 0.70;
+    document.getElementById('setAcompteSeuil').value = settings.acompteSeuil || 5000;
+    document.getElementById('setTauxDefaut').value = settings.tauxDefaut;
+    document.getElementById('setDeplacementDefaut').value = settings.deplacementDefaut;
+    document.getElementById('setSeuilAlerte').value = settings.seuilAlerte || 30;
+    document.getElementById('setSeuilSauvegarde').value = settings.seuilSauvegarde || 15;
+    document.getElementById('setTvaIntra').value = settings.tvaIntra || '';
+    document.getElementById('setAssuranceNom').value = settings.assuranceNom || '';
+    document.getElementById('setAssuranceNum').value = settings.assuranceNum || '';
+    document.getElementById('setDelaiPaiement').value = settings.delaiPaiement || 30;
+    document.getElementById('settingsModal').classList.add('show');
+  });
+  var setPinActive = document.getElementById('setPinActive');
+  if (setPinActive) setPinActive.addEventListener('change', function() {
+    document.getElementById('pinSetupBlock').style.display = this.checked ? 'block' : 'none';
+  });
+  var setIban = document.getElementById('setIban');
+  if (setIban) setIban.addEventListener('input', debounce(updateIbanStatus, 300));
+  var cancelSettings = document.getElementById('cancelSettings');
+  if (cancelSettings) cancelSettings.addEventListener('click', function() { document.getElementById('settingsModal').classList.remove('show'); });
+  var saveSettingsBtn = document.getElementById('saveSettings');
+  if (saveSettingsBtn) saveSettingsBtn.addEventListener('click', function() {
+    var newTheme = document.getElementById('setTheme').value;
+    applyTheme(newTheme);
+    var newPinActive = document.getElementById('setPinActive').checked;
+    var newPin = document.getElementById('setPin').value;
+
+    // Cas 1 : activation initiale du PIN
+    if (newPinActive && !pinMeta.active) {
+      if (!newPin || newPin.length < 4) { showToast('Code PIN min. 4 chiffres requis', 'warning'); return; }
+      var salt = generateSalt();
+      computePinHashB64(newPin, salt).then(function(hashB64) {
+        pinMeta = {
+          active: true, salt: uint8ToBase64(salt), pinHash: hashB64,
+          pinLength: newPin.length, createdAt: new Date().toISOString()
+        };
+        return savePinMeta();
+      }).then(function() {
+        saveSettingsData();
+        showToast('Code PIN activé. Rechargement...', 'success');
+        setTimeout(function() { location.reload(); }, 1500);
+      }).catch(function(e) {
+        console.error('[PIN activation]', e);
+        showToast('Erreur activation PIN', 'error');
+      });
+      return;
+    }
+
+    // Cas 2 : changement de PIN
+    if (newPinActive && pinMeta.active && newPin && newPin.length >= 4) {
+      var newSalt = generateSalt();
+      computePinHashB64(newPin, newSalt).then(function(newHash) {
+        return deriveKeyFromPin(newPin, newSalt).then(function(newKey) {
+          cryptoKey = newKey;
+          return Promise.all([
+            storageSet(STORAGE_KEY, {
+              interventions: interventions, devisList: devisList, clients: clients,
+              factureCounter: factureCounter, devisCounter: devisCounter, avoirCounter: avoirCounter,
+              schemaVersion: 4, appVersion: APP_VERSION, savedAt: new Date().toISOString()
+            }),
+            storageSet(SETTINGS_KEY, settings),
+            storageSet(BACKUP_META_KEY, backupMeta),
+            storageSet(STOCK_KEY, stock)
+          ]).then(function() {
+            pinMeta.salt = uint8ToBase64(newSalt);
+            pinMeta.pinHash = newHash;
+            pinMeta.pinLength = newPin.length;
+            pinMeta.updatedAt = new Date().toISOString();
+            return savePinMeta();
+          }).then(function() {
+            showToast('Code PIN modifié. Rechargement...', 'success');
+            setTimeout(function() { location.reload(); }, 1500);
+          });
+        });
+      }).catch(function(e) {
+        console.error('[PIN change]', e);
+        showToast('Erreur changement PIN', 'error');
+      });
+      return;
+    }
+
+    // Cas 3 : désactivation du PIN
+    if (!newPinActive && pinMeta.active) {
+      showConfirm(
+        '⚠ Désactiver le code PIN ?\n\nLes données seront DÉCHIFFRÉES et stockées en clair sur cet appareil. Toute personne ayant accès à l\'appareil pourra les consulter.\n\nContinuer ?',
+        function(ok) {
+          if (!ok) return;
+          var oldKey = cryptoKey;
+          cryptoKey = null;
+          Promise.all([
+            idbSet(STORAGE_KEY, {
+              interventions: interventions, devisList: devisList, clients: clients,
+              factureCounter: factureCounter, devisCounter: devisCounter,
+              avoirCounter: avoirCounter, schemaVersion: 4,
+              appVersion: APP_VERSION, savedAt: new Date().toISOString()
+            }),
+            idbSet(SETTINGS_KEY, settings),
+            idbSet(BACKUP_META_KEY, backupMeta),
+            idbSet(STOCK_KEY, stock)
+          ]).then(function() {
+            pinMeta = { active: false, salt: null };
+            return savePinMeta();
+          }).then(function() {
+            showToast('Code PIN désactivé. Rechargement...', 'warning');
+            setTimeout(function() { location.reload(); }, 1500);
+          }).catch(function(e) {
+            console.error('[PIN disable]', e);
+            cryptoKey = oldKey;
+            showToast('Erreur désactivation PIN — données non modifiées', 'error');
+          });
+        }
+      );
+      return;
+    }
+
+    // Cas 4 : pas de changement PIN
+    saveSettingsData();
+    document.getElementById('settingsModal').classList.remove('show');
+    renderAll();
+    checkBackupReminder();
+    haptic(15);
+    showToast('Paramètres sauvegardés', 'success');
+  });
+
+  // Bottom nav + main tabs
+  document.querySelectorAll('.main-tab').forEach(function(tab) {
+    tab.addEventListener('click', function() { switchTab(this.dataset.tab); });
+  });
+  document.querySelectorAll('.bottom-nav-item').forEach(function(tab) {
+    tab.addEventListener('click', function() { switchTab(this.dataset.tab); });
+  });
+
+  // Keyboard shortcuts + Escape
+  document.addEventListener('keydown', function(e) {
+    if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+      e.preventDefault();
+      storageDirty = true;
+      saveToStorage().then(function() { showToast('Sauvegardé (Ctrl+S)', 'success'); });
+    }
+    if (e.key === 'Escape') {
+      document.querySelectorAll('.modal-overlay.show').forEach(function(m) {
+        if (m.id === 'signatureModal') saveSignatures();
+        m.classList.remove('show');
+      });
+      var as = document.getElementById('actionSheet');
+      if (as && as.classList.contains('show')) as.classList.remove('show');
+      editingDevisId = null;
+      editingPlanningId = null;
+      convertDevisSourceId = null;
+      currentAvoirSourceFactureId = null;
+    }
+  });
+
+  // beforeunload / pagehide
+  window.addEventListener('beforeunload', function() { if (storageDirty) saveToStorage(); });
+  window.addEventListener('pagehide', function() { if (storageDirty) saveToStorage(); });
+  document.addEventListener('visibilitychange', function() {
+    if (document.visibilityState === 'hidden' && storageDirty) saveToStorage();
+  });
+
+  // BroadcastChannel
+  if ('BroadcastChannel' in window) {
+    try {
+      broadcastChannel = new BroadcastChannel('pipepline_ch_sync');
+      broadcastChannel.onmessage = function(e) {
+        if (e.data && e.data.type === 'data-updated') {
+          var modalOpen = document.querySelector('.modal-overlay.show');
+          if (modalOpen || storageDirty) return;
+          loadFromStorage().then(function() { renderAll(); });
+        }
+      };
+    } catch(e) {}
+  }
+
+  // Swipe tabs
+  (function setupSwipe() {
+    var tabs = ['today', 'planning', 'interventions', 'factures', 'devis', 'recap'];
+    var startX = 0, startY = 0, startTime = 0;
+    var minSwipe = 80, maxTime = 600, maxVertical = 60;
+    var target = document.querySelector('.app-container');
+    if (!target) return;
+    target.addEventListener('touchstart', function(e) {
+      if (e.touches.length !== 1) return;
+      if (e.target.closest('.dashboard-strip, .quick-filters, .sort-bar, .photos-strip, .action-sheet, .planning-grid, .pieces-container-scroll, .frais-container-scroll, .signature-canvas-wrapper')) return;
+      startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
+      startTime = Date.now();
+    }, { passive: true });
+    target.addEventListener('touchend', function(e) {
+      if (e.changedTouches.length !== 1) return;
+      var dx = e.changedTouches[0].clientX - startX;
+      var dy = e.changedTouches[0].clientY - startY;
+      var dt = Date.now() - startTime;
+      if (dt > maxTime) return;
+      if (Math.abs(dy) > maxVertical) return;
+      if (Math.abs(dx) < minSwipe) return;
+      if (document.querySelector('.modal-overlay.show')) return;
+      if (document.getElementById('actionSheet').classList.contains('show')) return;
+      var current = document.querySelector('.main-tab.active');
+      if (!current) return;
+      var idx = tabs.indexOf(current.dataset.tab);
+      if (idx === -1) return;
+      if (dx < 0 && idx < tabs.length - 1) switchTab(tabs[idx + 1]);
+      else if (dx > 0 && idx > 0) switchTab(tabs[idx - 1]);
+    }, { passive: true });
+  })();
+
+  // Periodic save
+  setInterval(function() { if (storageDirty) saveToStorage(); }, 180000);
+}
+
+/* ==========================================================================
+   SWITCH TAB
+   ========================================================================== */
+function switchTab(tabName) {
+  document.querySelectorAll('.main-tab').forEach(function(t) {
+    if (t.dataset.tab === tabName) t.classList.add('active');
+    else t.classList.remove('active');
+  });
+  document.querySelectorAll('.bottom-nav-item').forEach(function(t) {
+    if (t.dataset.tab === tabName) t.classList.add('active');
+    else t.classList.remove('active');
+  });
+  document.querySelectorAll('.tab-content').forEach(function(c) {
+    if (c.id === 'tab-' + tabName) c.classList.add('active');
+    else c.classList.remove('active');
+  });
+  if (tabName === 'recap') renderRecap();
+  if (tabName === 'planning') renderPlanning();
+  if (tabName === 'today') renderToday();
+  clearTabNew(tabName);
+  haptic(8);
+}
+
+/* ==========================================================================
    DÉMARRAGE
    ========================================================================== */
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', init);
-} else {
+function boot() {
+  bindEventListeners();
   init();
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', boot);
+} else {
+  boot();
 }

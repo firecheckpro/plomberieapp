@@ -10,7 +10,7 @@
   <meta name="theme-color" content="#1a5279" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#0f1a24" media="(prefers-color-scheme: dark)">
   <meta name="description" content="Application de gestion pour plombier - 100% hors ligne et privée">
-  <title>PipePline V2.7 - Gestion hors ligne</title>
+  <title>PipePline V3 - Gestion hors ligne</title>
   <link rel="icon" type="image/png" href="logo.png">
   <link rel="apple-touch-icon" href="logo.png">
   <script>
@@ -809,7 +809,7 @@
       background: var(--bg-card);
       border-top: 1px solid var(--border-1);
       z-index: 500;
-      padding: 4px 4px 4px;
+      padding: 8px 4px 4px;
       box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08);
       transform: translate3d(0, 0, 0);
       -webkit-transform: translate3d(0, 0, 0);
@@ -1062,7 +1062,7 @@
     <div class="app-header">
       <div class="header-left">
         <img src="logo.png" alt="Logo" class="app-logo" onerror="this.style.display='none'" />
-        <h1>PipePline <span class="app-version">V2.8</span></h1>
+        <h1>PipePline <span class="app-version">V3</span></h1>
       </div>
       <div style="display:flex; flex-wrap:wrap; gap:6px; align-items:center;">
         <div class="save-indicator" id="saveIndicator">
@@ -1383,22 +1383,7 @@
             <input type="text" id="intAdresse" placeholder="Rue du Rhône 12, 1204 Genève" autocomplete="street-address" />
             <div style="margin-top:6px;"><button type="button" class="btn-secondary" id="verifyAddressBtn" style="padding:6px 12px; font-size:0.7rem;">📍 Vérifier l'adresse</button></div>
           </div>
-          <div class="form-group">
-            <label>Pays du client</label>
-            <select id="intPays">
-              <option value="CH" selected>🇨🇭 Suisse</option>
-              <option value="FR">🇫🇷 France</option>
-              <option value="DE">🇩🇪 Allemagne</option>
-              <option value="IT">🇮🇹 Italie</option>
-              <option value="AT">🇦🇹 Autriche</option>
-              <option value="BE">🇧🇪 Belgique</option>
-              <option value="autre">Autre</option>
-            </select>
-          </div>
-          <div class="form-group" id="intNoTvaClientGroup" style="display:none;">
-            <label>N° TVA du client (si pro UE)</label>
-            <input type="text" id="intNoTvaClient" placeholder="FR 12 345678901" />
-          </div>
+          
         </div>
         <div class="wizard-pane" data-pane="2">
           <div class="form-group">
@@ -1881,9 +1866,9 @@
   <div class="modal-overlay" id="certificateModal" role="dialog" aria-modal="true" aria-labelledby="certificateModalTitle">
     <div class="modal-box" style="max-width:520px;">
       <h2 id="certificateModalTitle">🔥 Certificat d'entretien chaudière</h2>
-      <div style="padding:12px; background:#fff8e1; border-radius:var(--r-sm); border-left:4px solid var(--warning); font-size:0.8rem; color:#7a3d00; line-height:1.5; margin-bottom:12px;">
-        Document à remplir lors de l'entretien annuel. Conforme aux exigences cantonales (VD, GE, NE, JU...).
-      </div>
+      <div style="padding:12px; background:#fff8e1; border-radius:var(--r-sm); border-left:4px solid var(--warning); font-size:0.8rem; color:#7a3d00; line-height:1.5; margin-bottom:12px; flex-shrink:0; min-height:auto; overflow:visible;">
+  <strong>Document non officiel.</strong> Cette attestation de réglage/entretien ne remplace pas le rapport de contrôle officiel des émissions, établi par le maître ramoneur (canton de Vaud). Conservez-la comme trace de votre intervention.
+</div>
       <div class="modal-scroll-area">
         <div class="form-group"><label>Marque / Modèle</label><input type="text" id="certMarque" placeholder="Ex: Viessmann Vitodens 200-W" /></div>
         <div class="form-row">
@@ -2001,6 +1986,12 @@
         <div class="form-group"><label>Seuil d'alerte impayés (jours)</label><input type="number" id="setSeuilAlerte" value="30" step="1" min="1" inputmode="numeric" /></div>
         <div class="form-group"><label>Rappel de sauvegarde (jours)</label><input type="number" id="setSeuilSauvegarde" value="15" step="1" min="1" inputmode="numeric" /></div>
       </div>
+
+           <div style="margin:14px 0; padding:12px; background:var(--bg-surface); border-radius:var(--r-sm); border:1px solid var(--border-1); font-size:0.72rem; color:var(--text-secondary); line-height:1.55;">
+        <strong style="color:var(--accent);">🔒 Confidentialité (LPrD)</strong><br>
+        Vos données clients sont stockées uniquement sur cet appareil. Elles sont chiffrées si le code PIN est activé (AES-256 / PBKDF2). Aucune donnée n'est transmise à un serveur. Vous pouvez exporter ou supprimer vos données à tout moment via « Sauvegarder » / « Restaurer ».
+      </div>
+
       <div class="modal-actions">
         <button class="btn-cancel" id="cancelSettings">Annuler</button>
         <button class="btn-confirm" id="saveSettings">✓ Sauvegarder</button>
