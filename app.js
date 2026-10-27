@@ -1,7 +1,7 @@
 /* ==========================================================================
-   PipePline V2.4 CH — Application de gestion pour plombier
+   PipePline V3 FR — Application de gestion pour plombier
    100% hors ligne / privée / chiffrée
-   Fichier : app.js  (CORRIGÉ)
+   Fichier : app.js  (VERSION FRANCE)
    ========================================================================== */
 'use strict';
 
@@ -80,9 +80,8 @@ function haptic(pattern) {
 
 /* ==========================================================================
    INDEXEDDB
-   🔧 CORRECTION : reject avec une vraie Error si e.target.error est null
    ========================================================================== */
-var IDB_NAME = 'pipepline_ch_db';
+var IDB_NAME = 'pipepline_fr_db';
 var IDB_VERSION = 2;
 var IDB_STORE = 'kv';
 var IDB_CRYPTO_STORE = 'crypto';
@@ -437,24 +436,25 @@ function _closePasswordModal(result) {
 }
 
 /* ==========================================================================
-   HELPERS GÉNÉRAUX
+   HELPERS GÉNÉRAUX — JOURS FÉRIÉS FRANÇAIS
    ========================================================================== */
-function getSwissHolidays(year) {
+function getFrenchHolidays(year) {
   var h = {};
-  h[year + '-01-01'] = 'Nouvel An';
-  h[year + '-08-01'] = 'Fête nationale suisse';
+  h[year + '-01-01'] = 'Jour de l\'An';
+  h[year + '-05-01'] = 'Fête du Travail';
+  h[year + '-05-08'] = 'Victoire 1945';
+  h[year + '-07-14'] = 'Fête nationale';
+  h[year + '-08-15'] = 'Assomption';
+  h[year + '-11-01'] = 'Toussaint';
+  h[year + '-11-11'] = 'Armistice 1918';
   h[year + '-12-25'] = 'Noël';
   var easter = getEasterDate(year);
   var easterMs = easter.getTime();
   var dayMs = 86400000;
   function iso(ms) { return new Date(ms).toISOString().slice(0, 10); }
-  h[iso(easterMs - 2 * dayMs)] = 'Vendredi saint';
   h[iso(easterMs + 1 * dayMs)] = 'Lundi de Pâques';
   h[iso(easterMs + 39 * dayMs)] = 'Ascension';
   h[iso(easterMs + 50 * dayMs)] = 'Lundi de Pentecôte';
-  h[year + '-05-01'] = 'Fête du Travail';
-  h[year + '-11-01'] = 'Toussaint';
-  h[year + '-12-26'] = 'Saint-Étienne';
   return h;
 }
 var easterCache = {};
@@ -477,7 +477,7 @@ var holidayCache = {};
 function isHoliday(dateStr) {
   if (!dateStr) return null;
   var year = parseInt(dateStr.slice(0, 4));
-  if (!holidayCache[year]) holidayCache[year] = getSwissHolidays(year);
+  if (!holidayCache[year]) holidayCache[year] = getFrenchHolidays(year);
   return holidayCache[year][dateStr] || null;
 }
 
@@ -531,12 +531,12 @@ function loadJsPDF() {
 }
 
 /* ==========================================================================
-   VALIDATION IBAN SUISSE
+   VALIDATION IBAN FRANÇAIS
    ========================================================================== */
-function isValidSwissIBAN(iban) {
+function isValidFrenchIBAN(iban) {
   if (!iban) return false;
   var clean = iban.replace(/\s+/g, '').toUpperCase();
-  if (!/^(CH|LI)\d{2}[A-Z0-9]{17}$/.test(clean)) return false;
+  if (!/^FR\d{2}[A-Z0-9]{23}$/.test(clean)) return false;
   var rearranged = clean.slice(4) + clean.slice(0, 4);
   var numeric = '';
   for (var i = 0; i < rearranged.length; i++) {
@@ -555,21 +555,22 @@ function isValidSwissIBAN(iban) {
 /* ==========================================================================
    ÉTAT DE L'APPLICATION
    ========================================================================== */
-var APP_VERSION = 'V2.4 CH';
-var STORAGE_KEY = 'pipepline_ch_v4';
-var SETTINGS_KEY = 'pipepline_ch_settings_v4';
-var BACKUP_META_KEY = 'pipepline_ch_backup_meta_v4';
-var STORAGE_ALERT_KEY = 'pipepline_ch_storage_alert_v4';
-var STOCK_KEY = 'pipepline_ch_stock_v3';
+var APP_VERSION = 'V3 FR';
+var STORAGE_KEY = 'pipepline_fr_v1';
+var SETTINGS_KEY = 'pipepline_fr_settings_v1';
+var BACKUP_META_KEY = 'pipepline_fr_backup_meta_v1';
+var STORAGE_ALERT_KEY = 'pipepline_fr_storage_alert_v1';
+var STOCK_KEY = 'pipepline_fr_stock_v1';
 var THEME_KEY = 'pipepline_theme';
 var TAB_NEWS_KEY = 'pipepline_tab_news';
 var SAVE_DELAY = 1500;
 var WORK_HOURS_PER_DAY = 7;
-var TVA_SEUIL_CHF = 100000;
+var TVA_SEUIL_FR = 39100; // Seuil de franchise en base de TVA (France, 2025)
 var TVA_BANNER_DURATION = 5000;
 var MAX_PHOTO_BYTES = 20 * 1024 * 1024;
 var MAX_PHOTOS = 20;
 var MAX_IMPORT_BYTES = 50 * 1024 * 1024;
+var INDENMITE_RECOUVREMENT = 40; // Indemnité forfaitaire française
 
 var TYPES_TACHES = {
   depannage: { label: 'Dépannage', color: 'depannage' },
@@ -628,14 +629,14 @@ var clientCanvas, clientCtx, techCanvas, techCtx;
 var clientDrawing = false, techDrawing = false;
 var clientLastX = 0, clientLastY = 0, techLastX = 0, techLastY = 0;
 var signatureInitialized = false;
-var interventionModal = null; // 🔧 CORRECTION : plus de lookup au chargement
+var interventionModal = null;
 
 var settings = {
   nom: 'PipePline', adresse: '', zip: '', city: '', siret: '', iban: '', tel: '', email: '',
-  taxe: 21.2, tva: 8.1, tvaActive: false, tvaIntra: '',
-  tauxDefaut: 90, deplacementDefaut: 50, seuilAlerte: 30, seuilSauvegarde: 15,
-  assuranceNom: '', assuranceNum: '', delaiPaiement: 30, pays: 'CH',
-  kmRate: 0.70, acompteSeuil: 5000,
+  taxe: 21.2, tva: 20, tvaActive: false, tvaIntra: '',
+  tauxDefaut: 45, deplacementDefaut: 30, seuilAlerte: 30, seuilSauvegarde: 15,
+  assuranceNom: '', assuranceNum: '', delaiPaiement: 30, pays: 'FR',
+  kmRate: 0.636, acompteSeuil: 5000,
   pinActive: false, encryptExport: false
 };
 var backupMeta = { lastExportAt: null, lastReminderAt: null };
@@ -650,7 +651,6 @@ var currentAvoirSourceFactureId = null;
 
 /* ==========================================================================
    ESCAPE HTML
-   🔧 CORRECTION : version rapide sans createElement
    ========================================================================== */
 function escapeHtml(text) {
   if (text === null || text === undefined) return '';
@@ -663,7 +663,7 @@ function escapeHtml(text) {
 }
 
 /* ==========================================================================
-   FORMATAGE
+   FORMATAGE — FORMAT FRANÇAIS
    ========================================================================== */
 function formatDate(dateStr) {
   if (!dateStr) return '—';
@@ -673,21 +673,24 @@ function formatDate(dateStr) {
     var day = String(d.getDate()).padStart(2, '0');
     var month = String(d.getMonth() + 1).padStart(2, '0');
     var year = d.getFullYear();
-    return day + '.' + month + '.' + year;
+    return day + '/' + month + '/' + year;
   } catch(e) { return dateStr; }
 }
 function formatMois(date) {
-  var s = date.toLocaleDateString('fr-CH', { month: 'long', year: 'numeric' });
+  var s = date.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
-function formatCHF(n) {
+function formatEUR(n) {
   if (!isFinite(n) || n === null || n === undefined) n = 0;
   n = Number(n);
   if (!isFinite(n)) n = 0;
   var parts = n.toFixed(2).split('.');
-  var intPart = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, "'");
-  return intPart + '.' + parts[1] + ' CHF';
+  var intPart = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  return intPart + ',' + parts[1] + ' €';
 }
+// Alias pour compatibilité (ancien nom CHF)
+var formatCHF = formatEUR;
+
 function formatDuree(minutes) {
   if (!minutes || minutes === 0) return '0 min';
   var total = parseInt(minutes) || 0;
@@ -761,7 +764,7 @@ function formatMonthHeader(monthKey) {
   if (!monthKey) return '—';
   try {
     var d = new Date(monthKey + '-01T00:00:00');
-    var s = d.toLocaleDateString('fr-CH', { month: 'long', year: 'numeric' });
+    var s = d.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
     return s.charAt(0).toUpperCase() + s.slice(1);
   } catch(e) { return monthKey; }
 }
@@ -770,9 +773,9 @@ function formatDayHeader(dateStr) {
   try {
     var d = new Date(dateStr + 'T00:00:00');
     if (isNaN(d.getTime())) return '—';
-    var dayName = d.toLocaleDateString('fr-CH', { weekday: 'long' });
+    var dayName = d.toLocaleDateString('fr-FR', { weekday: 'long' });
     var dayNum = d.getDate();
-    var monthName = d.toLocaleDateString('fr-CH', { month: 'long' });
+    var monthName = d.toLocaleDateString('fr-FR', { month: 'long' });
     var year = d.getFullYear();
     return dayName.charAt(0).toUpperCase() + dayName.slice(1) + ' ' + dayNum + ' ' + monthName + ' ' + year;
   } catch(e) { return dateStr; }
@@ -827,13 +830,27 @@ function updateTabNewDots() {
 }
 
 /* ==========================================================================
-   KM / TOTAUX
+   BARÈME KILOMÉTRIQUE FRANÇAIS (progressif)
    ========================================================================== */
-function getKmTotal(distance, retourMultiplier, rate) {
+function getKmTotal(distance, cv, electrique) {
   var d = parseFloat(distance) || 0;
-  var r = parseInt(retourMultiplier) || 1;
-  var t = parseFloat(rate) || 0.70;
-  return d * r * t;
+  var puissance = parseInt(cv) || 5;
+  var isElec = parseInt(electrique) === 1;
+  if (d <= 0) return 0;
+  var bareme = {
+    3: { seuil1: 0.529, seuil2: 0.316, plafond: 1065, seuil3: 0.370 },
+    4: { seuil1: 0.606, seuil2: 0.340, plafond: 1330, seuil3: 0.407 },
+    5: { seuil1: 0.636, seuil2: 0.357, plafond: 1395, seuil3: 0.427 },
+    6: { seuil1: 0.665, seuil2: 0.374, plafond: 1457, seuil3: 0.447 },
+    7: { seuil1: 0.697, seuil2: 0.394, plafond: 1515, seuil3: 0.470 }
+  };
+  var b = bareme[puissance] || bareme[5];
+  var total = 0;
+  if (d <= 5000) total = d * b.seuil1;
+  else if (d <= 20000) total = (d * b.seuil2) + b.plafond;
+  else total = d * b.seuil3;
+  if (isElec) total = total * 1.20;
+  return total;
 }
 function updateKmTotal() {
   var activeEl = document.getElementById('intKmActive');
@@ -842,10 +859,10 @@ function updateKmTotal() {
   if (activeEl.checked) fieldsEl.classList.add('show');
   else fieldsEl.classList.remove('show');
   var distance = document.getElementById('intKmDistance').value;
-  var retour = document.getElementById('intKmRetour').value;
-  var rate = document.getElementById('intKmTaux').value;
-  var total = getKmTotal(distance, retour, rate);
-  document.getElementById('intKmTotal').textContent = formatCHF(total);
+  var cv = document.getElementById('intKmRetour').value;
+  var elec = document.getElementById('intKmTaux').value;
+  var total = getKmTotal(distance, cv, elec);
+  document.getElementById('intKmTotal').textContent = formatEUR(total);
 }
 
 function invalidateTotals(id) {
@@ -884,14 +901,17 @@ function getTotalHT(item) {
 }
 function getTauxTva(item) {
   if (!settings.tvaActive) return 0;
-  if (item.paysClient && item.paysClient !== 'CH' && item.paysClient !== 'autre') {
+  // Taux spécifique par item (nouveau en France)
+  if (typeof item.tvaTaux === 'number' && isFinite(item.tvaTaux)) return item.tvaTaux;
+  // Autoliquidation UE
+  if (item.paysClient && item.paysClient !== 'FR' && item.paysClient !== 'autre') {
     if (item.noTvaClient && String(item.noTvaClient).trim()) return 0;
-    return settings.tva;
   }
   return settings.tva;
 }
 function isAutoliquidation(item) {
-  return settings.tvaActive && item.paysClient && item.paysClient !== 'CH' && item.paysClient !== 'autre';
+  return settings.tvaActive && item.paysClient && item.paysClient !== 'FR' && item.paysClient !== 'autre'
+    && item.noTvaClient && String(item.noTvaClient).trim();
 }
 function getTotalTTC(item) {
   var ht = getTotalHT(item);
@@ -1039,7 +1059,7 @@ function saveToStorage(silent) {
     factureCounter: factureCounter,
     devisCounter: devisCounter,
     avoirCounter: avoirCounter,
-    schemaVersion: 4,
+    schemaVersion: 1,
     appVersion: APP_VERSION,
     savedAt: new Date().toISOString()
   };
@@ -1191,8 +1211,12 @@ function showTvaBanner() {
   var banner = document.getElementById('alertTva');
   var text = document.getElementById('alertTvaText');
   if (!banner || !text) return;
-  if (!settings.tvaActive) text.innerHTML = '<strong>TVA non applicable</strong> — CA annuel < ' + formatCHF(TVA_SEUIL_CHF) + '. Vos factures porteront la mention « TVA non applicable (art. 10 al. 2 LTVA) ».';
-  else text.innerHTML = '<strong>Assujetti à la TVA suisse</strong> — Taux : ' + settings.tva + ' %. N° TVA : ' + escapeHtml(settings.tvaIntra || 'à renseigner') + '. Clients UE : autoliquidation (0 %).';
+  if (!settings.tvaActive) {
+    text.innerHTML = '<strong>TVA non applicable</strong> — CA annuel < ' + formatEUR(TVA_SEUIL_FR) + '. Vos factures porteront la mention « TVA non applicable, art. 293 B du CGI ».';
+  } else {
+    var tauxTxt = settings.tva + ' %';
+    text.innerHTML = '<strong>Assujetti à la TVA française</strong> — Taux par défaut : ' + tauxTxt + '. N° TVA : ' + escapeHtml(settings.tvaIntra || 'à renseigner') + '.';
+  }
   banner.classList.remove('hiding');
   banner.classList.add('show');
   if (tvaBannerTimeout) clearTimeout(tvaBannerTimeout);
@@ -1209,8 +1233,8 @@ function updateTvaBannerContent() {
   var banner = document.getElementById('alertTva');
   if (!banner || !banner.classList.contains('show')) return;
   var text = document.getElementById('alertTvaText');
-  if (!settings.tvaActive) text.innerHTML = '<strong>TVA non applicable</strong> — CA annuel < ' + formatCHF(TVA_SEUIL_CHF) + '. Vos factures porteront la mention « TVA non applicable (art. 10 al. 2 LTVA) ».';
-  else text.innerHTML = '<strong>Assujetti à la TVA suisse</strong> — Taux : ' + settings.tva + ' %. N° TVA : ' + escapeHtml(settings.tvaIntra || 'à renseigner') + '. Clients UE : autoliquidation (0 %).';
+  if (!settings.tvaActive) text.innerHTML = '<strong>TVA non applicable</strong> — CA annuel < ' + formatEUR(TVA_SEUIL_FR) + '. Vos factures porteront la mention « TVA non applicable, art. 293 B du CGI ».';
+  else text.innerHTML = '<strong>Assujetti à la TVA française</strong> — Taux par défaut : ' + settings.tva + ' %. N° TVA : ' + escapeHtml(settings.tvaIntra || 'à renseigner') + '.';
 }
 
 function checkRecurringClients() {
@@ -1276,14 +1300,14 @@ function renderStats() {
   var el;
   if (el = document.getElementById('totalInterventions')) el.textContent = total;
   if (el = document.getElementById('totalImpayees')) el.textContent = impayees;
-  if (el = document.getElementById('caMoisMini')) el.textContent = formatCHF(caMois);
+  if (el = document.getElementById('caMoisMini')) el.textContent = formatEUR(caMois);
   if (el = document.getElementById('tabInterventionsCount')) el.textContent = total;
   if (el = document.getElementById('tabFacturesCount')) el.textContent = total;
   if (el = document.getElementById('tabDevisCount')) el.textContent = devisList.length;
-  if (el = document.getElementById('caMois')) el.textContent = formatCHF(caMois);
-  if (el = document.getElementById('caNetMois')) el.textContent = formatCHF(caNetMois);
-  if (el = document.getElementById('caAnnuel')) el.textContent = formatCHF(caAnnuel);
-  if (el = document.getElementById('resteEncaisser')) el.textContent = formatCHF(resteEncaisser);
+  if (el = document.getElementById('caMois')) el.textContent = formatEUR(caMois);
+  if (el = document.getElementById('caNetMois')) el.textContent = formatEUR(caNetMois);
+  if (el = document.getElementById('caAnnuel')) el.textContent = formatEUR(caAnnuel);
+  if (el = document.getElementById('resteEncaisser')) el.textContent = formatEUR(resteEncaisser);
   if (el = document.getElementById('caMoisLabel')) el.textContent = formatMois(now);
   if (el = document.getElementById('caAnnuelLabel')) el.textContent = currentYear;
   if (el = document.getElementById('caNetMoisSub')) el.textContent = '~' + settings.taxe + '%';
@@ -1298,7 +1322,7 @@ function renderStats() {
   if (!alertEl || !alertText) return;
   if (overdue > 0) {
     alertEl.classList.add('show');
-    alertText.innerHTML = '<strong>' + overdue + '</strong> facture' + (overdue > 1 ? 's' : '') + ' impayée' + (overdue > 1 ? 's' : '') + ' depuis plus de ' + settings.seuilAlerte + ' jours — Total : <strong>' + formatCHF(overdueTotal) + '</strong>';
+    alertText.innerHTML = '<strong>' + overdue + '</strong> facture' + (overdue > 1 ? 's' : '') + ' impayée' + (overdue > 1 ? 's' : '') + ' depuis plus de ' + settings.seuilAlerte + ' jours — Total : <strong>' + formatEUR(overdueTotal) + '</strong>';
   } else alertEl.classList.remove('show');
 }
 
@@ -1377,7 +1401,7 @@ function applySortAndDateFilter(list, sortMode, fromDate, toDate) {
 function renderToday() {
   var todayStr = new Date().toISOString().slice(0, 10);
   var todayDate = new Date();
-  var label = todayDate.toLocaleDateString('fr-CH', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  var label = todayDate.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
   var labelEl = document.getElementById('todayDateLabel');
   if (labelEl) labelEl.textContent = label.charAt(0).toUpperCase() + label.slice(1);
 
@@ -1394,7 +1418,7 @@ function renderToday() {
     summary.innerHTML =
       '<span class="today-pill">' + todayItems.length + ' RDV</span>'
       + '<span class="today-pill">' + workH + 'h / ' + WORK_HOURS_PER_DAY + 'h</span>'
-      + '<span class="today-pill">' + formatCHF(caJour) + '</span>'
+      + '<span class="today-pill">' + formatEUR(caJour) + '</span>'
       + (unpaidCount > 0 ? '<span class="today-pill warn">⚠ ' + unpaidCount + ' à encaisser</span>' : '<span class="today-pill ok">✓ tout payé</span>');
   }
 
@@ -1421,7 +1445,7 @@ function renderToday() {
       + '<div class="today-slot-body">'
       + '<div class="today-slot-client">' + escapeHtml(int.client || 'Client') + '</div>'
       + '<div class="today-slot-desc">' + escapeHtml(int.description || '—') + '</div>'
-      + '<div class="today-slot-meta"><span>' + typeInfo.label + '</span><span>⏱ ' + formatDuree(int.duree) + '</span><span>' + formatCHF(getTotalTTC(int)) + '</span></div>'
+      + '<div class="today-slot-meta"><span>' + typeInfo.label + '</span><span>⏱ ' + formatDuree(int.duree) + '</span><span>' + formatEUR(getTotalTTC(int)) + '</span></div>'
       + '</div>'
       + '<div class="today-slot-actions">' + actionsHtml + '</div>'
       + '</div>';
@@ -1511,7 +1535,7 @@ function renderInterventionsGrouped(container, filtered) {
     });
     var isMonthOpen = openMonths[mKey] === true;
     html += '<div class="group-month' + (isMonthOpen ? ' open' : '') + '" data-month="' + escapeHtml(mKey) + '">';
-    html += '<div class="group-month-header" data-month-toggle="' + escapeHtml(mKey) + '"><div class="gm-left"><span class="gm-chevron">▶</span><span class="gm-title">' + formatMonthHeader(mKey) + '</span></div><div class="gm-stats"><span class="gm-stat">' + monthCount + ' interv.</span><span class="gm-stat">' + formatCHF(monthTotal) + '</span>' + (monthImpayees > 0 ? '<span class="gm-stat danger">⚠ ' + monthImpayees + '</span>' : '') + '</div></div>';
+    html += '<div class="group-month-header" data-month-toggle="' + escapeHtml(mKey) + '"><div class="gm-left"><span class="gm-chevron">▶</span><span class="gm-title">' + formatMonthHeader(mKey) + '</span></div><div class="gm-stats"><span class="gm-stat">' + monthCount + ' interv.</span><span class="gm-stat">' + formatEUR(monthTotal) + '</span>' + (monthImpayees > 0 ? '<span class="gm-stat danger">⚠ ' + monthImpayees + '</span>' : '') + '</div></div>';
     html += '<div class="group-month-content">';
     dayKeys.forEach(function(dKey) {
       var dayItems = days[dKey];
@@ -1521,7 +1545,7 @@ function renderInterventionsGrouped(container, filtered) {
       var isDayOpen = openDays[dayKeyFull] === true;
       var isToday = dKey === todayStr;
       html += '<div class="group-day' + (isDayOpen ? ' open' : '') + '" data-day="' + escapeHtml(dayKeyFull) + '">';
-      html += '<div class="group-day-header" data-day-toggle="' + escapeHtml(dayKeyFull) + '"><div class="gd-left"><span class="gd-chevron">▶</span><span class="gd-date' + (isToday ? ' today' : '') + '">' + formatDayHeader(dKey) + '</span></div><span class="gd-count">' + dayItems.length + '</span><span class="gd-total">' + formatCHF(dayTotal) + '</span></div>';
+      html += '<div class="group-day-header" data-day-toggle="' + escapeHtml(dayKeyFull) + '"><div class="gd-left"><span class="gd-chevron">▶</span><span class="gd-date' + (isToday ? ' today' : '') + '">' + formatDayHeader(dKey) + '</span></div><span class="gd-count">' + dayItems.length + '</span><span class="gd-total">' + formatEUR(dayTotal) + '</span></div>';
       html += '<div class="group-day-content" data-day-content="' + escapeHtml(dayKeyFull) + '"></div>';
       html += '</div>';
     });
@@ -1615,7 +1639,7 @@ function buildInterventionCard(int) {
     + '<div class="int-meta">'
     + (int.heure ? '<span class="int-meta-item">🕐 ' + int.heure + (int.heureFin ? ' → ' + int.heureFin : '') + '</span>' : '<span class="int-meta-item">📅 ' + formatDate(int.date) + '</span>')
     + '<span class="int-meta-item">⏱ ' + formatDuree(int.duree) + '</span>'
-    + '<span class="int-meta-item total">' + formatCHF(total) + '</span>'
+    + '<span class="int-meta-item total">' + formatEUR(total) + '</span>'
     + '</div>'
     + actionsHtml
     + '</div></div>';
@@ -1679,7 +1703,7 @@ function openActionSheet(id) {
   var sheet = document.getElementById('actionSheet');
   if (!sheet) return;
   document.getElementById('actionSheetTitle').textContent = int.client || 'Client';
-  document.getElementById('actionSheetSub').textContent = (int.numeroFacture || '') + ' • ' + formatCHF(getTotalTTC(int));
+  document.getElementById('actionSheetSub').textContent = (int.numeroFacture || '') + ' • ' + formatEUR(getTotalTTC(int));
   sheet.dataset.id = id;
   var progressBtn = sheet.querySelector('[data-action="progress"]');
   if (int.paye || int.statut === 'termine' || int.isAvoir) progressBtn.classList.add('hidden');
@@ -1845,7 +1869,7 @@ function renderPlanning() {
   var workMin = getDayWorkMinutes(selStr);
   var workH = Math.round(workMin / 60 * 10) / 10;
   var holiday = isHoliday(selStr);
-  var label = selectedPlanningDate.toLocaleDateString('fr-CH', { weekday: 'long', day: 'numeric', month: 'long' });
+  var label = selectedPlanningDate.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
   if (workMin > 0) label += ' — ' + workH + 'h / ' + WORK_HOURS_PER_DAY + 'h';
   if (holiday) label += ' 🎉 ' + holiday;
   var dayLabel = document.getElementById('planningDayLabel');
@@ -1904,7 +1928,7 @@ function buildPlanningText(format) {
     if (events.length === 0) return;
     totalEvents += events.length;
     events.sort(function(a, b) { return (a.heure || '99:99').localeCompare(b.heure || '99:99'); });
-    var dayLabel = day.toLocaleDateString('fr-CH', { weekday: 'long', day: 'numeric', month: 'long' });
+    var dayLabel = day.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
     lines.push('▶ ' + dayLabel.charAt(0).toUpperCase() + dayLabel.slice(1));
     events.forEach(function(int) {
       var heure = int.heure || '--:--';
@@ -2033,7 +2057,7 @@ function updatePaysClientUI() {
   var group = document.getElementById('intNoTvaClientGroup');
   if (!paysEl || !group) return;
   var pays = paysEl.value;
-  if (settings.tvaActive && pays !== 'CH' && pays !== 'autre') group.style.display = 'block';
+  if (settings.tvaActive && pays !== 'FR' && pays !== 'autre') group.style.display = 'block';
   else group.style.display = 'none';
 }
 
@@ -2054,7 +2078,7 @@ function openInterventionModal(prefill) {
   document.getElementById('intTel').value = prefill.tel || '';
   document.getElementById('intAdresse').value = prefill.adresse || '';
   var paysEl = document.getElementById('intPays');
-  if (paysEl) paysEl.value = prefill.paysClient || 'CH';
+  if (paysEl) paysEl.value = prefill.paysClient || 'FR';
   var noTvaEl = document.getElementById('intNoTvaClient');
   if (noTvaEl) noTvaEl.value = prefill.noTvaClient || '';
   updatePaysClientUI();
@@ -2075,8 +2099,8 @@ function openInterventionModal(prefill) {
   document.getElementById('intRecurring').checked = prefill.recurring || false;
   document.getElementById('intKmActive').checked = prefill.kmActive || false;
   document.getElementById('intKmDistance').value = prefill.kmDistance || 0;
-  document.getElementById('intKmRetour').value = prefill.kmRetour || 2;
-  document.getElementById('intKmTaux').value = prefill.kmTaux || settings.kmRate;
+  document.getElementById('intKmRetour').value = prefill.kmRetour || 5;
+  document.getElementById('intKmTaux').value = prefill.kmTaux || 0;
   updateKmTotal();
   interventionModal.dataset.editId = prefill.editId || '';
   var found = prefill.editId ? interventions.find(function(i) { return i.id === prefill.editId; }) : null;
@@ -2119,7 +2143,7 @@ function renderPieces() {
     row.className = 'piece-row';
     row.innerHTML = '<input type="text" class="piece-nom" placeholder="Nom" value="' + escapeHtml(p.nom || '') + '" data-idx="' + i + '" data-field="nom" />'
       + '<input type="number" class="piece-qte" placeholder="Qté" value="' + (p.qte || 1) + '" min="1" step="1" data-idx="' + i + '" data-field="qte" inputmode="numeric" />'
-      + '<input type="number" class="piece-prix" placeholder="Prix CHF" value="' + (p.prix || '') + '" step="0.01" min="0" data-idx="' + i + '" data-field="prix" inputmode="decimal" />'
+      + '<input type="number" class="piece-prix" placeholder="Prix €" value="' + (p.prix || '') + '" step="0.01" min="0" data-idx="' + i + '" data-field="prix" inputmode="decimal" />'
       + '<button data-idx="' + i + '" class="del-piece" aria-label="Supprimer">✕</button>';
     container.appendChild(row);
     if (stockInfo && stockInfo.low) {
@@ -2143,7 +2167,7 @@ function renderPieces() {
 }
 function updatePiecesTotal() {
   var el = document.getElementById('piecesTotal');
-  if (el) el.textContent = formatCHF(getPiecesTotal(tempPieces));
+  if (el) el.textContent = formatEUR(getPiecesTotal(tempPieces));
 }
 
 function renderFrais() {
@@ -2154,7 +2178,7 @@ function renderFrais() {
     var row = document.createElement('div');
     row.className = 'frais-row';
     row.innerHTML = '<input type="text" class="frais-libelle" placeholder="Ex: Carburant" value="' + escapeHtml(f.libelle || '') + '" data-idx="' + i + '" data-field="libelle" />'
-      + '<input type="number" class="frais-montant" placeholder="CHF" value="' + (f.montant || '') + '" step="0.01" min="0" data-idx="' + i + '" data-field="montant" inputmode="decimal" />'
+      + '<input type="number" class="frais-montant" placeholder="€" value="' + (f.montant || '') + '" step="0.01" min="0" data-idx="' + i + '" data-field="montant" inputmode="decimal" />'
       + '<button data-idx="' + i + '" class="del-frais" aria-label="Supprimer">✕</button>';
     container.appendChild(row);
   });
@@ -2172,7 +2196,7 @@ function renderFrais() {
 }
 function updateFraisTotal() {
   var el = document.getElementById('fraisTotal');
-  if (el) el.textContent = formatCHF(getFraisTotal(tempFrais));
+  if (el) el.textContent = formatEUR(getFraisTotal(tempFrais));
 }
 
 function renderDevisPieces() {
@@ -2184,7 +2208,7 @@ function renderDevisPieces() {
     row.className = 'piece-row';
     row.innerHTML = '<input type="text" class="piece-nom" placeholder="Nom" value="' + escapeHtml(p.nom || '') + '" data-idx="' + i + '" data-field="nom" />'
       + '<input type="number" class="piece-qte" placeholder="Qté" value="' + (p.qte || 1) + '" min="1" step="1" data-idx="' + i + '" data-field="qte" inputmode="numeric" />'
-      + '<input type="number" class="piece-prix" placeholder="Prix CHF" value="' + (p.prix || '') + '" step="0.01" min="0" data-idx="' + i + '" data-field="prix" inputmode="decimal" />'
+      + '<input type="number" class="piece-prix" placeholder="Prix €" value="' + (p.prix || '') + '" step="0.01" min="0" data-idx="' + i + '" data-field="prix" inputmode="decimal" />'
       + '<button data-idx="' + i + '" class="del-piece" aria-label="Supprimer">✕</button>';
     container.appendChild(row);
   });
@@ -2202,7 +2226,7 @@ function renderDevisPieces() {
 }
 function updateDevisPiecesTotal() {
   var el = document.getElementById('devisPiecesTotal');
-  if (el) el.textContent = formatCHF(getPiecesTotal(tempDevisPieces));
+  if (el) el.textContent = formatEUR(getPiecesTotal(tempDevisPieces));
 }
 
 function updateDureeTotal(prefix) {
@@ -2401,20 +2425,20 @@ function openDevisDetail(id) {
   html += '<div class="facture-line"><span>Validité</span><span>' + d.validite + ' jours</span></div>';
   html += '<div class="facture-line"><span>Description</span><span style="text-align:right; max-width:60%;">' + escapeHtml(d.description) + '</span></div>';
   if (d.notes) html += '<div class="facture-line"><span>Notes</span><span style="text-align:right; max-width:60%; font-style:italic; color:var(--text-faint);">' + escapeHtml(d.notes) + '</span></div>';
-  html += '<div class="facture-line" style="margin-top:10px; padding-top:10px; border-top:1px solid var(--border-1);"><span>Main d\'œuvre (' + formatDuree(d.duree) + ')</span><span>' + (d.taux || settings.tauxDefaut) + ' CHF/h = ' + mainOeuvre.toFixed(2) + ' CHF</span></div>';
-  html += '<div class="facture-line"><span>Déplacement</span><span>' + (d.deplacement || 0).toFixed(2) + ' CHF</span></div>';
+  html += '<div class="facture-line" style="margin-top:10px; padding-top:10px; border-top:1px solid var(--border-1);"><span>Main d\'œuvre (' + formatDuree(d.duree) + ')</span><span>' + (d.taux || settings.tauxDefaut) + ' €/h = ' + mainOeuvre.toFixed(2) + ' €</span></div>';
+  html += '<div class="facture-line"><span>Déplacement</span><span>' + (d.deplacement || 0).toFixed(2) + ' €</span></div>';
   if (d.pieces && d.pieces.length > 0) {
     d.pieces.forEach(function(p) {
       var qte = parseInt(p.qte) || 1;
-      html += '<div class="facture-line"><span>• ' + escapeHtml(p.nom) + (qte > 1 ? ' ×' + qte : '') + '</span><span>' + (parseFloat(p.prix) * qte).toFixed(2) + ' CHF</span></div>';
+      html += '<div class="facture-line"><span>• ' + escapeHtml(p.nom) + (qte > 1 ? ' ×' + qte : '') + '</span><span>' + (parseFloat(p.prix) * qte).toFixed(2) + ' €</span></div>';
     });
   }
-  html += '<div class="facture-line" style="font-weight:600;"><span>Total HT</span><span>' + formatCHF(ht) + '</span></div>';
+  html += '<div class="facture-line" style="font-weight:600;"><span>Total HT</span><span>' + formatEUR(ht) + '</span></div>';
   if (settings.tvaActive) {
-    if (isAutoliquidation(d)) html += '<div class="facture-line"><span>Autoliquidation</span><span>0,00 CHF (TVA due par le client)</span></div>';
-    else html += '<div class="facture-line"><span>TVA (' + settings.tva + '%)</span><span>' + formatCHF(tvaMontant) + '</span></div>';
-  } else html += '<div class="facture-line"><span style="color:var(--text-faint); font-style:italic;">TVA non applicable</span><span></span></div>';
-  html += '<div class="facture-total-highlight"><div><div class="total-label">Total TTC</div>' + (settings.tvaActive && !isAutoliquidation(d) ? '<div class="total-sub">dont TVA ' + formatCHF(tvaMontant) + '</div>' : '<div class="total-sub">HT</div>') + '</div><div class="total-value">' + formatCHF(ttc) + '</div></div>';
+    if (isAutoliquidation(d)) html += '<div class="facture-line"><span>Autoliquidation</span><span>0,00 € (TVA due par le client)</span></div>';
+    else html += '<div class="facture-line"><span>TVA (' + getTauxTva(d) + '%)</span><span>' + formatEUR(tvaMontant) + '</span></div>';
+  } else html += '<div class="facture-line"><span style="color:var(--text-faint); font-style:italic;">TVA non applicable, art. 293 B du CGI</span><span></span></div>';
+  html += '<div class="facture-total-highlight"><div><div class="total-label">Total TTC</div>' + (settings.tvaActive && !isAutoliquidation(d) ? '<div class="total-sub">dont TVA ' + formatEUR(tvaMontant) + '</div>' : '<div class="total-sub">HT</div>') + '</div><div class="total-value">' + formatEUR(ttc) + '</div></div>';
   var statutLabel = d.statut === 'accepte' ? 'Accepté' : (d.statut === 'refuse' ? 'Refusé' : 'En attente');
   var statutColor = d.statut === 'accepte' ? 'var(--success)' : (d.statut === 'refuse' ? 'var(--danger)' : '#b16b1a');
   html += '<div style="margin-top:12px; padding:10px; border-radius:var(--r-sm); text-align:center; font-weight:600; font-size:0.85rem; background:' + statutColor + '20; color:' + statutColor + ';">' + statutLabel + '</div>';
@@ -2439,11 +2463,11 @@ function updateConvertAcompte() {
   var pct = parseFloat(document.getElementById('convertAcomptePct').value) || 0;
   var acompte = ttc * pct / 100;
   var reste = ttc - acompte;
-  document.getElementById('convertAcompteMontant').value = formatCHF(acompte);
-  document.getElementById('convertResteMontant').value = formatCHF(reste);
+  document.getElementById('convertAcompteMontant').value = formatEUR(acompte);
+  document.getElementById('convertResteMontant').value = formatEUR(reste);
   var info = document.getElementById('convertInfo');
-  if (actif) info.innerHTML = 'Deux factures seront créées :<br>• <strong>Acompte ' + pct + '%</strong> = ' + formatCHF(acompte) + ' (impayée)<br>• <strong>Solde</strong> = ' + formatCHF(reste) + ' (sera facturé plus tard)';
-  else info.textContent = 'Sans acompte, une seule facture sera créée au montant total du devis : ' + formatCHF(ttc);
+  if (actif) info.innerHTML = 'Deux factures seront créées :<br>• <strong>Acompte ' + pct + '%</strong> = ' + formatEUR(acompte) + ' (impayée)<br>• <strong>Solde</strong> = ' + formatEUR(reste) + ' (sera facturé plus tard)';
+  else info.textContent = 'Sans acompte, une seule facture sera créée au montant total du devis : ' + formatEUR(ttc);
 }
 
 /* ==========================================================================
@@ -2459,7 +2483,7 @@ function openAvoirModal(sourceFactureId) {
     .forEach(function(int) {
       var opt = document.createElement('option');
       opt.value = int.id;
-      opt.textContent = (int.numeroFacture || '—') + ' • ' + (int.client || '—') + ' • ' + formatCHF(getTotalTTC(int));
+      opt.textContent = (int.numeroFacture || '—') + ' • ' + (int.client || '—') + ' • ' + formatEUR(getTotalTTC(int));
       select.appendChild(opt);
     });
   if (sourceFactureId) {
@@ -2522,7 +2546,7 @@ function renderFactures() {
       + '</div>'
       + '<div class="fact-info">'
       + '<span>📅 ' + formatDate(int.date) + '</span>'
-      + '<span class="fact-total" ' + (int.isAvoir ? 'style="color:var(--purple);"' : '') + '>' + formatCHF(total) + '</span>'
+      + '<span class="fact-total" ' + (int.isAvoir ? 'style="color:var(--purple);"' : '') + '>' + formatEUR(total) + '</span>'
       + statutHtml
       + '</div>'
       + '<div class="fact-actions">'
@@ -2593,7 +2617,7 @@ function renderDevis() {
       + '</div>'
       + '<div class="fact-info">'
       + '<span>📅 ' + formatDate(d.date) + '</span>'
-      + '<span class="fact-total">' + formatCHF(total) + '</span>'
+      + '<span class="fact-total">' + formatEUR(total) + '</span>'
       + '</div>'
       + '<div class="fact-actions">'
       + (d.tel ? '<a class="call" href="' + getPhoneHref(d.tel) + '" title="Appeler" onclick="event.stopPropagation();">☎</a>' : '')
@@ -2634,7 +2658,7 @@ function shareFacture(id) {
       navigator.share({
         files: [file],
         title: (int.isAvoir ? 'Avoir ' : 'Facture ') + int.numeroFacture,
-        text: (int.isAvoir ? 'Avoir ' : 'Facture ') + int.numeroFacture + ' - ' + formatCHF(getTotalTTC(int))
+        text: (int.isAvoir ? 'Avoir ' : 'Facture ') + int.numeroFacture + ' - ' + formatEUR(getTotalTTC(int))
       }).catch(function(err) {
         if (err.name !== 'AbortError') downloadBlob(blob, file.name);
       });
@@ -2654,7 +2678,7 @@ function shareDevis(id) {
     var canShare = false;
     try { canShare = navigator.canShare && navigator.canShare({ files: [file] }); } catch(e) { canShare = false; }
     if (canShare) {
-      navigator.share({ files: [file], title: 'Devis ' + d.numeroDevis, text: 'Devis ' + d.numeroDevis + ' - ' + formatCHF(getTotalTTC(d)) })
+      navigator.share({ files: [file], title: 'Devis ' + d.numeroDevis, text: 'Devis ' + d.numeroDevis + ' - ' + formatEUR(getTotalTTC(d)) })
         .catch(function(err) { if (err.name !== 'AbortError') downloadBlob(blob, file.name); });
     } else {
       downloadBlob(blob, file.name);
@@ -2701,35 +2725,35 @@ function openFacture(id) {
   html += '<div class="facture-line"><span>Description</span><span style="text-align:right; max-width:60%;">' + escapeHtml(int.description || '—') + '</span></div>';
   if (int.notes) html += '<div class="facture-line"><span>Notes</span><span style="text-align:right; max-width:60%; font-style:italic; color:var(--text-faint);">' + escapeHtml(int.notes) + '</span></div>';
   if (!int.isAvoir) {
-    html += '<div class="facture-line" style="margin-top:10px; padding-top:10px; border-top:1px solid var(--border-1);"><span>Main d\'œuvre (' + formatDuree(int.duree) + ')</span><span>' + (int.taux || settings.tauxDefaut) + ' CHF/h = ' + mainOeuvre.toFixed(2) + ' CHF</span></div>';
-    if ((int.deplacement || 0) > 0) html += '<div class="facture-line"><span>Déplacement</span><span>' + (int.deplacement || 0).toFixed(2) + ' CHF</span></div>';
+    html += '<div class="facture-line" style="margin-top:10px; padding-top:10px; border-top:1px solid var(--border-1);"><span>Main d\'œuvre (' + formatDuree(int.duree) + ')</span><span>' + (int.taux || settings.tauxDefaut) + ' €/h = ' + mainOeuvre.toFixed(2) + ' €</span></div>';
+    if ((int.deplacement || 0) > 0) html += '<div class="facture-line"><span>Déplacement</span><span>' + (int.deplacement || 0).toFixed(2) + ' €</span></div>';
     if (int.kmActive) {
       var kmTotal = getKmFraisAmount(int);
-      html += '<div class="facture-line"><span>🚗 Frais km (' + (int.kmDistance || 0) + ' km × ' + (int.kmRetour || 1) + ' × ' + (int.kmTaux || 0.70) + ' CHF)</span><span>' + kmTotal.toFixed(2) + ' CHF</span></div>';
+      html += '<div class="facture-line"><span>🚗 Frais km (' + (int.kmDistance || 0) + ' km, ' + (int.kmRetour || 5) + ' CV' + (parseInt(int.kmTaux) === 1 ? ', électrique' : '') + ')</span><span>' + kmTotal.toFixed(2) + ' €</span></div>';
     }
     if (int.pieces && int.pieces.length > 0) {
       html += '<div class="facture-line" style="margin-top:6px; font-weight:600; color:var(--accent);"><span>Pièces & Matériels</span><span></span></div>';
       int.pieces.forEach(function(p) {
         var qte = parseInt(p.qte) || 1;
-        html += '<div class="facture-line"><span>• ' + escapeHtml(p.nom) + (qte > 1 ? ' ×' + qte : '') + '</span><span>' + (parseFloat(p.prix) * qte).toFixed(2) + ' CHF</span></div>';
+        html += '<div class="facture-line"><span>• ' + escapeHtml(p.nom) + (qte > 1 ? ' ×' + qte : '') + '</span><span>' + (parseFloat(p.prix) * qte).toFixed(2) + ' €</span></div>';
       });
     }
     if (int.frais && int.frais.length > 0) {
       html += '<div class="facture-line" style="margin-top:6px; font-weight:600; color:var(--accent);"><span>Notes de frais</span><span></span></div>';
       int.frais.forEach(function(f) {
-        html += '<div class="facture-line"><span>• ' + escapeHtml(f.libelle) + '</span><span>' + (parseFloat(f.montant) || 0).toFixed(2) + ' CHF</span></div>';
+        html += '<div class="facture-line"><span>• ' + escapeHtml(f.libelle) + '</span><span>' + (parseFloat(f.montant) || 0).toFixed(2) + ' €</span></div>';
       });
     }
   }
-  html += '<div class="facture-line" style="font-weight:600;"><span>Total HT</span><span>' + formatCHF(ht) + '</span></div>';
+  html += '<div class="facture-line" style="font-weight:600;"><span>Total HT</span><span>' + formatEUR(ht) + '</span></div>';
   if (settings.tvaActive) {
-    if (isAutoliquidation(int)) html += '<div class="facture-line"><span>Autoliquidation</span><span>0,00 CHF</span></div>';
-    else html += '<div class="facture-line"><span>TVA (' + settings.tva + '%)</span><span>' + formatCHF(tvaMontant) + '</span></div>';
-  } else html += '<div class="facture-line"><span style="color:var(--text-faint); font-style:italic;">TVA non applicable</span><span></span></div>';
+    if (isAutoliquidation(int)) html += '<div class="facture-line"><span>Autoliquidation</span><span>0,00 €</span></div>';
+    else html += '<div class="facture-line"><span>TVA (' + getTauxTva(int) + '%)</span><span>' + formatEUR(tvaMontant) + '</span></div>';
+  } else html += '<div class="facture-line"><span style="color:var(--text-faint); font-style:italic;">TVA non applicable, art. 293 B du CGI</span><span></span></div>';
   html += '<div class="facture-total-highlight' + (int.isAvoir ? ' credit' : '') + '">'
     + '<div><div class="total-label">Total ' + (int.isAvoir ? 'Avoir' : (settings.tvaActive && !isAutoliquidation(int) ? 'TTC' : '')) + '</div>'
-    + (settings.tvaActive && !isAutoliquidation(int) ? '<div class="total-sub">dont TVA ' + formatCHF(tvaMontant) + '</div>' : '<div class="total-sub">' + (int.isAvoir ? 'Montant crédité' : (!settings.tvaActive ? 'TVA non applicable' : 'Autoliquidation')) + '</div>')
-    + '</div><div class="total-value">' + formatCHF(ttc) + '</div></div>';
+    + (settings.tvaActive && !isAutoliquidation(int) ? '<div class="total-sub">dont TVA ' + formatEUR(tvaMontant) + '</div>' : '<div class="total-sub">' + (int.isAvoir ? 'Montant crédité' : (!settings.tvaActive ? 'TVA non applicable' : 'Autoliquidation')) + '</div>')
+    + '</div><div class="total-value">' + formatEUR(ttc) + '</div></div>';
   if (int.paye) html += '<div style="margin-top:12px; padding:10px; background:#e8f5e9; border-radius:var(--r-sm); text-align:center; color:var(--success); font-weight:600; font-size:0.85rem;">✓ Payée le ' + formatDate(int.datePaiement) + '</div>';
   else if (int.statut === 'en_cours') html += '<div style="margin-top:12px; padding:10px; background:var(--accent-light); border-radius:var(--r-sm); text-align:center; color:var(--accent); font-weight:600; font-size:0.85rem;">⏳ En cours</div>';
   else if (isOverdue(int)) {
@@ -2771,8 +2795,8 @@ function openMailModal(id, type) {
   document.getElementById('mailTo').value = item.email;
   document.getElementById('mailSubject').value = (item.isAvoir ? 'Avoir ' : (type === 'facture' ? 'Facture ' : 'Devis ')) + (num || '') + ' - ' + settings.nom;
   document.getElementById('mailBody').value = 'Bonjour ' + item.client + ',\n\n'
-    + 'Veuillez trouver ci-joint ' + (item.isAvoir ? 'l\'avoir ' : (type === 'facture' ? 'la facture ' : 'le devis ')) + (num || '') + ' d\'un montant de ' + formatCHF(total) + '.\n\n'
-    + 'Vos données personnelles sont traitées conformément à la LPrD vaudoise. Elles sont stockées localement par ' + settings.nom + ' et ne sont transmises à aucun tiers.\n\n'
+    + 'Veuillez trouver ci-joint ' + (item.isAvoir ? 'l\'avoir ' : (type === 'facture' ? 'la facture ' : 'le devis ')) + (num || '') + ' d\'un montant de ' + formatEUR(total) + '.\n\n'
+    + 'Conformément au RGPD, vos données personnelles sont traitées par ' + settings.nom + ' pour la gestion de la relation client. Elles sont conservées 10 ans (obligation comptable) et ne sont transmises à aucun tiers. Vous disposez d\'un droit d\'accès, de rectification et d\'effacement.\n\n'
     + 'Cordialement,\n' + settings.nom + '\n' + settings.tel + '\n' + settings.email;
   document.getElementById('mailModal').classList.add('show');
 }
@@ -2969,7 +2993,7 @@ function saveSignatures(done) {
 }
 
 /* ==========================================================================
-   PDF FACTURE
+   PDF FACTURE — MENTIONS LÉGALES FRANÇAISES
    ========================================================================== */
 function createFactureDoc(int) {
   var jsPDF = window.jspdf.jsPDF;
@@ -2991,7 +3015,7 @@ function createFactureDoc(int) {
     (settings.adresse || '') + (settings.zip ? ', ' + settings.zip : '') + (settings.city ? ' ' + settings.city : ''),
     pageWidth / 2, 27, { align: 'center' }
   );
-  doc.text(int.isAvoir ? 'Artisan Plombier - AVOIR' : 'Artisan Plombier - Dépannage & Entretien', pageWidth / 2, 34, { align: 'center' });
+  doc.text('Artisan Plombier - Dépannage & Entretien', pageWidth / 2, 34, { align: 'center' });
   y = 50;
   doc.setTextColor(headerColor);
   doc.setFontSize(16);
@@ -3060,20 +3084,20 @@ function createFactureDoc(int) {
     var fraisArr = int.frais || [];
 
     if (mainOeuvre > 0) {
-      var labelMO = 'Main d\'œuvre (' + formatDuree(int.duree) + ' à ' + taux + ' CHF/h)';
+      var labelMO = 'Main d\'œuvre (' + formatDuree(int.duree) + ' à ' + taux + ' €/h)';
       doc.text(labelMO, margin + 15, y + 5);
-      doc.text(mainOeuvre.toFixed(2) + ' CHF', pageWidth - margin - 15, y + 5, { align: 'right' });
+      doc.text(mainOeuvre.toFixed(2) + ' €', pageWidth - margin - 15, y + 5, { align: 'right' });
       y += 7;
     }
     if (deplacement > 0) {
       doc.text('Déplacement', margin + 15, y + 5);
-      doc.text(deplacement.toFixed(2) + ' CHF', pageWidth - margin - 15, y + 5, { align: 'right' });
+      doc.text(deplacement.toFixed(2) + ' €', pageWidth - margin - 15, y + 5, { align: 'right' });
       y += 7;
     }
     if (int.kmActive && kmMontant > 0) {
-      var labelKm = 'Frais kilométriques (' + (int.kmDistance || 0) + ' km × ' + (int.kmRetour || 1) + ' × ' + (int.kmTaux || 0.70) + ' CHF)';
+      var labelKm = 'Frais kilométriques (' + (int.kmDistance || 0) + ' km, ' + (int.kmRetour || 5) + ' CV' + (parseInt(int.kmTaux) === 1 ? ', électrique' : '') + ')';
       doc.text(labelKm, margin + 15, y + 5);
-      doc.text(kmMontant.toFixed(2) + ' CHF', pageWidth - margin - 15, y + 5, { align: 'right' });
+      doc.text(kmMontant.toFixed(2) + ' €', pageWidth - margin - 15, y + 5, { align: 'right' });
       y += 7;
     }
     piecesArr.forEach(function(p) {
@@ -3083,19 +3107,19 @@ function createFactureDoc(int) {
       var totalPiece = (parseFloat(p.prix) || 0) * qte;
       var lines = doc.splitTextToSize('• ' + ligne, pageWidth - margin - 55);
       doc.text(lines, margin + 15, y + 5);
-      doc.text(totalPiece.toFixed(2) + ' CHF', pageWidth - margin - 15, y + 5, { align: 'right' });
+      doc.text(totalPiece.toFixed(2) + ' €', pageWidth - margin - 15, y + 5, { align: 'right' });
       y += (lines.length * 4) + 3;
     });
     fraisArr.forEach(function(f) {
       if (!f.libelle || !f.montant) return;
       var lines = doc.splitTextToSize('• ' + f.libelle, pageWidth - margin - 55);
       doc.text(lines, margin + 15, y + 5);
-      doc.text((parseFloat(f.montant) || 0).toFixed(2) + ' CHF', pageWidth - margin - 15, y + 5, { align: 'right' });
+      doc.text((parseFloat(f.montant) || 0).toFixed(2) + ' €', pageWidth - margin - 15, y + 5, { align: 'right' });
       y += (lines.length * 4) + 3;
     });
   } else {
     doc.text('Avoir', margin + 15, y + 5);
-    doc.text(ht.toFixed(2) + ' CHF', pageWidth - margin - 15, y + 5, { align: 'right' });
+    doc.text(ht.toFixed(2) + ' €', pageWidth - margin - 15, y + 5, { align: 'right' });
     y += 7;
   }
 
@@ -3104,22 +3128,22 @@ function createFactureDoc(int) {
   y += 6;
   doc.setFont('helvetica', 'bold');
   doc.text('Total HT', margin + 15, y + 4);
-  doc.text(ht.toFixed(2) + ' CHF', pageWidth - margin - 15, y + 4, { align: 'right' });
+  doc.text(ht.toFixed(2) + ' €', pageWidth - margin - 15, y + 4, { align: 'right' });
   doc.setFont('helvetica', 'normal');
   y += 7;
 
   if (settings.tvaActive && !isAutoliquidation(int)) {
-    doc.text('TVA (' + settings.tva + '%)', margin + 15, y + 4);
-    doc.text(tvaMontant.toFixed(2) + ' CHF', pageWidth - margin - 15, y + 4, { align: 'right' });
+    doc.text('TVA (' + getTauxTva(int) + '%)', margin + 15, y + 4);
+    doc.text(tvaMontant.toFixed(2) + ' €', pageWidth - margin - 15, y + 4, { align: 'right' });
     y += 7;
   } else if (isAutoliquidation(int)) {
     doc.setFontSize(8);
-    doc.text('Autoliquidation — TVA due par le client (art. 8 al. 1 LTVA)', margin + 15, y + 4);
+    doc.text('Autoliquidation — TVA due par le client (art. 283-2 du CGI)', margin + 15, y + 4);
     y += 7;
     doc.setFontSize(9);
   } else {
     doc.setFontSize(8);
-    doc.text('TVA non applicable (art. 10 al. 2 LTVA)', margin + 15, y + 4);
+    doc.text('TVA non applicable, art. 293 B du CGI', margin + 15, y + 4);
     y += 7;
     doc.setFontSize(9);
   }
@@ -3131,22 +3155,30 @@ function createFactureDoc(int) {
   doc.setFontSize(13);
   doc.setFont('helvetica', 'bold');
   doc.text('TOTAL', margin + 15, y + 5);
-  doc.text(ttc.toFixed(2) + ' CHF', pageWidth - margin - 15, y + 5, { align: 'right' });
+  doc.text(ttc.toFixed(2) + ' €', pageWidth - margin - 15, y + 5, { align: 'right' });
   y += 20;
   doc.setTextColor('#666666');
   doc.setFontSize(7);
   doc.setFont('helvetica', 'normal');
   var legal = [];
-  if (settings.siret) {
-    var ideAvecTva = settings.siret;
-    if (settings.tvaActive && ideAvecTva.indexOf('TVA') === -1) ideAvecTva += ' TVA';
-    legal.push('IDE : ' + ideAvecTva);
+  if (settings.siret) legal.push('SIREN : ' + settings.siret);
+  if (settings.tvaActive && settings.tvaIntra) legal.push('N° TVA intracommunautaire : ' + settings.tvaIntra);
+  if (settings.assuranceNom) legal.push('RC pro : ' + settings.assuranceNom + (settings.assuranceNum ? ' (police ' + settings.assuranceNum + ')' : ''));
+  if (settings.delaiPaiement) {
+    legal.push('Délai de paiement : ' + settings.delaiPaiement + ' jours');
+    legal.push('Pénalités de retard : 3 fois le taux d\'intérêt légal');
+    legal.push('Indemnité forfaitaire pour frais de recouvrement : ' + INDENMITE_RECOUVREMENT + ' € (art. L441-10 du Code de commerce)');
   }
-  if (settings.tvaActive && settings.tvaIntra) legal.push('N° TVA : ' + settings.tvaIntra);
-  if (settings.assuranceNom) legal.push('RC pro : ' + settings.assuranceNom + (settings.assuranceNum ? ' (' + settings.assuranceNum + ')' : ''));
-  if (settings.delaiPaiement) legal.push('Délai de paiement : ' + settings.delaiPaiement + ' jours');
   if (settings.iban) legal.push('IBAN : ' + settings.iban);
   legal.forEach(function(line) { doc.text(line, margin + 10, y); y += 3.5; });
+
+  // Mention garantie légale de conformité (pour particuliers)
+  y += 2;
+  doc.setFontSize(6.5);
+  doc.setTextColor('#888888');
+  doc.text('Garantie légale de conformité (art. L217-3 du Code de la consommation) : 2 ans minimum pour les biens meubles.', margin + 10, y);
+  y += 3.5;
+  doc.text('Médiateur de la consommation : en cas de litige, vous pouvez recourir gratuitement à un médiateur.', margin + 10, y);
 
   if (int.signatureClient || int.signatureTech) {
     var sigY = y + 5;
@@ -3171,7 +3203,7 @@ function createFactureDoc(int) {
         doc.setFontSize(6);
         doc.setTextColor('#999999');
         var d = new Date(int.signatureClientAt);
-        var dateStr = String(d.getDate()).padStart(2, '0') + '.' + String(d.getMonth() + 1).padStart(2, '0') + '.' + d.getFullYear()
+        var dateStr = String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0') + '/' + d.getFullYear()
           + ' ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
         doc.text('Signé le ' + dateStr, halfPage + 10, sigY + sigH + 8);
       }
@@ -3210,7 +3242,7 @@ function generateFacturePDF(id, silent) {
 }
 
 /* ==========================================================================
-   PDF DEVIS
+   PDF DEVIS — MENTIONS LÉGALES FRANÇAISES
    ========================================================================== */
 function createDevisDoc(d) {
   var jsPDF = window.jspdf.jsPDF;
@@ -3294,11 +3326,11 @@ function createDevisDoc(d) {
   var heures = (d.duree || 0) / 60;
   var mainOeuvre = heures * (d.taux || settings.tauxDefaut);
   doc.text('Main d\'œuvre (' + formatDuree(d.duree) + ')', margin + 15, y + 5);
-  doc.text(mainOeuvre.toFixed(2) + ' CHF', pageWidth - margin - 15, y + 5, { align: 'right' });
+  doc.text(mainOeuvre.toFixed(2) + ' €', pageWidth - margin - 15, y + 5, { align: 'right' });
   y += 7;
   if ((d.deplacement || 0) > 0) {
     doc.text('Frais de déplacement', margin + 15, y + 5);
-    doc.text((d.deplacement || 0).toFixed(2) + ' CHF', pageWidth - margin - 15, y + 5, { align: 'right' });
+    doc.text((d.deplacement || 0).toFixed(2) + ' €', pageWidth - margin - 15, y + 5, { align: 'right' });
     y += 7;
   }
   if (d.pieces && d.pieces.length > 0) {
@@ -3306,7 +3338,7 @@ function createDevisDoc(d) {
       var qte = parseInt(p.qte) || 1;
       var label = p.nom + (qte > 1 ? ' ×' + qte : '');
       doc.text('• ' + label, margin + 15, y + 5);
-      doc.text((parseFloat(p.prix) * qte).toFixed(2) + ' CHF', pageWidth - margin - 15, y + 5, { align: 'right' });
+      doc.text((parseFloat(p.prix) * qte).toFixed(2) + ' €', pageWidth - margin - 15, y + 5, { align: 'right' });
       y += 7;
     });
   }
@@ -3317,12 +3349,17 @@ function createDevisDoc(d) {
   doc.line(margin + 10, y, pageWidth - margin - 10, y);
   y += 6;
   doc.text('Total HT', margin + 15, y + 4);
-  doc.text(ht.toFixed(2) + ' CHF', pageWidth - margin - 15, y + 4, { align: 'right' });
+  doc.text(ht.toFixed(2) + ' €', pageWidth - margin - 15, y + 4, { align: 'right' });
   y += 6;
   if (settings.tvaActive) {
-    doc.text('TVA (' + settings.tva + '%)', margin + 15, y + 4);
-    doc.text(tvaMontant.toFixed(2) + ' CHF', pageWidth - margin - 15, y + 4, { align: 'right' });
+    doc.text('TVA (' + getTauxTva(d) + '%)', margin + 15, y + 4);
+    doc.text(tvaMontant.toFixed(2) + ' €', pageWidth - margin - 15, y + 4, { align: 'right' });
     y += 6;
+  } else {
+    doc.setFontSize(8);
+    doc.text('TVA non applicable, art. 293 B du CGI', margin + 15, y + 4);
+    y += 6;
+    doc.setFontSize(9);
   }
   doc.setDrawColor('#4338ca');
   doc.line(margin + 10, y, pageWidth - margin - 10, y);
@@ -3331,7 +3368,14 @@ function createDevisDoc(d) {
   doc.setFontSize(13);
   doc.setFont('helvetica', 'bold');
   doc.text('TOTAL', margin + 15, y + 5);
-  doc.text(ttc.toFixed(2) + ' CHF', pageWidth - margin - 15, y + 5, { align: 'right' });
+  doc.text(ttc.toFixed(2) + ' €', pageWidth - margin - 15, y + 5, { align: 'right' });
+  y += 16;
+  doc.setTextColor('#666666');
+  doc.setFontSize(7);
+  doc.setFont('helvetica', 'normal');
+  doc.text('Devis gratuit. Ce devis est valable ' + d.validite + ' jours à compter de sa date d\'émission.', margin + 10, y);
+  y += 3.5;
+  doc.text('Bon pour accord (date, nom, signature) : ____________________________', margin + 10, y);
   y = pageHeight - 15;
   doc.setTextColor('#999999');
   doc.setFontSize(6.5);
@@ -3363,9 +3407,9 @@ function exportData(encrypt) {
   var data = {
     interventions: interventions, devisList: devisList, clients: clients, stock: stock,
     factureCounter: factureCounter, devisCounter: devisCounter, avoirCounter: avoirCounter,
-    settings: settings, exportedAt: new Date().toISOString(), schemaVersion: 4, appVersion: APP_VERSION, pays: 'CH'
+    settings: settings, exportedAt: new Date().toISOString(), schemaVersion: 1, appVersion: APP_VERSION, pays: 'FR'
   };
-  var filename = 'pipepline_ch_sauvegarde_' + new Date().toISOString().slice(0, 10) + '.json';
+  var filename = 'pipepline_fr_sauvegarde_' + new Date().toISOString().slice(0, 10) + '.json';
   if (encrypt && window.crypto && window.crypto.subtle) {
     askPassword({
       title: 'Chiffrer la sauvegarde',
@@ -3437,7 +3481,7 @@ function doImport(data) {
   showConfirm(msg, function(confirmOk) {
     if (!confirmOk) { var inp = document.getElementById('importDataInput'); if (inp) inp.value = ''; return; }
     try {
-      storageSet('pipepline_ch_backup_before_import', {
+      storageSet('pipepline_fr_backup_before_import', {
         interventions: interventions, devisList: devisList, clients: clients,
         factureCounter: factureCounter, devisCounter: devisCounter, settings: settings,
         backupAt: new Date().toISOString()
@@ -3634,8 +3678,8 @@ function renderRecap() {
   });
   var grid = document.getElementById('recapGrid');
   if (grid) grid.innerHTML =
-    '<div class="recap-card"><div class="recap-label">CA TTC</div><div class="recap-value">' + formatCHF(totalTTC) + '</div></div>'
-    + '<div class="recap-card"><div class="recap-label">CA Net</div><div class="recap-value green">' + formatCHF(totalNet) + '</div></div>'
+    '<div class="recap-card"><div class="recap-label">CA TTC</div><div class="recap-value">' + formatEUR(totalTTC) + '</div></div>'
+    + '<div class="recap-card"><div class="recap-label">CA Net</div><div class="recap-value green">' + formatEUR(totalNet) + '</div></div>'
     + '<div class="recap-card"><div class="recap-label">Interventions</div><div class="recap-value">' + filtered.length + '</div></div>'
     + '<div class="recap-card"><div class="recap-label">Temps total</div><div class="recap-value">' + formatDuree(totalHeures) + '</div></div>'
     + '<div class="recap-card"><div class="recap-label">Payées</div><div class="recap-value green">' + payees + '</div></div>'
@@ -3651,7 +3695,7 @@ function renderRecap() {
         + '<div><span class="int-type-badge ' + typeInfo.color + '" style="font-size:0.55rem; margin-right:6px;">' + typeInfo.label + '</span><strong>' + escapeHtml(int.client) + '</strong></div>'
         + '<div style="display:flex; gap:12px; align-items:center;">'
         + '<span style="color:var(--text-muted);">' + formatDate(int.date) + '</span>'
-        + '<span style="font-weight:600; color:' + (int.isAvoir ? 'var(--purple)' : 'var(--accent)') + ';">' + formatCHF(getTotalTTC(int)) + '</span>'
+        + '<span style="font-weight:600; color:' + (int.isAvoir ? 'var(--purple)' : 'var(--accent)') + ';">' + formatEUR(getTotalTTC(int)) + '</span>'
         + ((int.paye || int.isAvoir) ? '<span style="color:var(--success);">✓</span>' : '<span style="color:var(--danger);">⚠</span>')
         + '</div></div>';
     });
@@ -3720,10 +3764,10 @@ function renderTvaResult() {
   caHT -= avoirsHT;
   var html = '';
   html += '<div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin:14px 0;">';
-  html += '<div class="ca-card"><span class="ca-lbl">CA HT facturé</span><span class="ca-val">' + formatCHF(caHT) + '</span></div>';
-  html += '<div class="ca-card"><span class="ca-lbl">CA TTC facturé</span><span class="ca-val">' + formatCHF(caTTC) + '</span></div>';
-  html += '<div class="ca-card"><span class="ca-lbl">TVA collectée</span><span class="ca-val net">' + formatCHF(tvaCollectee) + '</span></div>';
-  html += '<div class="ca-card"><span class="ca-lbl">Avoirs HT</span><span class="ca-val red">-' + formatCHF(avoirsHT) + '</span></div>';
+  html += '<div class="ca-card"><span class="ca-lbl">CA HT facturé</span><span class="ca-val">' + formatEUR(caHT) + '</span></div>';
+  html += '<div class="ca-card"><span class="ca-lbl">CA TTC facturé</span><span class="ca-val">' + formatEUR(caTTC) + '</span></div>';
+  html += '<div class="ca-card"><span class="ca-lbl">TVA collectée</span><span class="ca-val net">' + formatEUR(tvaCollectee) + '</span></div>';
+  html += '<div class="ca-card"><span class="ca-lbl">Avoirs HT</span><span class="ca-val red">-' + formatEUR(avoirsHT) + '</span></div>';
   html += '</div>';
   if (Object.keys(parTaux).length > 1) {
     html += '<h4 style="font-size:0.75rem; color:var(--accent); margin:14px 0 8px;">Répartition par taux</h4>';
@@ -3731,22 +3775,22 @@ function renderTvaResult() {
     Object.keys(parTaux).sort().forEach(function(t) {
       var p = parTaux[t];
       html += '<div style="display:flex; justify-content:space-between; padding:6px 10px; background:var(--bg-surface); border-radius:var(--r-xs); font-size:0.75rem;">'
-        + '<span><strong>' + t + '%</strong> — base ' + formatCHF(p.base) + '</span>'
-        + '<span style="font-weight:700; color:var(--success);">TVA ' + formatCHF(p.tva) + '</span>'
+        + '<span><strong>' + t + '%</strong> — base ' + formatEUR(p.base) + '</span>'
+        + '<span style="font-weight:700; color:var(--success);">TVA ' + formatEUR(p.tva) + '</span>'
         + '</div>';
     });
     html += '</div>';
   }
   html += '<div style="margin-top:16px; padding:12px; background:var(--accent-light); border-radius:var(--r-sm); font-size:0.75rem; color:var(--text-secondary); line-height:1.6;">';
-  html += '<strong>Rappel AFC :</strong> ce décompte concerne la <strong>TVA collectée</strong> sur vos ventes. ';
-  html += 'Pour la déclaration, vous devez y soustraire la <strong>TVA déductible</strong> (achats, frais généraux) que vous trouverez sur vos factures fournisseurs. ';
-  html += 'Seuil d\'assujettissement : ' + formatCHF(TVA_SEUIL_CHF) + ' de CA annuel.';
+  html += '<strong>Rappel DGFiP :</strong> ce décompte concerne la <strong>TVA collectée</strong> sur vos ventes. ';
+  html += 'Pour la déclaration CA3/CA12, vous devez y soustraire la <strong>TVA déductible</strong> (achats, frais généraux) que vous trouverez sur vos factures fournisseurs. ';
+  html += 'Seuil de franchise en base : ' + formatEUR(TVA_SEUIL_FR) + ' de CA annuel (art. 293 B du CGI).';
   html += '</div>';
   resultEl.innerHTML = html;
 }
 
 /* ==========================================================================
-   CERTIFICAT CHAUDIÈRE
+   ATTESTATION D'ENTRETIEN CHAUDIÈRE (FRANCE)
    ========================================================================== */
 function openCertificateModal(id) {
   haptic(10);
@@ -3785,7 +3829,7 @@ function generateCertificatePDF(int) {
     doc.setTextColor('#ffffff');
     doc.setFontSize(18);
     doc.setFont('helvetica', 'bold');
-    doc.text('CERTIFICAT D\'ENTRETIEN', pw / 2, 20, { align: 'center' });
+    doc.text('ATTESTATION D\'ENTRETIEN', pw / 2, 20, { align: 'center' });
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
     doc.text('Chaudière — Attestation de réglage / entretien (document non officiel)', pw / 2, 30, { align: 'center' });
@@ -3795,7 +3839,7 @@ function generateCertificatePDF(int) {
     var cert = int.certificat || {};
     var lines = [
       ['Entreprise', settings.nom],
-      ['IDE', settings.siret || '—'],
+      ['SIREN', settings.siret || '—'],
       ['Date d\'intervention', formatDate(cert.date || int.date)],
       ['Client', int.client || '—'],
       ['Adresse', int.adresse || '—']
@@ -3822,7 +3866,7 @@ function generateCertificatePDF(int) {
       ['Marque / Modèle', cert.marque || '—'],
       ['N° de série', cert.serie || '—'],
       ['Année d\'installation', cert.annee || '—'],
-      ['Combustible', ({gaz: 'Gaz naturel', mazout: 'Mazout', propane: 'Propane', pellet: 'Pellets', bois: 'Bois', pac: 'Pompe à chaleur'}[cert.combustible]) || cert.combustible],
+      ['Combustible', ({gaz: 'Gaz naturel', mazout: 'Fioul domestique', propane: 'Propane', pellet: 'Granulés de bois', bois: 'Bois bûches', pac: 'Pompe à chaleur'}[cert.combustible]) || cert.combustible],
       ['Puissance (kW)', cert.puissance || '—']
     ];
     chaudiere.forEach(function(l) {
@@ -3893,7 +3937,7 @@ function generateCertificatePDF(int) {
         doc.setFontSize(7);
         doc.setTextColor('#999999');
         var dTech = new Date(int.signatureTechAt);
-        var dateTech = String(dTech.getDate()).padStart(2, '0') + '.' + String(dTech.getMonth() + 1).padStart(2, '0') + '.' + dTech.getFullYear()
+        var dateTech = String(dTech.getDate()).padStart(2, '0') + '/' + String(dTech.getMonth() + 1).padStart(2, '0') + '/' + dTech.getFullYear()
           + ' ' + String(dTech.getHours()).padStart(2, '0') + ':' + String(dTech.getMinutes()).padStart(2, '0');
         doc.text('Signé le ' + dateTech, margin + 5, y + 34);
       }
@@ -3911,8 +3955,8 @@ function generateCertificatePDF(int) {
     doc.setFontSize(7);
     doc.setTextColor('#999999');
     doc.text(settings.nom + ' - ' + settings.adresse + ' - ' + settings.tel, pw / 2, ph - 10, { align: 'center' });
-    doc.save('Certificat_' + (int.numeroFacture || 'chaudiere') + '.pdf');
-    showToast('Certificat PDF téléchargé', 'success');
+    doc.save('Attestation_' + (int.numeroFacture || 'chaudiere') + '.pdf');
+    showToast('Attestation PDF téléchargée', 'success');
   }).catch(function() { showToast('Impossible de générer le PDF', 'error'); });
 }
 
@@ -3977,12 +4021,12 @@ function updateIbanStatus() {
   var iban = ibanEl.value.trim();
   if (!iban) { status.style.display = 'none'; return; }
   status.style.display = 'block';
-  if (isValidSwissIBAN(iban)) {
-    status.innerHTML = '✅ IBAN suisse valide';
+  if (isValidFrenchIBAN(iban)) {
+    status.innerHTML = '✅ IBAN français valide';
     status.style.background = '#e8f5e9';
     status.style.color = '#1b5e20';
   } else {
-    status.innerHTML = '⚠ IBAN invalide ou non suisse';
+    status.innerHTML = '⚠ IBAN invalide ou non français';
     status.style.background = '#ffebee';
     status.style.color = '#c62828';
   }
@@ -3998,12 +4042,11 @@ function saveSettingsData() {
   settings.tel = document.getElementById('setTel').value.trim();
   settings.email = document.getElementById('setEmail').value.trim();
   settings.taxe = parseFloat(document.getElementById('setTaxe').value) || 21.2;
-  settings.tva = parseFloat(document.getElementById('setTva').value) || 8.1;
+  settings.tva = parseFloat(document.getElementById('setTva').value) || 20;
   settings.tvaActive = document.getElementById('setTvaActive').checked;
-  settings.kmRate = parseFloat(document.getElementById('setKmRate').value) || 0.70;
   settings.acompteSeuil = parseFloat(document.getElementById('setAcompteSeuil').value) || 5000;
-  settings.tauxDefaut = parseFloat(document.getElementById('setTauxDefaut').value) || 90;
-  settings.deplacementDefaut = parseFloat(document.getElementById('setDeplacementDefaut').value) || 50;
+  settings.tauxDefaut = parseFloat(document.getElementById('setTauxDefaut').value) || 45;
+  settings.deplacementDefaut = parseFloat(document.getElementById('setDeplacementDefaut').value) || 30;
   settings.seuilAlerte = parseInt(document.getElementById('setSeuilAlerte').value) || 30;
   settings.seuilSauvegarde = parseInt(document.getElementById('setSeuilSauvegarde').value) || 15;
   settings.tvaIntra = document.getElementById('setTvaIntra').value.trim();
@@ -4064,8 +4107,6 @@ function init() {
     }
   }).catch(function(err) {
     console.error('[init PIN]', err);
-    // 🔧 CORRECTION : si le PIN est actif mais qu'on n'arrive pas à lire sa meta,
-    // on prévient l'utilisateur au lieu de le bloquer silencieusement.
     if (pinMeta && pinMeta.active) {
       var errEl = document.getElementById('pinError');
       if (errEl) errEl.textContent = 'Erreur de lecture — vérifiez le stockage';
@@ -4098,9 +4139,7 @@ function startApp() {
 }
 
 /* ==========================================================================
-   🔧 CORRECTION MAJEURE : tous les écouteurs d'événements sont attachés
-   après le DOMContentLoaded, dans une fonction dédiée.
-   Ainsi aucun getElementById ne peut retourner null.
+   ÉCOUTEURS D'ÉVÉNEMENTS
    ========================================================================== */
 function bindEventListeners() {
   // PIN keypad
@@ -4313,7 +4352,7 @@ function bindEventListeners() {
         date: date, heure: heureDebut, heureFin: heureFin, duree: duree,
         taux: settings.tauxDefaut, deplacement: settings.deplacementDefaut,
         pieces: [], frais: [], photos: [], notes: '', paye: false, statut: 'planifie',
-        paysClient: 'CH', datePaiement: null, signatureClient: null, signatureTech: null,
+        paysClient: 'FR', datePaiement: null, signatureClient: null, signatureTech: null,
         createdAt: new Date().toISOString()
       };
       interventions.push(newInt);
@@ -4368,7 +4407,7 @@ function bindEventListeners() {
     var tel = document.getElementById('intTel').value.trim();
     var adresse = document.getElementById('intAdresse').value.trim();
     var paysEl = document.getElementById('intPays');
-    var paysClient = paysEl ? paysEl.value : 'CH';
+    var paysClient = paysEl ? paysEl.value : 'FR';
     var noTvaEl = document.getElementById('intNoTvaClient');
     var noTvaClient = noTvaEl ? noTvaEl.value.trim() : '';
     var description = document.getElementById('intDescription').value.trim();
@@ -4385,8 +4424,8 @@ function bindEventListeners() {
     var recurring = document.getElementById('intRecurring').checked;
     var kmActive = document.getElementById('intKmActive').checked;
     var kmDistance = parseFloat(document.getElementById('intKmDistance').value) || 0;
-    var kmRetour = parseInt(document.getElementById('intKmRetour').value) || 1;
-    var kmTaux = parseFloat(document.getElementById('intKmTaux').value) || settings.kmRate;
+    var kmRetour = parseInt(document.getElementById('intKmRetour').value) || 5;
+    var kmTaux = parseInt(document.getElementById('intKmTaux').value) || 0;
     if (!client) { showToast('Nom du client requis', 'warning'); setWizardStep(1); return; }
     if (!description) { showToast('Description requise', 'warning'); setWizardStep(2); return; }
     if (!date) { showToast('Date requise', 'warning'); setWizardStep(2); return; }
@@ -4493,7 +4532,7 @@ function bindEventListeners() {
   var intKmRetour = document.getElementById('intKmRetour');
   if (intKmRetour) intKmRetour.addEventListener('change', updateKmTotal);
   var intKmTaux = document.getElementById('intKmTaux');
-  if (intKmTaux) intKmTaux.addEventListener('input', updateKmTotal);
+  if (intKmTaux) intKmTaux.addEventListener('change', updateKmTotal);
 
   // Int date/hour conflict check
   ['intDate', 'intHeure', 'intHeureFin'].forEach(function(id) {
@@ -4544,7 +4583,7 @@ function bindEventListeners() {
         client: client, email: email, tel: tel, adresse: adresse,
         description: description, date: date,
         validite: validite, duree: duree, taux: taux, deplacement: deplacement,
-        pieces: pieces, notes: notes, statut: 'en_attente', paysClient: 'CH',
+        pieces: pieces, notes: notes, statut: 'en_attente', paysClient: 'FR',
         signatureClient: null, signatureTech: null, createdAt: new Date().toISOString()
       };
       devisList.push(newDevis);
@@ -4590,7 +4629,7 @@ function bindEventListeners() {
     if (!d) return;
     convertDevisSourceId = currentDevisId;
     document.getElementById('convertClientDisplay').value = d.client || '—';
-    document.getElementById('convertTotalDisplay').value = formatCHF(getTotalTTC(d));
+    document.getElementById('convertTotalDisplay').value = formatEUR(getTotalTTC(d));
     var ttc = getTotalTTC(d);
     var autoAcompte = ttc > (settings.acompteSeuil || 5000);
     document.getElementById('convertAcompteActive').checked = autoAcompte;
@@ -4600,7 +4639,7 @@ function bindEventListeners() {
     document.getElementById('convertEcheanceSolde').value = dateSolde.toISOString().slice(0, 10);
     updateConvertAcompte();
     if (autoAcompte) {
-      setTimeout(function() { showToast('💡 Devis > ' + formatCHF(settings.acompteSeuil) + ' — Acompte 30% pré-sélectionné', 'warning'); }, 400);
+      setTimeout(function() { showToast('💡 Devis > ' + formatEUR(settings.acompteSeuil) + ' — Acompte 30% pré-sélectionné', 'warning'); }, 400);
     }
     document.getElementById('convertDevisModal').classList.add('show');
   });
@@ -4624,7 +4663,7 @@ function bindEventListeners() {
       var acompteMontant = ttc * pct / 100;
       var factureAcompte = {
         id: 'int_' + Date.now() + '_a', numeroFacture: genererNumeroFacture(),
-        client: d.client, email: d.email, tel: d.tel, adresse: d.adresse, paysClient: d.paysClient || 'CH',
+        client: d.client, email: d.email, tel: d.tel, adresse: d.adresse, paysClient: d.paysClient || 'FR',
         description: 'Acompte ' + pct + '% — ' + (d.description || ''),
         type: 'autre', date: today, heure: '', heureFin: '', duree: 0, taux: 0, deplacement: 0,
         pieces: [], frais: [], photos: [], notes: 'Acompte sur devis ' + d.numeroDevis,
@@ -4637,7 +4676,7 @@ function bindEventListeners() {
       var resteMontant = ttc - acompteMontant;
       var factureSolde = {
         id: 'int_' + Date.now() + '_s', numeroFacture: genererNumeroFacture(),
-        client: d.client, email: d.email, tel: d.tel, adresse: d.adresse, paysClient: d.paysClient || 'CH',
+        client: d.client, email: d.email, tel: d.tel, adresse: d.adresse, paysClient: d.paysClient || 'FR',
         description: 'Solde — ' + (d.description || ''),
         type: 'autre', date: echeanceSolde || today, heure: '', heureFin: '',
         duree: d.duree, taux: d.taux, deplacement: d.deplacement,
@@ -4659,11 +4698,11 @@ function bindEventListeners() {
       document.getElementById('convertDevisModal').classList.remove('show');
       document.getElementById('devisDetailModal').classList.remove('show');
       switchTab('interventions');
-      showToast('2 factures créées : acompte ' + formatCHF(acompteMontant) + ' + solde ' + formatCHF(resteMontant), 'success');
+      showToast('2 factures créées : acompte ' + formatEUR(acompteMontant) + ' + solde ' + formatEUR(resteMontant), 'success');
     } else {
       var newInt = {
         id: 'int_' + Date.now(), numeroFacture: genererNumeroFacture(),
-        client: d.client, email: d.email, tel: d.tel, adresse: d.adresse, paysClient: d.paysClient || 'CH',
+        client: d.client, email: d.email, tel: d.tel, adresse: d.adresse, paysClient: d.paysClient || 'FR',
         description: d.description, type: 'autre', date: echeanceSolde || today,
         heure: '', heureFin: '', duree: d.duree, taux: d.taux, deplacement: d.deplacement,
         pieces: (d.pieces || []).slice(), frais: fraisCopy, photos: [], notes: d.notes, paye: false,
@@ -4740,7 +4779,7 @@ function bindEventListeners() {
       heure: '', heureFin: '', duree: 0, taux: 0, deplacement: 0,
       pieces: [], frais: [], photos: [], notes: description,
       paye: true, statut: 'termine', datePaiement: date,
-      signatureClient: null, signatureTech: null, paysClient: 'CH',
+      signatureClient: null, signatureTech: null, paysClient: 'FR',
       avoirMotif: motif, avoirSourceFacture: srcFacture ? srcFacture.numeroFacture : null,
       montantForceHT: -Math.abs(montant), createdAt: new Date().toISOString()
     };
@@ -4752,7 +4791,7 @@ function bindEventListeners() {
     currentAvoirSourceFactureId = null;
     markTabAsNew('factures');
     haptic(15);
-    showToast('Avoir ' + newAvoir.numeroFacture + ' créé (' + formatCHF(montant) + ')', 'purple');
+    showToast('Avoir ' + newAvoir.numeroFacture + ' créé (' + formatEUR(montant) + ')', 'purple');
   });
 
   // Facture modal
@@ -4790,7 +4829,7 @@ function bindEventListeners() {
     if (!int) return;
     var printSection = document.getElementById('printSection');
     var ttc = getTotalTTC(int);
-    printSection.innerHTML = '<div style="font-family:Arial, sans-serif; max-width:800px; margin:0 auto; padding:20px;"><h1>' + escapeHtml(int.isAvoir ? 'AVOIR' : 'FACTURE') + ' ' + escapeHtml(int.numeroFacture || '') + '</h1><p><strong>Client :</strong> ' + escapeHtml(int.client) + '</p><p><strong>Total :</strong> ' + ttc.toFixed(2) + ' CHF</p></div>';
+    printSection.innerHTML = '<div style="font-family:Arial, sans-serif; max-width:800px; margin:0 auto; padding:20px;"><h1>' + escapeHtml(int.isAvoir ? 'AVOIR' : 'FACTURE') + ' ' + escapeHtml(int.numeroFacture || '') + '</h1><p><strong>Client :</strong> ' + escapeHtml(int.client) + '</p><p><strong>Total :</strong> ' + ttc.toFixed(2) + ' €</p></div>';
     printSection.style.display = 'block';
     window.print();
     setTimeout(function() { printSection.style.display = 'none'; }, 1000);
@@ -4931,7 +4970,7 @@ function bindEventListeners() {
     var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     var link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.download = 'pipepline_ch_export_' + new Date().toISOString().slice(0, 10) + '.csv';
+    link.download = 'pipepline_fr_export_' + new Date().toISOString().slice(0, 10) + '.csv';
     link.click();
     showToast('Export CSV téléchargé', 'success');
   });
@@ -5078,7 +5117,7 @@ function bindEventListeners() {
     filtered.forEach(function(int) {
       lines.push([
         int.numeroFacture || '', int.date || '',
-        (int.client || '').replace(/[;\n]/g, ' '), int.paysClient || 'CH',
+        (int.client || '').replace(/[;\n]/g, ' '), int.paysClient || 'FR',
         getTotalHT(int).toFixed(2).replace('.', ','), getTauxTva(int),
         getTvaMontant(int).toFixed(2).replace('.', ','), getTotalTTC(int).toFixed(2).replace('.', ',')
       ].join(';'));
@@ -5092,7 +5131,7 @@ function bindEventListeners() {
     showToast('Décompte TVA exporté', 'success');
   });
 
-  // Certificat
+  // Attestation chaudière
   var cancelCertificate = document.getElementById('cancelCertificate');
   if (cancelCertificate) cancelCertificate.addEventListener('click', function() { document.getElementById('certificateModal').classList.remove('show'); });
   var generateCertificateBtn = document.getElementById('generateCertificateBtn');
@@ -5121,7 +5160,7 @@ function bindEventListeners() {
     renderAll();
     document.getElementById('certificateModal').classList.remove('show');
     haptic(15);
-    showToast('Certificat enregistré — génération PDF...', 'success');
+    showToast('Attestation enregistrée — génération PDF...', 'success');
     generateCertificatePDF(int);
   });
 
@@ -5183,7 +5222,6 @@ function bindEventListeners() {
     document.getElementById('setTaxe').value = settings.taxe;
     document.getElementById('setTva').value = settings.tva;
     document.getElementById('setTvaActive').checked = settings.tvaActive;
-    document.getElementById('setKmRate').value = settings.kmRate || 0.70;
     document.getElementById('setAcompteSeuil').value = settings.acompteSeuil || 5000;
     document.getElementById('setTauxDefaut').value = settings.tauxDefaut;
     document.getElementById('setDeplacementDefaut').value = settings.deplacementDefaut;
@@ -5210,7 +5248,6 @@ function bindEventListeners() {
     var newPinActive = document.getElementById('setPinActive').checked;
     var newPin = document.getElementById('setPin').value;
 
-    // Cas 1 : activation initiale du PIN
     if (newPinActive && !pinMeta.active) {
       if (!newPin || newPin.length < 4) { showToast('Code PIN min. 4 chiffres requis', 'warning'); return; }
       var salt = generateSalt();
@@ -5231,7 +5268,6 @@ function bindEventListeners() {
       return;
     }
 
-    // Cas 2 : changement de PIN
     if (newPinActive && pinMeta.active && newPin && newPin.length >= 4) {
       var newSalt = generateSalt();
       computePinHashB64(newPin, newSalt).then(function(newHash) {
@@ -5241,7 +5277,7 @@ function bindEventListeners() {
             storageSet(STORAGE_KEY, {
               interventions: interventions, devisList: devisList, clients: clients,
               factureCounter: factureCounter, devisCounter: devisCounter, avoirCounter: avoirCounter,
-              schemaVersion: 4, appVersion: APP_VERSION, savedAt: new Date().toISOString()
+              schemaVersion: 1, appVersion: APP_VERSION, savedAt: new Date().toISOString()
             }),
             storageSet(SETTINGS_KEY, settings),
             storageSet(BACKUP_META_KEY, backupMeta),
@@ -5264,7 +5300,6 @@ function bindEventListeners() {
       return;
     }
 
-    // Cas 3 : désactivation du PIN
     if (!newPinActive && pinMeta.active) {
       showConfirm(
         '⚠ Désactiver le code PIN ?\n\nLes données seront DÉCHIFFRÉES et stockées en clair sur cet appareil. Toute personne ayant accès à l\'appareil pourra les consulter.\n\nContinuer ?',
@@ -5276,7 +5311,7 @@ function bindEventListeners() {
             idbSet(STORAGE_KEY, {
               interventions: interventions, devisList: devisList, clients: clients,
               factureCounter: factureCounter, devisCounter: devisCounter,
-              avoirCounter: avoirCounter, schemaVersion: 4,
+              avoirCounter: avoirCounter, schemaVersion: 1,
               appVersion: APP_VERSION, savedAt: new Date().toISOString()
             }),
             idbSet(SETTINGS_KEY, settings),
@@ -5298,7 +5333,6 @@ function bindEventListeners() {
       return;
     }
 
-    // Cas 4 : pas de changement PIN
     saveSettingsData();
     document.getElementById('settingsModal').classList.remove('show');
     renderAll();
@@ -5346,7 +5380,7 @@ function bindEventListeners() {
   // BroadcastChannel
   if ('BroadcastChannel' in window) {
     try {
-      broadcastChannel = new BroadcastChannel('pipepline_ch_sync');
+      broadcastChannel = new BroadcastChannel('pipepline_fr_sync');
       broadcastChannel.onmessage = function(e) {
         if (e.data && e.data.type === 'data-updated') {
           var modalOpen = document.querySelector('.modal-overlay.show');
@@ -5430,3 +5464,4 @@ if (document.readyState === 'loading') {
 } else {
   boot();
 }
+

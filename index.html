@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fr-CH">
+<html lang="fr-FR">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
@@ -10,7 +10,7 @@
   <meta name="theme-color" content="#1a5279" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#0f1a24" media="(prefers-color-scheme: dark)">
   <meta name="description" content="Application de gestion pour plombier - 100% hors ligne et privée">
-  <title>PipePline V3 - Gestion hors ligne</title>
+  <title>PipePline V3 FR - Gestion hors ligne</title>
   <link rel="icon" type="image/png" href="logo.png">
   <link rel="apple-touch-icon" href="logo.png">
   <script>
@@ -1062,7 +1062,7 @@
     <div class="app-header">
       <div class="header-left">
         <img src="logo.png" alt="Logo" class="app-logo" onerror="this.style.display='none'" />
-        <h1>PipePline <span class="app-version">V3</span></h1>
+        <h1>PipePline <span class="app-version">V3 FR</span></h1>
       </div>
       <div style="display:flex; flex-wrap:wrap; gap:6px; align-items:center;">
         <div class="save-indicator" id="saveIndicator">
@@ -1082,16 +1082,16 @@
       <div class="dash-item"><span class="dash-num" id="totalInterventions">0</span><span class="dash-lbl">Interv.</span></div>
       <div class="dash-item danger"><span class="dash-num" id="totalImpayees">0</span><span class="dash-lbl">Impayées</span></div>
       <div class="dash-sep"></div>
-      <div class="dash-item"><span class="dash-num" id="caMoisMini">0.00 CHF</span><span class="dash-lbl">CA mois</span></div>
+      <div class="dash-item"><span class="dash-num" id="caMoisMini">0.00 €</span><span class="dash-lbl">CA mois</span></div>
       <button class="dash-toggle" id="dashToggle" title="Détail CA" aria-label="Détail CA">⌄</button>
     </div>
 
     <div class="ca-panel" id="caPanel">
       <div class="ca-grid">
-        <div class="ca-card"><span class="ca-lbl">CA mois</span><span class="ca-val" id="caMois">0.00 CHF</span><span class="ca-sub" id="caMoisLabel">—</span></div>
-        <div class="ca-card"><span class="ca-lbl">CA net</span><span class="ca-val net" id="caNetMois">0.00 CHF</span><span class="ca-sub" id="caNetMoisSub">~21,2%</span></div>
-        <div class="ca-card"><span class="ca-lbl">CA annuel</span><span class="ca-val" id="caAnnuel">0.00 CHF</span><span class="ca-sub" id="caAnnuelLabel">—</span></div>
-        <div class="ca-card"><span class="ca-lbl">À encaisser</span><span class="ca-val red" id="resteEncaisser">0.00 CHF</span><span class="ca-sub">Impayées</span></div>
+        <div class="ca-card"><span class="ca-lbl">CA mois</span><span class="ca-val" id="caMois">0.00 €</span><span class="ca-sub" id="caMoisLabel">—</span></div>
+        <div class="ca-card"><span class="ca-lbl">CA net</span><span class="ca-val net" id="caNetMois">0.00 €</span><span class="ca-sub" id="caNetMoisSub">~21,2%</span></div>
+        <div class="ca-card"><span class="ca-lbl">CA annuel</span><span class="ca-val" id="caAnnuel">0.00 €</span><span class="ca-sub" id="caAnnuelLabel">—</span></div>
+        <div class="ca-card"><span class="ca-lbl">À encaisser</span><span class="ca-val red" id="resteEncaisser">0.00 €</span><span class="ca-sub">Impayées</span></div>
       </div>
       <div class="ca-actions">
         <button class="ca-action-btn save-btn" id="exportDataBtn">Sauvegarder</button>
@@ -1271,14 +1271,14 @@
       <div class="action-sheet-handle"></div>
       <div class="action-sheet-header">
         <strong id="actionSheetTitle">Client</strong>
-        <span id="actionSheetSub">FAC-0000 • 0.00 CHF</span>
+        <span id="actionSheetSub">FAC-0000 • 0.00 €</span>
       </div>
       <div class="action-sheet-grid">
         <button data-action="view"><span class="as-icon">👁</span><span>Voir</span></button>
         <button data-action="edit"><span class="as-icon">✎</span><span>Modifier</span></button>
         <button data-action="sign"><span class="as-icon">✍</span><span>Signer</span></button>
         <button data-action="progress"><span class="as-icon">▶</span><span>En cours</span></button>
-        <button data-action="certificate"><span class="as-icon">🔥</span><span>Certificat</span></button>
+        <button data-action="certificate"><span class="as-icon">🔥</span><span>Attestation</span></button>
         <button data-action="duplicate"><span class="as-icon">⎘</span><span>Dupliquer</span></button>
         <button data-action="followup"><span class="as-icon">📅</span><span>Nouveau RDV</span></button>
         <button data-action="credit"><span class="as-icon">↩</span><span>Avoir</span></button>
@@ -1376,14 +1376,13 @@
             <input type="text" id="intClient" placeholder="Nom du client ou adresse" autocomplete="off" />
             <div class="autocomplete-list" id="intClientAutocomplete"></div>
           </div>
-          <div class="form-group"><label>Email du client</label><input type="email" id="intEmail" placeholder="client@email.ch" autocomplete="email" /></div>
-          <div class="form-group"><label>Téléphone du client</label><input type="tel" id="intTel" placeholder="+41 79 123 45 67" autocomplete="tel" /></div>
+          <div class="form-group"><label>Email du client</label><input type="email" id="intEmail" placeholder="client@email.fr" autocomplete="email" /></div>
+          <div class="form-group"><label>Téléphone du client</label><input type="tel" id="intTel" placeholder="+33 6 12 34 56 78" autocomplete="tel" /></div>
           <div class="form-group">
             <label>Adresse (pour itinéraire)</label>
-            <input type="text" id="intAdresse" placeholder="Rue du Rhône 12, 1204 Genève" autocomplete="street-address" />
+            <input type="text" id="intAdresse" placeholder="12 rue de la Paix, 75002 Paris" autocomplete="street-address" />
             <div style="margin-top:6px;"><button type="button" class="btn-secondary" id="verifyAddressBtn" style="padding:6px 12px; font-size:0.7rem;">📍 Vérifier l'adresse</button></div>
           </div>
-          
         </div>
         <div class="wizard-pane" data-pane="2">
           <div class="form-group">
@@ -1432,39 +1431,49 @@
         </div>
         <div class="wizard-pane" data-pane="3">
           <div class="form-row">
-            <div class="form-group"><label>Taux horaire (CHF/h)</label><input type="number" id="intTaux" min="0" step="5" value="90" inputmode="decimal" /></div>
-            <div class="form-group"><label>Déplacement (CHF)</label><input type="number" id="intDeplacement" min="0" step="5" value="50" inputmode="decimal" /></div>
+            <div class="form-group"><label>Taux horaire (€/h)</label><input type="number" id="intTaux" min="0" step="5" value="45" inputmode="decimal" /></div>
+            <div class="form-group"><label>Déplacement (€)</label><input type="number" id="intDeplacement" min="0" step="5" value="30" inputmode="decimal" /></div>
           </div>
           <div class="km-block">
             <div class="km-header">
               <input type="checkbox" id="intKmActive" />
-              <label for="intKmActive">🚗 Frais kilométriques (barème)</label>
+              <label for="intKmActive">🚗 Frais kilométriques (barème fiscal français)</label>
             </div>
             <div class="km-fields" id="intKmFields">
               <div class="km-field"><label>Distance (km)</label><input type="number" id="intKmDistance" min="0" step="1" value="0" placeholder="0" inputmode="numeric" /></div>
               <div class="km-field">
-                <label>Aller-retour</label>
+                <label>Véhicule</label>
                 <select id="intKmRetour" style="padding:8px 10px; font-weight:700; color:var(--info); text-align:center; font-size:16px;">
-                  <option value="1">Simple</option>
-                  <option value="2" selected>Aller-retour</option>
+                  <option value="3">3 CV</option>
+                  <option value="4">4 CV</option>
+                  <option value="5" selected>5 CV</option>
+                  <option value="6">6 CV</option>
+                  <option value="7">7 CV et +</option>
                 </select>
               </div>
-              <div class="km-field"><label>Barème CHF/km</label><input type="number" id="intKmTaux" min="0" step="0.05" value="0.70" inputmode="decimal" /></div>
+              <div class="km-field">
+                <label>Électrique</label>
+                <select id="intKmTaux" style="padding:8px 10px; font-weight:700; color:var(--info); text-align:center; font-size:16px;">
+                  <option value="0" selected>Non</option>
+                  <option value="1">Oui (+20%)</option>
+                </select>
+              </div>
             </div>
-            <div class="km-total-badge" id="intKmTotal">0.00 CHF</div>
+            <div class="km-total-badge" id="intKmTotal">0.00 €</div>
+            <div style="font-size:0.6rem; color:var(--text-faint); margin-top:6px;">Barème fiscal 2025 (à ajuster chaque année).</div>
           </div>
           <div class="form-group"><label>Notes (optionnel)</label><input type="text" id="intNotes" placeholder="Ex: Client absent..." /></div>
           <div class="pieces-section">
             <h4>Pièces & Matériels</h4>
             <div class="pieces-container-scroll" id="piecesContainer"></div>
             <button class="btn-add-piece" id="addPieceBtn">+ Ajouter une pièce</button>
-            <div class="piece-total"><span>Total pièces :</span><span id="piecesTotal">0.00 CHF</span></div>
+            <div class="piece-total"><span>Total pièces :</span><span id="piecesTotal">0.00 €</span></div>
           </div>
           <div class="pieces-section">
             <h4>Notes de frais (carburant, péage...)</h4>
             <div class="frais-container-scroll" id="fraisContainer"></div>
             <button class="btn-add-piece" id="addFraisBtn">+ Ajouter un frais</button>
-            <div class="piece-total"><span>Total frais :</span><span id="fraisTotal">0.00 CHF</span></div>
+            <div class="piece-total"><span>Total frais :</span><span id="fraisTotal">0.00 €</span></div>
           </div>
           <div class="photos-section">
             <h4>Photos avant / après</h4>
@@ -1507,7 +1516,7 @@
           <label>Client / Adresse</label>
           <input type="text" id="avoirClient" placeholder="Nom du client" autocomplete="off" />
         </div>
-        <div class="form-group"><label>Montant à créditer (CHF)</label><input type="number" id="avoirMontant" min="0.01" step="0.01" placeholder="Ex: 120.00" inputmode="decimal" /></div>
+        <div class="form-group"><label>Montant à créditer (€)</label><input type="number" id="avoirMontant" min="0.01" step="0.01" placeholder="Ex: 120.00" inputmode="decimal" /></div>
         <div class="form-group">
           <label>Motif de l'avoir</label>
           <select id="avoirMotif">
@@ -1626,8 +1635,8 @@
         </div>
         <div class="form-group autocomplete-wrapper"><label>Client / Adresse</label><input type="text" id="planClient" placeholder="Nom ou adresse" autocomplete="off" /><div class="autocomplete-list" id="planClientAutocomplete"></div></div>
         <div class="form-row">
-          <div class="form-group"><label>Téléphone</label><input type="tel" id="planTel" placeholder="+41 79 123 45 67" autocomplete="tel" /></div>
-          <div class="form-group"><label>Adresse (itinéraire)</label><input type="text" id="planAdresse" placeholder="Rue du Rhône 12, 1204 Genève" autocomplete="street-address" /></div>
+          <div class="form-group"><label>Téléphone</label><input type="tel" id="planTel" placeholder="+33 6 12 34 56 78" autocomplete="tel" /></div>
+          <div class="form-group"><label>Adresse (itinéraire)</label><input type="text" id="planAdresse" placeholder="12 rue de la Paix, 75002 Paris" autocomplete="street-address" /></div>
         </div>
         <div class="form-group"><label>Description de la tâche</label><textarea id="planDescription" placeholder="Ex: Fuite sous évier..." style="min-height:70px;"></textarea></div>
       </div>
@@ -1644,9 +1653,9 @@
       <h2 id="devisModalTitle">Nouveau devis</h2>
       <div class="modal-scroll-area">
         <div class="form-group autocomplete-wrapper"><label>Client / Adresse</label><input type="text" id="devisClient" placeholder="Nom du client ou adresse" autocomplete="off" /><div class="autocomplete-list" id="devisClientAutocomplete"></div></div>
-        <div class="form-group"><label>Email du client</label><input type="email" id="devisEmail" placeholder="client@email.ch" autocomplete="email" /></div>
-        <div class="form-group"><label>Téléphone du client</label><input type="tel" id="devisTel" placeholder="+41 79 123 45 67" autocomplete="tel" /></div>
-        <div class="form-group"><label>Adresse (pour itinéraire)</label><input type="text" id="devisAdresse" placeholder="Rue du Rhône 12, 1204 Genève" autocomplete="street-address" /></div>
+        <div class="form-group"><label>Email du client</label><input type="email" id="devisEmail" placeholder="client@email.fr" autocomplete="email" /></div>
+        <div class="form-group"><label>Téléphone du client</label><input type="tel" id="devisTel" placeholder="+33 6 12 34 56 78" autocomplete="tel" /></div>
+        <div class="form-group"><label>Adresse (pour itinéraire)</label><input type="text" id="devisAdresse" placeholder="12 rue de la Paix, 75002 Paris" autocomplete="street-address" /></div>
         <div class="form-group"><label>Description des travaux</label><textarea id="devisDescription" placeholder="Détail des travaux à réaliser..."></textarea></div>
         <div class="form-row">
           <div class="form-group"><label>Date du devis</label><input type="date" id="devisDate" /></div>
@@ -1662,15 +1671,15 @@
           <div class="duree-total-badge" id="devisDureeTotalBadge">Total : 0 min</div>
         </div>
         <div class="form-row">
-          <div class="form-group"><label>Taux horaire (CHF/h)</label><input type="number" id="devisTaux" min="0" step="5" value="90" inputmode="decimal" /></div>
-          <div class="form-group"><label>Déplacement (CHF)</label><input type="number" id="devisDeplacement" min="0" step="5" value="50" inputmode="decimal" /></div>
+          <div class="form-group"><label>Taux horaire (€/h)</label><input type="number" id="devisTaux" min="0" step="5" value="45" inputmode="decimal" /></div>
+          <div class="form-group"><label>Déplacement (€)</label><input type="number" id="devisDeplacement" min="0" step="5" value="30" inputmode="decimal" /></div>
         </div>
         <div class="form-group"><label>Notes</label><input type="text" id="devisNotes" placeholder="Conditions particulières..." /></div>
         <div class="pieces-section">
           <h4>Pièces & Matériels</h4>
           <div class="pieces-container-scroll" id="devisPiecesContainer"></div>
           <button class="btn-add-piece" id="addDevisPieceBtn">+ Ajouter une pièce</button>
-          <div class="piece-total"><span>Total pièces :</span><span id="devisPiecesTotal">0.00 CHF</span></div>
+          <div class="piece-total"><span>Total pièces :</span><span id="devisPiecesTotal">0.00 €</span></div>
         </div>
       </div>
       <div class="modal-actions">
@@ -1822,7 +1831,7 @@
     <div class="modal-box" style="max-width:480px;">
       <h2 id="mailModalTitle">Envoyer</h2>
       <div class="modal-scroll-area">
-        <div class="form-group"><label>Destinataire</label><input type="email" id="mailTo" placeholder="client@email.ch" autocomplete="email" /></div>
+        <div class="form-group"><label>Destinataire</label><input type="email" id="mailTo" placeholder="client@email.fr" autocomplete="email" /></div>
         <div class="form-group"><label>Objet</label><input type="text" id="mailSubject" readonly /></div>
         <div class="form-group"><label>Message</label><textarea id="mailBody" readonly style="border-radius:var(--r-sm); min-height:140px;"></textarea></div>
       </div>
@@ -1862,12 +1871,12 @@
     </div>
   </div>
 
-  <!-- CERTIFICAT CHAUDIÈRE -->
+  <!-- ATTESTATION D'ENTRETIEN CHAUDIÈRE -->
   <div class="modal-overlay" id="certificateModal" role="dialog" aria-modal="true" aria-labelledby="certificateModalTitle">
     <div class="modal-box" style="max-width:520px;">
-      <h2 id="certificateModalTitle">🔥 Certificat d'entretien chaudière</h2>
+      <h2 id="certificateModalTitle">🔥 Attestation d'entretien chaudière</h2>
       <div style="padding:12px; background:#fff8e1; border-radius:var(--r-sm); border-left:4px solid var(--warning); font-size:0.8rem; color:#7a3d00; line-height:1.5; margin-bottom:12px; flex-shrink:0; min-height:auto; overflow:visible;">
-  <strong>Document non officiel.</strong> Cette attestation de réglage/entretien ne remplace pas le rapport de contrôle officiel des émissions, établi par le maître ramoneur (canton de Vaud). Conservez-la comme trace de votre intervention.
+  <strong>Document non officiel.</strong> Cette attestation d'entretien ne remplace pas le rapport de contrôle officiel des émissions (obligatoire pour les chaudières de 4 à 400 kW, réalisé par un organisme accrédité). Conservez-la comme trace de votre intervention.
 </div>
       <div class="modal-scroll-area">
         <div class="form-group"><label>Marque / Modèle</label><input type="text" id="certMarque" placeholder="Ex: Viessmann Vitodens 200-W" /></div>
@@ -1879,10 +1888,10 @@
           <div class="form-group"><label>Type de combustible</label>
             <select id="certCombustible">
               <option value="gaz">Gaz naturel</option>
-              <option value="mazout">Mazout</option>
+              <option value="mazout">Fioul domestique</option>
               <option value="propane">Propane</option>
-              <option value="pellet">Pellets</option>
-              <option value="bois">Bois</option>
+              <option value="pellet">Granulés de bois</option>
+              <option value="bois">Bois bûches</option>
               <option value="pac">Pompe à chaleur</option>
             </select>
           </div>
@@ -1905,7 +1914,7 @@
       </div>
       <div class="modal-actions">
         <button class="btn-cancel" id="cancelCertificate">Annuler</button>
-        <button class="btn-confirm" id="generateCertificateBtn">📄 Générer le certificat</button>
+        <button class="btn-confirm" id="generateCertificateBtn">📄 Générer l'attestation</button>
       </div>
     </div>
   </div>
@@ -1946,49 +1955,58 @@
           </div>
         </div>
         <div class="form-group"><label>Nom de l'entreprise</label><input type="text" id="setNom" value="PipePline" /></div>
-        <div class="form-group"><label>Adresse</label><input type="text" id="setAdresse" placeholder="Rue du Rhône 12" autocomplete="street-address" /></div>
+        <div class="form-group"><label>Adresse</label><input type="text" id="setAdresse" placeholder="12 rue de la Paix" autocomplete="street-address" /></div>
         <div class="form-row">
-          <div class="form-group"><label>NPA</label><input type="text" id="setZip" placeholder="1204" autocomplete="postal-code" inputmode="numeric" /></div>
-          <div class="form-group"><label>Ville</label><input type="text" id="setCity" placeholder="Genève" autocomplete="address-level2" /></div>
+          <div class="form-group"><label>Code postal</label><input type="text" id="setZip" placeholder="75002" autocomplete="postal-code" inputmode="numeric" /></div>
+          <div class="form-group"><label>Ville</label><input type="text" id="setCity" placeholder="Paris" autocomplete="address-level2" /></div>
         </div>
-        <div class="form-group"><label>N° IDE / UID (Suisse)</label><input type="text" id="setSiret" placeholder="CHE-123.456.789" /></div>
-        <div class="form-group"><label>IBAN (pour QR-facture)</label><input type="text" id="setIban" placeholder="CH93 0076 2011 6238 5295 7" autocomplete="off" /></div>
+        <div class="form-group"><label>N° SIREN</label><input type="text" id="setSiret" placeholder="123 456 789" /></div>
+        <div class="form-group"><label>IBAN (pour virement)</label><input type="text" id="setIban" placeholder="FR76 3000 6000 0112 3456 7890 189" autocomplete="off" /></div>
         <div class="form-group" id="ibanStatus" style="font-size:0.7rem; padding:8px 12px; border-radius:var(--r-sm); background:var(--bg-surface); display:none;"></div>
         <div class="form-group">
-          <label>Assujetti à la TVA suisse ?</label>
+          <label>Assujetti à la TVA française ?</label>
           <div style="display:flex; align-items:center; gap:10px;">
             <input type="checkbox" id="setTvaActive" style="width:auto; accent-color:var(--accent);" />
-            <span style="font-size:0.8rem; color:var(--text-secondary);">Chiffre d'affaires ≥ 100 000 CHF</span>
+            <span style="font-size:0.8rem; color:var(--text-secondary);">Chiffre d'affaires ≥ 39 100 €</span>
           </div>
         </div>
-        <div class="form-group"><label>N° TVA suisse (TVA / MWST)</label><input type="text" id="setTvaIntra" placeholder="CHE-123.456.789 TVA" /></div>
-        <div class="form-group"><label>TVA (%) — saisie libre</label><input type="number" id="setTva" value="8.1" step="0.1" min="0" max="30" inputmode="decimal" /></div>
+        <div class="form-group"><label>N° TVA intracommunautaire</label><input type="text" id="setTvaIntra" placeholder="FR 12 345678901" /></div>
         <div class="form-group">
-          <label>🚗 Barème kilométrique (CHF/km)</label>
-          <input type="number" id="setKmRate" value="0.70" step="0.05" min="0" inputmode="decimal" />
-          <div style="font-size:0.65rem; color:var(--text-faint); margin-top:4px;">Barème officiel suisse 2024 : 0.70 CHF/km</div>
+          <label>Taux de TVA par défaut (%)</label>
+          <select id="setTva">
+            <option value="20">20 % (normal)</option>
+            <option value="10">10 % (travaux logement > 2 ans)</option>
+            <option value="5.5">5,5 % (rénovation énergétique)</option>
+            <option value="2.1">2,1 % (taux particulier)</option>
+          </select>
         </div>
         <div class="form-group">
-          <label>Seuil facture d'acompte automatique (CHF)</label>
+          <label>🚗 Barème kilométrique</label>
+          <div style="font-size:0.7rem; color:var(--text-faint); padding:8px 12px; background:var(--bg-surface); border-radius:var(--r-sm); line-height:1.5;">
+            Le barème fiscal français 2025 est progressif selon la puissance fiscale (CV) et la distance. Il est appliqué automatiquement dans la fiche intervention. Majoration de 20 % pour les véhicules électriques.
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Seuil facture d'acompte automatique (€)</label>
           <input type="number" id="setAcompteSeuil" value="5000" step="100" min="0" inputmode="decimal" />
         </div>
         <div style="margin:12px 0 14px; padding:10px 12px; background:var(--accent-light); border-radius:var(--r-sm); border-left:4px solid var(--accent);">
-          <div style="font-size:0.7rem; font-weight:700; color:var(--accent); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:10px;">Mentions légales (factures suisses)</div>
+          <div style="font-size:0.7rem; font-weight:700; color:var(--accent); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:10px;">Mentions légales (factures françaises)</div>
           <div class="form-group" style="margin-bottom:10px;"><label>Assurance RC professionnelle - Assureur</label><input type="text" id="setAssuranceNom" placeholder="AXA Assurances" /></div>
           <div class="form-group" style="margin-bottom:10px;"><label>N° police d'assurance</label><input type="text" id="setAssuranceNum" placeholder="POL-123456789" /></div>
           <div class="form-group" style="margin-bottom:0;"><label>Délai de paiement (jours)</label><input type="number" id="setDelaiPaiement" value="30" min="0" max="120" step="1" inputmode="numeric" /></div>
         </div>
-        <div class="form-group"><label>Téléphone</label><input type="text" id="setTel" placeholder="+41 22 123 45 67" autocomplete="tel" /></div>
-        <div class="form-group"><label>Email</label><input type="email" id="setEmail" placeholder="contact@pipepline.ch" autocomplete="email" /></div>
+        <div class="form-group"><label>Téléphone</label><input type="text" id="setTel" placeholder="+33 1 23 45 67 89" autocomplete="tel" /></div>
+        <div class="form-group"><label>Email</label><input type="email" id="setEmail" placeholder="contact@pipepline.fr" autocomplete="email" /></div>
         <div class="form-group"><label>Taux d'imposition auto-entreprise (%)</label><input type="number" id="setTaxe" value="21.2" step="0.1" min="0" max="50" inputmode="decimal" /></div>
-        <div class="form-group"><label>Taux horaire par défaut (CHF/h)</label><input type="number" id="setTauxDefaut" value="90" step="5" min="0" inputmode="decimal" /></div>
-        <div class="form-group"><label>Frais de déplacement par défaut (CHF)</label><input type="number" id="setDeplacementDefaut" value="50" step="5" min="0" inputmode="decimal" /></div>
+        <div class="form-group"><label>Taux horaire par défaut (€/h)</label><input type="number" id="setTauxDefaut" value="45" step="5" min="0" inputmode="decimal" /></div>
+        <div class="form-group"><label>Frais de déplacement par défaut (€)</label><input type="number" id="setDeplacementDefaut" value="30" step="5" min="0" inputmode="decimal" /></div>
         <div class="form-group"><label>Seuil d'alerte impayés (jours)</label><input type="number" id="setSeuilAlerte" value="30" step="1" min="1" inputmode="numeric" /></div>
         <div class="form-group"><label>Rappel de sauvegarde (jours)</label><input type="number" id="setSeuilSauvegarde" value="15" step="1" min="1" inputmode="numeric" /></div>
       </div>
 
            <div style="margin:14px 0; padding:12px; background:var(--bg-surface); border-radius:var(--r-sm); border:1px solid var(--border-1); font-size:0.72rem; color:var(--text-secondary); line-height:1.55;">
-        <strong style="color:var(--accent);">🔒 Confidentialité (LPrD)</strong><br>
+        <strong style="color:var(--accent);">🔒 Confidentialité (RGPD)</strong><br>
         Vos données clients sont stockées uniquement sur cet appareil. Elles sont chiffrées si le code PIN est activé (AES-256 / PBKDF2). Aucune donnée n'est transmise à un serveur. Vous pouvez exporter ou supprimer vos données à tout moment via « Sauvegarder » / « Restaurer ».
       </div>
 
